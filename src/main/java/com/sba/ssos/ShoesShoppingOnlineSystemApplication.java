@@ -4,9 +4,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class ShoesShoppingOnlineSystemBeApplication {
+public class ShoesShoppingOnlineSystemApplication {
 
   public static void main(String[] args) {
-    SpringApplication.run(ShoesShoppingOnlineSystemBeApplication.class, args);
+    SpringApplication.run(ShoesShoppingOnlineSystemApplication.class, args);
   }
 }
