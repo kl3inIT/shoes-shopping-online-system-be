@@ -13,7 +13,13 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KC_HEALTH_ENABLED: true
       KC_METRICS_ENABLED: true
-    mem_limit: 700m
+      JAVA_OPTS_KC_HEAP: >
+        -XX:InitialRAMPercentage=35
+        -XX:MaxRAMPercentage=60
+        -XX:MinHeapFreeRatio=20
+        -XX:MaxHeapFreeRatio=30
+
+    mem_limit: 1200m
     command: start-dev
     volumes:
       - ./keycloak/themes:/opt/keycloak/themes

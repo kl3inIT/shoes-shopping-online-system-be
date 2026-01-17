@@ -19,7 +19,7 @@ spring:
     url: jdbc:postgresql://${POSTGRESQL_HOST:localhost}:${POSTGRESQL_PORT:5432}/${POSTGRESQL_NAME}
     username: ${POSTGRESQL_USERNAME:postgres}
     password: ${POSTGRESQL_PASSWORD:123456}
-  threads.virtual.enabled: true # Make use of Spring Boot 3.2+ Virtual Threads support
+#  threads.virtual.enabled: true # Make use of Spring Boot 3.2+ Virtual Threads support
   security.oauth2.resourceserver:
     jwt.issuer-uri: http://${KEYCLOAK_HOST:localhost:8080}/realms/${application-properties.realm-name}
 logging.level:
