@@ -21,6 +21,7 @@ spring:
   threads.virtual.enabled: true # Make use of Spring Boot 3.2+ Virtual Threads support
   security.oauth2.resourceserver:
     jwt.issuer-uri: http://${KEYCLOAK_HOST:localhost:8080}/realms/${application-properties.realm-name}
+
 logging.level:
   # If you are curious about how Spring Security OAuth2 works behind the scene
   org.springframework.security.oauth2: TRACE
@@ -30,3 +31,6 @@ springdoc.swagger-ui:
   disable-swagger-default-url: true
 server:
   port: 8088
+
+
+
