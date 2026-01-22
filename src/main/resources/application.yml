@@ -8,9 +8,9 @@ application-properties:
     admin-password: ${KEYCLOAK_ADMIN_PASSWORD:}
   security-properties:
     admin-endpoints:
-      - {method: GET, path: /test/admin}
+      - { method: GET, path: /test/admin }
     public-endpoints:
-      - {method: GET, path: /test/free}
+      - { method: GET, path: /test/free }
     public-urls:
       # OpenAPI Swagger URLs
       - /swagger-ui.html
@@ -28,10 +28,15 @@ spring:
     url: jdbc:postgresql://${POSTGRESQL_HOST:localhost}:${POSTGRESQL_PORT:5432}/${POSTGRESQL_NAME}
     username: ${POSTGRESQL_USERNAME:postgres}
     password: ${POSTGRESQL_PASSWORD:123456}
+  jpa:
+    hibernate:
+      ddl-auto: create
   threads.virtual.enabled: true # Make use of Spring Boot 3.2+ Virtual Threads support
   security.oauth2.resourceserver:
     jwt.issuer-uri: http://${KEYCLOAK_HOST:localhost:8080}/realms/${application-properties.keycloak-properties.realm-name}
-
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/master.yaml
 logging.level:
   # If you are curious about how Spring Security OAuth2 works behind the scene
   org.springframework.security.oauth2: TRACE
@@ -41,6 +46,8 @@ springdoc.swagger-ui:
   disable-swagger-default-url: true
 server:
   port: 8088
+
+
 
 
 
