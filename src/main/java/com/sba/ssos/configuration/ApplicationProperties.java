@@ -8,6 +8,7 @@ import java.util.List;
 public record ApplicationProperties(
         String clientName,
         List<String> adminPrivilegeUrls,
-        List<String> noAuthUrls
+        List<String> noAuthUrls,
+        String sepayApiKey
 ) {
 }
