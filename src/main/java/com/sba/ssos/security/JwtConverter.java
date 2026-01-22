@@ -10,7 +10,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -31,7 +30,7 @@ public class JwtConverter implements Converter<Jwt, UsernamePasswordAuthenticati
     @SuppressWarnings("unchecked")
     public UsernamePasswordAuthenticationToken convert(Jwt jwt) {
         var keycloakProperties = applicationProperties.keycloakProperties();
-        var clientName = keycloakProperties.clientName();
+        var clientName = keycloakProperties.clientId();
         // cannot have different authorized party
         if (!clientName.equalsIgnoreCase(jwt.getClaimAsString("azp"))) {
             throw new AuthorizationException(

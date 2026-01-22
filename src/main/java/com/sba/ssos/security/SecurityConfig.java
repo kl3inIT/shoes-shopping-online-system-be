@@ -34,14 +34,11 @@ public class SecurityConfig {
 
   // One of the best and the most elegant ways to handle exceptions in Spring Security filters
   private final HandlerExceptionResolver handlerExceptionResolver;
-
-  private final ApplicationProperties applicationProperties;
-
   static final String ROLE_ADMIN_NAME = UserRole.ROLE_ADMIN.name();
 
   @Bean
   @SneakyThrows
-  SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, JwtConverter jwtConverter) {
+  SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, JwtConverter jwtConverter, ApplicationProperties applicationProperties) {
     var security = applicationProperties.securityProperties();
     return httpSecurity
         .headers(

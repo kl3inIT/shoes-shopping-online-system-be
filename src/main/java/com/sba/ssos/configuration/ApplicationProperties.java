@@ -2,6 +2,7 @@ package com.sba.ssos.configuration;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
 
 import java.util.List;
 
@@ -9,7 +10,14 @@ import java.util.List;
 public record ApplicationProperties(
     KeycloakProperties keycloakProperties, SecurityProperties securityProperties) {
 
-  public record KeycloakProperties(String realmName, String clientName) {}
+  public record KeycloakProperties(
+          String serverUrl,
+          String realmName,
+          String clientId,
+          String adminClientId,
+          String adminUsername,
+          String adminPassword
+  ) {}
 
   public record SecurityProperties(
       List<String> publicUrls,

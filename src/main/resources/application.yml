@@ -1,7 +1,11 @@
 application-properties:
   keycloak-properties:
-    client-name: ssos-backend
-    realm-name: ssos
+    realm-name: ${KEYCLOAK_REALM:ssos}
+    client-id: ${KEYCLOAK_CLIENT_ID:ssos-backend}
+    server-url: ${KEYCLOAK_HOST:}
+    admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
+    admin-username: ${KEYCLOAK_ADMIN_USERNAME:}
+    admin-password: ${KEYCLOAK_ADMIN_PASSWORD:}
   security-properties:
     admin-endpoints:
       - {method: GET, path: /test/admin}
