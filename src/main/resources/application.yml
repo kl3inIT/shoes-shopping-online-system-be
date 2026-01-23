@@ -9,6 +9,8 @@ application-properties:
   security-properties:
     admin-endpoints:
       - { method: GET, path: /test/admin }
+    manager-endpoints:
+      - { method: GET, path: /test/manager }
     public-endpoints:
       - { method: GET, path: /test/free }
     public-urls:

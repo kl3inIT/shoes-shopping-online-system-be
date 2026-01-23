@@ -19,7 +19,8 @@ public record ApplicationProperties(
   public record SecurityProperties(
       List<String> publicUrls,
       List<HttpEndpoint> publicEndpoints,
-      List<HttpEndpoint> adminEndpoints) {}
+      List<HttpEndpoint> adminEndpoints,
+      List<HttpEndpoint> managerEndpoints) {}
 
   public record HttpEndpoint(HttpMethod method, String path) {}
 }
