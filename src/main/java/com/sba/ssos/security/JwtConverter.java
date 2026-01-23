@@ -2,7 +2,7 @@ package com.sba.ssos.security;
 
 import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.enums.UserRole;
-import com.sba.ssos.exception.auth.AuthorizationException;
+import com.sba.ssos.exception.base.UnauthorizedException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -33,8 +33,10 @@ public class JwtConverter implements Converter<Jwt, UsernamePasswordAuthenticati
         var clientName = keycloakProperties.clientId();
         // cannot have different authorized party
         if (!clientName.equalsIgnoreCase(jwt.getClaimAsString("azp"))) {
-            throw new AuthorizationException(
-                    "Invalid authorized party (azp), expected [%s]".formatted(clientName));
+            throw new UnauthorizedException(
+                    "error.jwt.invalid_azp",
+                    "expected", clientName,
+                    "actual", jwt.getClaimAsString("azp"));
         }
 
         // get the top-level "resource_access" claim.
@@ -77,7 +79,9 @@ public class JwtConverter implements Converter<Jwt, UsernamePasswordAuthenticati
 
     private static <T> T nonMissing(T object, String name) {
         if (object == null) {
-            throw new AuthorizationException("Claim [%s] is missing".formatted(name));
+            throw new UnauthorizedException(
+                    "error.jwt.claim_missing",
+                    "claim", name);
         }
 
         return object;
