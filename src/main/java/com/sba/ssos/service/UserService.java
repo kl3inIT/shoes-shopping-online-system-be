@@ -2,7 +2,8 @@ package com.sba.ssos.service;
 
 import com.sba.ssos.dto.response.user.UserResponse;
 import com.sba.ssos.entity.User;
-import com.sba.ssos.exception.base.NotFoundException;
+import com.sba.ssos.exception.user.UserNotFoundException;
+import com.sba.ssos.mapper.UserMapper;
 import com.sba.ssos.repository.UserRepository;
 import com.sba.ssos.security.AuthorizedUserDetails;
 import java.time.Instant;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
   private final UserRepository userRepository;
+  private final UserMapper userMapper;
 
   public AuthorizedUserDetails getCurrentUser() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -69,18 +71,7 @@ public class UserService {
     User user =
         userRepository
             .findByKeycloakId(keycloakId)
-            .orElseThrow(() -> new NotFoundException("User", keycloakId));
-    return toResponse(user);
-  }
-
-  private static UserResponse toResponse(User user) {
-    return new UserResponse(
-        user.getKeycloakId(),
-        user.getUsername(),
-        user.getEmail(),
-        user.getPhoneNumber(),
-        user.getDateOfBirth(),
-        user.getAvatarUrl(),
-        user.getLastSeenAt());
+            .orElseThrow(() -> new UserNotFoundException(keycloakId));
+    return userMapper.toResponse(user);
   }
 }
