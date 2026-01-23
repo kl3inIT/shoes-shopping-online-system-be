@@ -1,8 +1,12 @@
 package com.sba.ssos.controller.payment;
 
 import com.sba.ssos.configuration.ApplicationProperties;
+import com.sba.ssos.dto.ResponseGeneral;
+import com.sba.ssos.dto.request.payment.PaymentRequestDTO;
+import com.sba.ssos.dto.response.payment.PaymentResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -41,4 +45,14 @@ public class PaymentController {
 //        paymentService.sendInvoiceToEmail(payload, transactionCode, downloadLink);
         return null;
     }
+
+    @PostMapping("/init")
+    public ResponseEntity<ResponseGeneral<PaymentResponseDTO>> createPayment(@RequestBody PaymentRequestDTO paymentRequestDTO) {
+        ResponseGeneral<PaymentResponseDTO> responseDTO = new ResponseGeneral<>();
+//        responseDTO.setMessage(SUCCESS);
+//        responseDTO.setData(paymentService.createPayment(paymentRequestDTO));
+        return ResponseEntity.ok(responseDTO);
+    }
+
+
 }
