@@ -1,9 +1,12 @@
 package com.sba.ssos.service;
 
+import com.sba.ssos.dto.response.user.UserResponse;
 import com.sba.ssos.entity.User;
+import com.sba.ssos.exception.base.NotFoundException;
 import com.sba.ssos.repository.UserRepository;
 import com.sba.ssos.security.AuthorizedUserDetails;
 import java.time.Instant;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -35,7 +38,7 @@ public class UserService {
   }
 
   @Transactional
-  public void getOrCreateUser(AuthorizedUserDetails principal) {
+  public void createOrUpdateUser(AuthorizedUserDetails principal) {
 
     userRepository
         .findByKeycloakId(principal.userId())
@@ -59,5 +62,25 @@ public class UserService {
               log.info("Created new user from Keycloak: {}", principal.username());
               return userRepository.save(user);
             });
+  }
+
+  @Transactional(readOnly = true)
+  public UserResponse getUserByKeycloakId(UUID keycloakId) {
+    User user =
+        userRepository
+            .findByKeycloakId(keycloakId)
+            .orElseThrow(() -> new NotFoundException("User", keycloakId));
+    return toResponse(user);
+  }
+
+  private static UserResponse toResponse(User user) {
+    return new UserResponse(
+        user.getKeycloakId(),
+        user.getUsername(),
+        user.getEmail(),
+        user.getPhoneNumber(),
+        user.getDateOfBirth(),
+        user.getAvatarUrl(),
+        user.getLastSeenAt());
   }
 }
