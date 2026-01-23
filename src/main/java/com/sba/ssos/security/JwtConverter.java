@@ -1,14 +1,15 @@
 package com.sba.ssos.security;
 
 import com.sba.ssos.configuration.ApplicationProperties;
+import com.sba.ssos.enums.UserRole;
 import com.sba.ssos.exception.auth.AuthorizationException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -28,8 +29,8 @@ public class JwtConverter implements Converter<Jwt, UsernamePasswordAuthenticati
     @Override
     @SuppressWarnings("unchecked")
     public UsernamePasswordAuthenticationToken convert(Jwt jwt) {
-        var clientName = applicationProperties.clientName();
-
+        var keycloakProperties = applicationProperties.keycloakProperties();
+        var clientName = keycloakProperties.clientId();
         // cannot have different authorized party
         if (!clientName.equalsIgnoreCase(jwt.getClaimAsString("azp"))) {
             throw new AuthorizationException(
@@ -48,17 +49,13 @@ public class JwtConverter implements Converter<Jwt, UsernamePasswordAuthenticati
         // get the collection of role strings from that map.
         var roleNames = getMapValue(clientRolesMap, "roles", RESOURCE_ACCESS_CLAIM, clientName);
 
-        var authorities =
-                roleNames.stream()
-                        // roughly equivalent to:
-                        // .filter(StringUtils::nonNull).map(e -> new SimpleGrantedAuthority(e.toUpperCase))
-                        .<GrantedAuthority>mapMulti(
-                                (element, downstream) -> {
-                                    if (StringUtils.isNotBlank(element)) {
-                                        downstream.accept(new SimpleGrantedAuthority(element.toUpperCase()));
-                                    }
-                                })
-                        .collect(Collectors.toSet());
+        var validRoles = UserRole.fromRawRole(roleNames);
+
+        Set<GrantedAuthority> authorities =
+                validRoles.stream()
+                        .map(UserRole::name)
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toUnmodifiableSet());
 
         var userDetails =
                 AuthorizedUserDetails.builder()

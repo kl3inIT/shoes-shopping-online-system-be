@@ -1,29 +1,46 @@
 application-properties:
-  realm-name: ssos
-  client-name: ssos-backend
-  admin-privilege-urls:
-    - /test/admin/**
-  no-auth-urls:
-    # OpenAPI Swagger URLs
-    - /swagger-ui.html
-    - /swagger-ui/**
-    - /v3/api-docs/**
-    - /v3/api-docs.yaml
-    # Actuator endpoints:
-    - /actuator/**
-    # Custom no-auth URLs:
-    - /test/free
-    - /api/payments/sepay/hook
-  sepay-api-key: ${SEPAY_API_KEY}
+
+  keycloak-properties:
+    realm-name: ${KEYCLOAK_REALM:ssos}
+    client-id: ${KEYCLOAK_CLIENT_ID:ssos-backend}
+    server-url: ${KEYCLOAK_HOST:}
+    admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
+    admin-username: ${KEYCLOAK_ADMIN_USERNAME:}
+    admin-password: ${KEYCLOAK_ADMIN_PASSWORD:}
+  security-properties:
+    admin-endpoints:
+      - { method: GET, path: /test/admin }
+    public-endpoints:
+      - { method: GET, path: /test/free }
+      - { method: POST, path: /api/payments/sepay/hook }
+    public-urls:
+      # OpenAPI Swagger URLs
+      - /swagger-ui.html
+      - /swagger-ui/**
+      - /v3/api-docs/**
+      - /v3/api-docs.yaml
+      # Actuator endpoints:
+      - /actuator/**
+      # Custom no-auth URLs:
+      - /test/free
+    sepay-api-key: ${SEPAY_API_KEY}
+
 spring:
+  application:
+    name: shoes-shopping-online-system
   datasource:
     url: jdbc:postgresql://${POSTGRESQL_HOST:localhost}:${POSTGRESQL_PORT:5432}/${POSTGRESQL_NAME}
     username: ${POSTGRESQL_USERNAME:postgres}
     password: ${POSTGRESQL_PASSWORD:123456}
+  jpa:
+    hibernate:
+      ddl-auto: create
   threads.virtual.enabled: true # Make use of Spring Boot 3.2+ Virtual Threads support
   security.oauth2.resourceserver:
-    jwt.issuer-uri: http://${KEYCLOAK_HOST:localhost:8080}/realms/${application-properties.realm-name}
-
+    jwt.issuer-uri: http://${KEYCLOAK_HOST:localhost:8080}/realms/${application-properties.keycloak-properties.realm-name}
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/master.yaml
 logging.level:
   # If you are curious about how Spring Security OAuth2 works behind the scene
   org.springframework.security.oauth2: TRACE
@@ -33,6 +50,8 @@ springdoc.swagger-ui:
   disable-swagger-default-url: true
 server:
   port: 8088
+
+
 
 
 

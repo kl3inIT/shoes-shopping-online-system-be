@@ -26,7 +26,7 @@ public class PaymentController {
     public Void verifyOrder(@RequestBody Map<String, Object> payload,
                             @RequestHeader("Authorization") String apiKey) {
         // Validate API Key
-        if (!apiKey.equals("Apikey " + props.sepayApiKey())) {
+        if (!apiKey.equals("Apikey " + props.securityProperties().sepayApiKey())) {
             throw new SecurityException("Invalid API Key");
         }
 
