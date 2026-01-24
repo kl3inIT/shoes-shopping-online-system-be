@@ -32,13 +32,17 @@ public class JwtConverter implements Converter<Jwt, UsernamePasswordAuthenticati
   @SuppressWarnings("unchecked")
   public UsernamePasswordAuthenticationToken convert(Jwt jwt) {
     var keycloakProperties = applicationProperties.keycloakProperties();
-    var clientName = keycloakProperties.clientId();
-    // cannot have different authorized party
-    if (!clientName.equalsIgnoreCase(jwt.getClaimAsString("azp"))) {
-      throw new UnauthorizedException(
-          "error.jwt.invalid_azp", "expected", clientName, "actual", jwt.getClaimAsString("azp"));
-    }
+    var acceptClients = keycloakProperties.acceptClients();
 
+    var clientName = jwt.getClaimAsString("azp");
+    if (clientName == null
+        || acceptClients == null
+        || acceptClients.isEmpty()
+        || acceptClients.stream().noneMatch(c -> c.equalsIgnoreCase(clientName))) {
+
+      throw new UnauthorizedException(
+          "error.jwt.invalid_azp", "expected", acceptClients, "actual", clientName);
+    }
     // get the top-level "resource_access" claim.
     var resourceAccess =
         nonMissing(jwt.getClaimAsMap(RESOURCE_ACCESS_CLAIM), RESOURCE_ACCESS_CLAIM);

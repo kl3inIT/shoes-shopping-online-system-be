@@ -1,6 +1,4 @@
 package com.sba.ssos.dto;
-
-
 import com.sba.ssos.utils.DateUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
