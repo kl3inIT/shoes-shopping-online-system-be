@@ -13,6 +13,7 @@ application-properties:
       - { method: GET, path: /test/manager }
     public-endpoints:
       - { method: GET, path: /test/free }
+      - { method: GET, path: /user }
     public-urls:
       # OpenAPI Swagger URLs
       - /swagger-ui.html
