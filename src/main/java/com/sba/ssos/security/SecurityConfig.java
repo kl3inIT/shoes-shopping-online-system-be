@@ -5,12 +5,10 @@ import static com.sba.ssos.security.CorsConfig.corsConfigurationSource;
 import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.configuration.ApplicationProperties.SecurityProperties;
 import com.sba.ssos.enums.UserRole;
-
-import java.util.Arrays;
-import java.util.Comparator;
-
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Arrays;
+import java.util.Comparator;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -36,10 +34,14 @@ public class SecurityConfig {
     // One of the best and the most elegant ways to handle exceptions in Spring Security filters
     private final HandlerExceptionResolver handlerExceptionResolver;
     static final String ROLE_ADMIN_NAME = UserRole.ROLE_ADMIN.name();
-
+    static final String ROLE_MANAGER_NAME = UserRole.ROLE_MANAGER.name();
+    static final String ROLE_SEPAY_WEBHOOK = UserRole.ROLE_SEPAY_WEBHOOK.name();
     @Bean
     @SneakyThrows
-    SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, JwtConverter jwtConverter, ApplicationProperties applicationProperties) {
+    SecurityFilterChain securityFilterChain(
+            HttpSecurity httpSecurity,
+            JwtConverter jwtConverter,
+            ApplicationProperties applicationProperties) {
         var security = applicationProperties.securityProperties();
         return httpSecurity
                 .headers(
@@ -78,10 +80,16 @@ public class SecurityConfig {
             AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry
                     authorizeHttpRequestsCustomizer,
             SecurityProperties securityProperties) {
-        for (var endpoint : securityProperties.publicEndpoints()) {
+        for (var puclicEndpoint : securityProperties.publicEndpoints()) {
             authorizeHttpRequestsCustomizer
-                    .requestMatchers(endpoint.method(), endpoint.path())
+                    .requestMatchers(puclicEndpoint.method(), puclicEndpoint.path())
                     .permitAll();
+        }
+
+        for (var managerEndpoint : securityProperties.managerEndpoints()) {
+            authorizeHttpRequestsCustomizer
+                    .requestMatchers(managerEndpoint.method(), managerEndpoint.path())
+                    .hasAuthority(ROLE_MANAGER_NAME);
         }
 
         for (var adminEndpoint : securityProperties.adminEndpoints()) {
@@ -90,6 +98,11 @@ public class SecurityConfig {
                     .hasAuthority(ROLE_ADMIN_NAME);
         }
 
+        for (var webhookEndpoint : securityProperties.webhookEndpoints()) {
+            authorizeHttpRequestsCustomizer
+                    .requestMatchers(webhookEndpoint.method(), webhookEndpoint.path())
+                    .hasAuthority(ROLE_SEPAY_WEBHOOK);
+        }
         authorizeHttpRequestsCustomizer
                 .requestMatchers(securityProperties.publicUrls().toArray(String[]::new))
                 .permitAll()

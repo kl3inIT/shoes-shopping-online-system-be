@@ -1,5 +1,7 @@
 application-properties:
-
+  sepay-properties:
+    sepay-username: ${SEPAY_USERNAME}
+    sepay-password: ${SEPAY_PASSWORD}
   keycloak-properties:
     realm-name: ${KEYCLOAK_REALM:ssos}
     client-id: ${KEYCLOAK_CLIENT_ID:ssos-backend}
@@ -7,12 +9,18 @@ application-properties:
     admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
     admin-username: ${KEYCLOAK_ADMIN_USERNAME:}
     admin-password: ${KEYCLOAK_ADMIN_PASSWORD:}
+    token-url: ${KEYCLOAK_TOKEN_URL}
+    accept-clients:
+      - ssos-backend
+      - ssos-sepay
   security-properties:
     admin-endpoints:
       - { method: GET, path: /test/admin }
       - { method: POST, path: /api/payments/sepay/hook}
-#    webhook-endpoint:
-#      - { method: POST, path: /api/payments/sepay/hook, client-id: ssos-sepay }
+    manager-endpoints:
+      - { method: GET, path: /test/manager }
+    webhook-endpoints:
+      - { method: POST, path: /api/payments/sepay/hook}
     public-endpoints:
       - { method: GET, path: /test/free }
       - { method: POST, path: /api/payments/sepay/hook }

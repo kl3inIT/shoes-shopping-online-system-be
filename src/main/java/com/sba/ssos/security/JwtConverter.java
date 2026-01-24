@@ -2,7 +2,7 @@ package com.sba.ssos.security;
 
 import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.enums.UserRole;
-import com.sba.ssos.exception.auth.AuthorizationException;
+import com.sba.ssos.exception.base.UnauthorizedException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -30,31 +30,17 @@ public class JwtConverter implements Converter<Jwt, UsernamePasswordAuthenticati
     @SuppressWarnings("unchecked")
     public UsernamePasswordAuthenticationToken convert(Jwt jwt) {
         var keycloakProperties = applicationProperties.keycloakProperties();
-        var clientName = keycloakProperties.clientId();
+        var acceptClients = keycloakProperties.acceptClients();
 
-        var preferredUsername = jwt.getClaimAsString("preferred_username");
-        if (preferredUsername != null && preferredUsername.startsWith("service-account-")) {
+        var clientName = jwt.getClaimAsString("azp");
+        if (clientName == null || acceptClients == null || acceptClients.isEmpty()
+                || acceptClients.stream().noneMatch(c -> c.equalsIgnoreCase(clientName))) {
 
-            var azp = jwt.getClaimAsString("azp");
-            if (azp == null) {
-                throw new AuthorizationException("Claim [azp] is missing");
-            }
-
-            var authority =
-                    new SimpleGrantedAuthority("CLIENT_" + azp.toUpperCase());
-
-            return UsernamePasswordAuthenticationToken.authenticated(
-                    azp,
-                    jwt.getTokenValue(),
-                    Set.of(authority));
+            throw new UnauthorizedException(
+                    "error.jwt.invalid_azp",
+                    "expected", acceptClients,
+                    "actual", clientName);
         }
-
-        // cannot have different authorized party
-        if (!clientName.equalsIgnoreCase(jwt.getClaimAsString("azp"))) {
-            throw new AuthorizationException(
-                    "Invalid authorized party (azp), expected [%s]".formatted(clientName));
-        }
-
         // get the top-level "resource_access" claim.
         var resourceAccess =
                 nonMissing(jwt.getClaimAsMap(RESOURCE_ACCESS_CLAIM), RESOURCE_ACCESS_CLAIM);
@@ -95,10 +81,11 @@ public class JwtConverter implements Converter<Jwt, UsernamePasswordAuthenticati
 
     private static <T> T nonMissing(T object, String name) {
         if (object == null) {
-            throw new AuthorizationException("Claim [%s] is missing".formatted(name));
+            throw new UnauthorizedException(
+                    "error.jwt.claim_missing",
+                    "claim", name);
         }
 
         return object;
     }
 }
-
