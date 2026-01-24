@@ -21,14 +21,9 @@ public class PaymentController {
 
     private final ApplicationProperties props;
 
-
+    // cmd: cloudflared tunnel run sepay-webhook
     @PostMapping("/sepay/hook")
-    public Void verifyOrder(@RequestBody Map<String, Object> payload,
-                            @RequestHeader("Authorization") String apiKey) {
-        // Validate API Key
-        if (!apiKey.equals("Apikey " + props.securityProperties().sepayApiKey())) {
-            throw new SecurityException("Invalid API Key");
-        }
+    public Void verifyOrder(@RequestBody Map<String, Object> payload) {
 
         String regex = "[A-Za-z0-9]{12}";
         Pattern pattern = Pattern.compile(regex);

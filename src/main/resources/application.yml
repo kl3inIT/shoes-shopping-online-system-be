@@ -10,9 +10,13 @@ application-properties:
   security-properties:
     admin-endpoints:
       - { method: GET, path: /test/admin }
+      - { method: POST, path: /api/payments/sepay/hook}
+#    webhook-endpoint:
+#      - { method: POST, path: /api/payments/sepay/hook, client-id: ssos-sepay }
     public-endpoints:
       - { method: GET, path: /test/free }
       - { method: POST, path: /api/payments/sepay/hook }
+      - { method: POST, path: /sepay/auth/token }
     public-urls:
       # OpenAPI Swagger URLs
       - /swagger-ui.html
@@ -23,7 +27,7 @@ application-properties:
       - /actuator/**
       # Custom no-auth URLs:
       - /test/free
-    sepay-api-key: ${SEPAY_API_KEY}
+#    sepay-api-key: ${SEPAY_API_KEY}
 
 spring:
   application:
@@ -50,6 +54,8 @@ springdoc.swagger-ui:
   disable-swagger-default-url: true
 server:
   port: 8088
+
+
 
 
 

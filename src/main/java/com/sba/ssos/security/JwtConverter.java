@@ -31,6 +31,24 @@ public class JwtConverter implements Converter<Jwt, UsernamePasswordAuthenticati
     public UsernamePasswordAuthenticationToken convert(Jwt jwt) {
         var keycloakProperties = applicationProperties.keycloakProperties();
         var clientName = keycloakProperties.clientId();
+
+        var preferredUsername = jwt.getClaimAsString("preferred_username");
+        if (preferredUsername != null && preferredUsername.startsWith("service-account-")) {
+
+            var azp = jwt.getClaimAsString("azp");
+            if (azp == null) {
+                throw new AuthorizationException("Claim [azp] is missing");
+            }
+
+            var authority =
+                    new SimpleGrantedAuthority("CLIENT_" + azp.toUpperCase());
+
+            return UsernamePasswordAuthenticationToken.authenticated(
+                    azp,
+                    jwt.getTokenValue(),
+                    Set.of(authority));
+        }
+
         // cannot have different authorized party
         if (!clientName.equalsIgnoreCase(jwt.getClaimAsString("azp"))) {
             throw new AuthorizationException(

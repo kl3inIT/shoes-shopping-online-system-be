@@ -22,10 +22,10 @@ public record ApplicationProperties(
     public record SecurityProperties(
             List<String> publicUrls,
             List<HttpEndpoint> publicEndpoints,
-            List<HttpEndpoint> adminEndpoints,
-            String sepayApiKey) {
+            List<HttpEndpoint> adminEndpoints) {
     }
-
     public record HttpEndpoint(HttpMethod method, String path) {
     }
+
+
 }
