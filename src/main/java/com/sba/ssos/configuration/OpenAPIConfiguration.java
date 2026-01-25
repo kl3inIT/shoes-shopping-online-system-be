@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 @OpenAPIDefinition(
     info =
         @Info(
-            title = "Shoes Shopping Online System API",
+            title = "Shoe Shopping Online System API",
             version = "v1",
             description = "datcute123"))
 @SecurityScheme(
