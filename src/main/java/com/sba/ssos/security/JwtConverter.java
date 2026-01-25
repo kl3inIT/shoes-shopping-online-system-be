@@ -10,7 +10,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.LocaleUtils;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -24,7 +23,6 @@ public class JwtConverter implements Converter<Jwt, UsernamePasswordAuthenticati
 
   static final String RESOURCE_ACCESS_CLAIM = "resource_access";
   static final String EMAIL_CLAIM = "email";
-  private final LocaleUtils localeUtils;
 
   private final ApplicationProperties applicationProperties;
 

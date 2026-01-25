@@ -1,6 +1,8 @@
 package com.sba.ssos.entity;
 
 import com.sba.ssos.entity.base.BaseAuditableEntity;
+import com.sba.ssos.enums.UserRole;
+import com.sba.ssos.enums.UserStatus;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -14,7 +16,9 @@ import org.hibernate.annotations.NaturalId;
     indexes = {
       @Index(name = "idx_user_email", columnList = "email", unique = true),
       @Index(name = "idx_user_keycloak_id", columnList = "keycloak_id", unique = true),
-      @Index(name = "idx_user_username", columnList = "username", unique = true)
+      @Index(name = "idx_user_username", columnList = "username", unique = true),
+      @Index(name = "idx_user_role", columnList = "role"),
+      @Index(name = "idx_user_status", columnList = "status")
     })
 @Getter
 @Setter
@@ -45,4 +49,14 @@ public class User extends BaseAuditableEntity {
 
   @Column(name = "LAST_SEEN_AT")
   private Instant lastSeenAt;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "ROLE", nullable = false, length = 50)
+  @Builder.Default
+  private UserRole role = UserRole.ROLE_USER;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "STATUS", nullable = false, length = 20)
+  @Builder.Default
+  private UserStatus status = UserStatus.ACTIVE;
 }
