@@ -25,6 +25,7 @@ application-properties:
       - { method: GET, path: /test/free }
       - { method: GET, path: /user }
       - { method: POST, path: /api/payments/sepay/hook }
+      - { method: POST, path: /webhook/keycloak/register }
       - { method: POST, path: /sepay/auth/token }
     public-urls:
       # OpenAPI Swagger URLs

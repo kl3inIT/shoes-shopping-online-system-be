@@ -29,14 +29,20 @@ public class User extends BaseAuditableEntity {
 
   @NaturalId
   @Column(name = "KEYCLOAK_ID", nullable = false, unique = true, updatable = false)
-  private UUID keycloakId; // Subject từ JWT (UUID string)
+  private UUID keycloakId;
 
   @Column(name = "USERNAME", nullable = false, unique = true, length = 100)
   private String username;
 
   @NaturalId
-  @Column(name = "EMAIL", nullable = false, unique = true)
+  @Column(name = "EMAIL", nullable = false, unique = true, length = 255)
   private String email;
+
+  @Column(name = "FIRST_NAME", length = 100)
+  private String firstName;
+
+  @Column(name = "LAST_NAME", length = 100)
+  private String lastName;
 
   @Column(name = "PHONE_NUMBER", length = 20)
   private String phoneNumber;
