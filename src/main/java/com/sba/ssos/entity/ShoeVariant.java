@@ -27,4 +27,7 @@ public class ShoeVariant extends BaseAuditableEntity {
 
     @Column(name = "quantity", nullable = false)
     private Long quantity;
+
+    @Column(name = "sku", nullable = false)
+    private String sku;
 }
