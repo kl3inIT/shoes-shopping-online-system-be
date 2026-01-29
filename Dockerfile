@@ -32,7 +32,7 @@ COPY src/main/ src/main/
 RUN --mount=type=cache,id=gradle-cache,target=/cache/.gradle,sharing=locked \
   ./gradlew bootJar --no-daemon --parallel --console=plain -x test && \
   mkdir -p /app && \
-  mv build/libs/spring-boot-template.jar /app/app.jar
+  mv build/libs/*.jar /app/app.jar
 
 WORKDIR /app
 
@@ -47,7 +47,7 @@ RUN jdeps --ignore-missing-deps -q \
 # Create the custom JRE
 RUN jlink \
   --verbose \
-  --add-modules $(cat deps.info) \
+  --add-modules $(cat deps.info),java.desktop,java.management,java.logging,java.naming,java.security.jgss,java.instrument,java.sql,jdk.unsupported,java.compiler \
   --compress zip-9 \
   --no-header-files \
   --no-man-pages \
@@ -136,7 +136,7 @@ LABEL org.opencontainers.image.title="Dockerfile của PHD" \
 # Health check using Spring Boot Actuator /health endpoint
 # Using curl for lightweight health checks
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:8088/health || exit 1
+  CMD curl -f http://localhost:8088/actuator/health || exit 1
 
 # Use tini as init system for proper signal handling
 # Ensures graceful shutdown and zombie process reaping

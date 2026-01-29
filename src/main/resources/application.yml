@@ -64,6 +64,13 @@ springdoc.swagger-ui:
   disable-swagger-default-url: true
 server:
   port: 8088
+  shutdown: graceful
+
+management.endpoints.web:
+  base-path: ''
+  exposure.include: health
+
+
 
 
 
