@@ -9,12 +9,12 @@ on:
 env:
   IMAGE_NAME: ssos-backend
   REGISTRY: docker.io
-  APP_DIR: /home/app
 
 jobs:
   ci-cd:
     runs-on: ubuntu-24.04
-
+    environment:
+      name: deployment
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -65,7 +65,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-            cd $APP_DIR
+            cd /home/app
 
             docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
 
