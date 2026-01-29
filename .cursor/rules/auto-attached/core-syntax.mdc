@@ -1,0 +1,104 @@
+---
+description: Core Java syntax - var, text blocks, formatted(), local variable extraction, spacing, ternary
+globs: **/*.java
+---
+
+# Core Java Syntax Guidelines
+
+## Type Inference
+
+**Prefer `var` over explicit data types** when the type is obvious from the context.
+
+```java
+// Preferred
+var name = "John Doe";
+var users = new ArrayList<User>();
+var config = ConfigLoader.load();
+
+// Avoid
+String name = "John Doe";
+List<User> users = new ArrayList<>();
+```
+
+## Text Blocks
+
+**Prefer text blocks** when a string contains two or more escaped characters like `\n`, `\t`, `\"`, etc. Pay attention to the ending backslash to avoid unwanted new line.
+
+```java
+// Preferred - using text block
+var json = """
+    {
+      "name": "John",
+      "age": 30,
+      "city": "New York"
+    }\
+    """;
+
+// Avoid - multiple escape characters
+var json = "{\n  \"name\": \"John\",\n  \"age\": 30\n}";
+```
+
+## String Formatting
+
+**Prefer instance method `formatted()`** over static method `String.format()`.
+
+```java
+// Preferred
+var message = "Hello, %s! You have %d messages.".formatted(userName, messageCount);
+
+// Avoid
+var message = String.format("Hello, %s! You have %d messages.", userName, messageCount);
+```
+
+## Local Variable Extraction for Repeated Method Calls
+
+**Prefer extracting to a local variable** when a method (especially getters) is called multiple times.
+
+```java
+// Preferred
+var userName = user.getName();
+var greeting = "Hello, " + userName;
+var logMessage = "User logged in: " + userName;
+
+// Avoid
+var greeting = "Hello, " + user.getName();
+var logMessage = "User logged in: " + user.getName();
+```
+
+**Exception:** Methods that return different values on each call (e.g. `Instant.now()`, `UUID.randomUUID()`) should NOT be extracted.
+
+## Code Spacing and Indentation
+
+**Prefer two-space gap** from definition to the first line of code. For long method chains, use four-space indentation for continuation lines (Google Java Format).
+
+```java
+// Preferred
+public void processUser(User user) {
+  var name = user.getName();
+
+  var result = someService
+      .withConfiguration(config)
+      .andSettings(settings)
+      .process(user);
+}
+```
+
+## Ternary Operator for Simple Conditions
+
+**Prefer ternary operator for simple if conditions when possible.**
+
+```java
+// Preferred
+var status = user.isActive() ? "Active" : "Inactive";
+var discount = isPremiumMember ? 0.20 : 0.10;
+
+// Avoid - verbose if-else for simple conditions
+String status;
+if (user.isActive()) {
+  status = "Active";
+} else {
+  status = "Inactive";
+}
+```
+
+When NOT to use ternary: complex conditions with multiple statements; nested ternary (hard to read); when the condition or values are lengthy; when there are side effects (use if-else).

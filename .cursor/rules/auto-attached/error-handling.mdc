@@ -1,0 +1,132 @@
+---
+description: Error handling and validation - Optional, empty collections, exception chaining, early returns
+globs: **/*.java
+---
+
+# Error Handling and Validation Guidelines
+
+## Optional Return Type
+
+**Prefer `Optional`** as a return type instead of returning `null` to force callers to handle the absence of a value.
+
+```java
+// Preferred - using Optional
+public Optional<User> findUserById(String id) {
+  return userRepository.findById(id);
+}
+
+public Optional<Order> findLatestOrder(String customerId) {
+  var orders = orderRepository.findByCustomerId(customerId);
+  return orders.isEmpty()
+      ? Optional.empty()
+      : Optional.of(orders.get(0));
+}
+
+// Usage - forces explicit handling
+var user = userService.findUserById("123")
+    .orElseThrow(() -> new UserNotFoundException("123"));
+```
+
+```java
+// Avoid - returning null
+public User findUserById(String id) {
+  return userRepository.findById(id).orElse(null);
+}
+```
+
+**When NOT to use Optional:** For fields in domain objects (use null); as method parameters (use overloading or null checks); in collections (use empty collections instead).
+
+## Empty Collections Over Null
+
+**Prefer returning empty collections** instead of null if the return type is a Collection.
+
+```java
+// Preferred - return empty collection
+public List<Order> findOrdersByCustomerId(String customerId) {
+  return orderRepository.findByCustomerId(customerId)
+      .orElse(List.of());
+}
+```
+
+```java
+// Avoid - returning null for collections
+public List<Order> findOrdersByCustomerId(String customerId) {
+  var orders = orderRepository.findByCustomerId(customerId);
+  return orders;  // Could be null!
+}
+```
+
+## Exception Handling
+
+### Exception Constructors
+
+**Always create an exception constructor** that takes a `Throwable` parameter to support exception chaining.
+
+```java
+// Preferred - complete exception class
+public class UserNotFoundException extends RuntimeException {
+
+  public UserNotFoundException(String message) {
+    super(message);
+  }
+
+  public UserNotFoundException(String message, Throwable cause) {
+    super(message, cause);
+  }
+
+  public UserNotFoundException(Throwable cause) {
+    super(cause);
+  }
+}
+```
+
+### Rethrowing Exceptions
+
+**When rethrowing an exception, always include the original exception** to preserve the full stack trace.
+
+```java
+// Preferred - preserving original exception
+} catch (DatabaseException e) {
+  throw new UserServiceException("Failed to load user: " + id, e);  // Original exception included
+}
+
+// Avoid - losing original exception
+} catch (DatabaseException e) {
+  throw new UserServiceException("Failed to load user: " + id);  // Original exception lost!
+}
+```
+
+## Nested Null Checks
+
+**Prefer Optional chaining** when nested null checks exceed three levels.
+
+```java
+// Preferred - clear functional chain
+Optional.ofNullable(user)
+    .map(User::getName)
+    .filter(name -> name.toUpperCase().startsWith("A"))
+    .ifPresent(this::processUser);
+```
+
+Before writing Optional chains, probe the involved classes to confirm method signatures and return types.
+
+## Early Returns
+
+**Prefer early returns over nested if-else statements** to reduce indentation and improve readability.
+
+```java
+// Preferred - early returns
+public String processOrder(Order order) {
+  if (order == null) {
+    return "Invalid order";
+  }
+  if (!order.hasItems()) {
+    return "Order is empty";
+  }
+  // Main logic at outermost level
+  var result = paymentService.process(order);
+  return "Order processed successfully";
+}
+```
+
+**Warning:** If a method contains more than 5 return statements, add a comment indicating potential complexity.
