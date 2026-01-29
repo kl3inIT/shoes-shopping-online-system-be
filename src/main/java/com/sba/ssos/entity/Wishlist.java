@@ -4,15 +4,8 @@ import com.sba.ssos.entity.base.BaseAuditableEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Entity
-@Table(
-    name = "WISHLISTS",
-    indexes = {
-      @Index(name = "idx_wishlist_customer", columnList = "customer_id", unique = true)
-    })
+@Table(name = "wishlists")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,11 +13,11 @@ import java.util.List;
 @Builder
 public class Wishlist extends BaseAuditableEntity {
 
-  @OneToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "CUSTOMER_ID", nullable = false, unique = true)
-  private Customer customer;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shoe_id", nullable = false)
+    private Shoe shoe;
 
-  @OneToMany(mappedBy = "wishlist", cascade = CascadeType.ALL, orphanRemoval = true)
-  @Builder.Default
-  private List<WishlistItem> items = new ArrayList<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id", nullable = false)
+    private Customer customer;
 }

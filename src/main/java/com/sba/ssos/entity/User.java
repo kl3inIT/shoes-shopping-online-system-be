@@ -4,22 +4,15 @@ import com.sba.ssos.entity.base.BaseAuditableEntity;
 import com.sba.ssos.enums.UserRole;
 import com.sba.ssos.enums.UserStatus;
 import jakarta.persistence.*;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.UUID;
 import lombok.*;
 import org.hibernate.annotations.NaturalId;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.UUID;
+
 @Entity
-@Table(
-    name = "USERS",
-    indexes = {
-      @Index(name = "idx_user_email", columnList = "email", unique = true),
-      @Index(name = "idx_user_keycloak_id", columnList = "keycloak_id", unique = true),
-      @Index(name = "idx_user_username", columnList = "username", unique = true),
-      @Index(name = "idx_user_role", columnList = "role"),
-      @Index(name = "idx_user_status", columnList = "status")
-    })
+@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -27,36 +20,40 @@ import org.hibernate.annotations.NaturalId;
 @Builder
 public class User extends BaseAuditableEntity {
 
-  @NaturalId
-  @Column(name = "KEYCLOAK_ID", nullable = false, unique = true, updatable = false)
-  private UUID keycloakId; // Subject từ JWT (UUID string)
+    @NaturalId
+    @Column(name = "keycloak_id", nullable = false, unique = true, updatable = false)
+    private UUID keycloakId;
 
-  @Column(name = "USERNAME", nullable = false, unique = true, length = 100)
-  private String username;
+    @Column(name = "role", nullable = false, length = 255)
+    @Enumerated(EnumType.STRING)
+    private UserRole role;
 
-  @NaturalId
-  @Column(name = "EMAIL", nullable = false, unique = true)
-  private String email;
+    @Column(name = "username", nullable = false, length = 255)
+    private String username;
 
-  @Column(name = "PHONE_NUMBER", length = 20)
-  private String phoneNumber;
+    @Column(name = "first_name", nullable = false, length = 255)
+    private String firstName;
 
-  @Column(name = "DATE_OF_BIRTH")
-  private LocalDate dateOfBirth;
+    @Column(name = "last_name", nullable = false, length = 255)
+    private String lastName;
 
-  @Column(name = "AVATAR_URL", length = 500)
-  private String avatarUrl;
+    @Column(name = "phone_number", nullable = false, length = 255)
+    private String phoneNumber;
 
-  @Column(name = "LAST_SEEN_AT")
-  private Instant lastSeenAt;
+    @NaturalId
+    @Column(name = "email", nullable = false, unique = true, length = 255)
+    private String email;
 
-  @Enumerated(EnumType.STRING)
-  @Column(name = "ROLE", nullable = false, length = 50)
-  @Builder.Default
-  private UserRole role = UserRole.ROLE_USER;
+    @Column(name = "date_of_birth", nullable = false)
+    private LocalDate dateOfBirth;
 
-  @Enumerated(EnumType.STRING)
-  @Column(name = "STATUS", nullable = false, length = 20)
-  @Builder.Default
-  private UserStatus status = UserStatus.ACTIVE;
+    @Column(name = "avatar_url", nullable = false, columnDefinition = "TEXT")
+    private String avatarUrl;
+
+    @Column(name = "status", nullable = false, length = 255)
+    @Enumerated(EnumType.STRING)
+    private UserStatus status;
+
+    @Column(name = "LAST_SEEN_AT")
+    private Instant lastSeenAt;
 }

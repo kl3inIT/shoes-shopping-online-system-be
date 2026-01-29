@@ -2,16 +2,13 @@ package com.sba.ssos.enums;
 
 import jakarta.annotation.Nullable;
 
-public enum ShipmentStatus {
-  ASSIGNED("ASSIGNED"),
-  PICKED_UP("PICKED_UP"),
-  IN_TRANSIT("IN_TRANSIT"),
-  DELIVERED("DELIVERED"),
-  FAILED("FAILED");
+public enum ShoeStatus {
+  ACTIVE("ACTIVE"),
+  INACTIVE("INACTIVE");
 
   private final String id;
 
-  ShipmentStatus(String id) {
+  ShoeStatus(String id) {
     this.id = id;
   }
 
@@ -20,11 +17,11 @@ public enum ShipmentStatus {
   }
 
   @Nullable
-  public static ShipmentStatus fromId(String id) {
+  public static ShoeStatus fromId(String id) {
     if (id == null) {
       return null;
     }
-    for (ShipmentStatus status : ShipmentStatus.values()) {
+    for (ShoeStatus status : ShoeStatus.values()) {
       if (status.getId().equalsIgnoreCase(id)) {
         return status;
       }
