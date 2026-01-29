@@ -1,5 +1,6 @@
 package com.sba.ssos.service;
 
+import com.sba.ssos.dto.request.keycloak.KeycloakUserCreatedWebhookRequest;
 import com.sba.ssos.dto.response.user.UserResponse;
 import com.sba.ssos.entity.User;
 import com.sba.ssos.exception.user.UserNotFoundException;
@@ -39,33 +40,6 @@ public class UserService {
     return user;
   }
 
-  @Transactional
-  public void createOrUpdateUser(AuthorizedUserDetails principal) {
-
-    userRepository
-        .findByKeycloakId(principal.userId())
-        .map(
-            user -> {
-              user.setUsername(principal.username());
-              user.setEmail(principal.email());
-              user.setLastSeenAt(Instant.now());
-              return user;
-            })
-        .orElseGet(
-            () -> {
-              User user =
-                  User.builder()
-                      .keycloakId(principal.userId())
-                      .username(principal.username())
-                      .email(principal.email())
-                      .lastSeenAt(Instant.now())
-                      .build();
-
-              log.info("Created new user from Keycloak: {}", principal.username());
-              return userRepository.save(user);
-            });
-  }
-
   @Transactional(readOnly = true)
   public UserResponse getUserByKeycloakId(UUID keycloakId) {
     User user =
@@ -73,5 +47,29 @@ public class UserService {
             .findByKeycloakId(keycloakId)
             .orElseThrow(() -> new UserNotFoundException(keycloakId));
     return userMapper.toResponse(user);
+  }
+
+  @Transactional
+  public void registerUserFromWebhook(KeycloakUserCreatedWebhookRequest request) {
+
+    log.info("Processing Keycloak user registration webhook: {}", request.getUserName());
+
+    userRepository
+        .findByKeycloakId(request.getId())
+        .orElseGet(
+            () -> {
+              User user =
+                  User.builder()
+                      .keycloakId(request.getId())
+                      .username(request.getUserName())
+                      .email(request.getEmail())
+                      .firstName(request.getFirstName())
+                      .lastName(request.getLastName())
+                      .lastSeenAt(Instant.now())
+                      .build();
+
+              log.info("Created new user from Keycloak webhook: {}", request.getUserName());
+              return userRepository.save(user);
+            });
   }
 }

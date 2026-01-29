@@ -20,9 +20,11 @@ import java.util.UUID;
 @Builder
 public class User extends BaseAuditableEntity {
 
+
     @NaturalId
     @Column(name = "keycloak_id", nullable = false, unique = true, updatable = false)
     private UUID keycloakId;
+
 
     @Column(name = "role", nullable = false, length = 255)
     @Enumerated(EnumType.STRING)
