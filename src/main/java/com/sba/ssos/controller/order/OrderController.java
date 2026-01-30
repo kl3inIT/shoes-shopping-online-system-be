@@ -1,11 +1,10 @@
-package com.sba.ssos.controller.payment;
+package com.sba.ssos.controller.order;
 
 import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.dto.ResponseGeneral;
-import com.sba.ssos.dto.request.payment.PaymentRequestDTO;
+import com.sba.ssos.dto.request.order.CreateOrderRequest;
 import com.sba.ssos.dto.response.payment.PaymentResponseDTO;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,9 +13,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @RestController
-@RequestMapping("/api/payments")
+@RequestMapping("/api/orders")
 @RequiredArgsConstructor
-public class PaymentController {
+public class OrderController {
 
 
     private final ApplicationProperties props;
@@ -42,7 +41,7 @@ public class PaymentController {
     }
 
     @PostMapping("/init")
-    public ResponseEntity<ResponseGeneral<PaymentResponseDTO>> createPayment(@RequestBody PaymentRequestDTO paymentRequestDTO) {
+    public ResponseEntity<ResponseGeneral<PaymentResponseDTO>> createPayment(@RequestBody CreateOrderRequest createOrderRequest) {
         ResponseGeneral<PaymentResponseDTO> responseDTO = new ResponseGeneral<>();
 //        responseDTO.setMessage(SUCCESS);
 //        responseDTO.setData(paymentService.createPayment(paymentRequestDTO));

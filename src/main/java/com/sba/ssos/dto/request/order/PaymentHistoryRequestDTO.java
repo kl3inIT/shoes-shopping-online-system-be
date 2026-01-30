@@ -1,4 +1,4 @@
-package com.sba.ssos.dto.request.payment;
+package com.sba.ssos.dto.request.order;
 
 import lombok.Getter;
 import lombok.Setter;

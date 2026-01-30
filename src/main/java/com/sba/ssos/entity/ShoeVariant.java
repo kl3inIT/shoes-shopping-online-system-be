@@ -4,8 +4,6 @@ import com.sba.ssos.entity.base.BaseAuditableEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.UUID;
-
 @Entity
 @Table(name = "shoe_variants")
 @Getter
