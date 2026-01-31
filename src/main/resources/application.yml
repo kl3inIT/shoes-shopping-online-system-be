@@ -3,8 +3,8 @@ application-properties:
     sepay-username: ${SEPAY_USERNAME}
     sepay-password: ${SEPAY_PASSWORD}
   keycloak-properties:
-    realm-name: ${KEYCLOAK_REALM:ssos}
-    client-id: ${KEYCLOAK_CLIENT_ID:ssos-backend}
+    realm-name: ${KEYCLOAK_REALM:ssos-app}
+    client-id: ${KEYCLOAK_CLIENT_ID:ssos-app}
     server-url: ${KEYCLOAK_HOST:}
     admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
     admin-username: ${KEYCLOAK_ADMIN_USERNAME:}
@@ -39,6 +39,7 @@ application-properties:
       - /actuator/**
       # Custom no-auth URLs:
       - /test/free
+      - /chat
 #    sepay-api-key: ${SEPAY_API_KEY}
 
 spring:
@@ -54,12 +55,33 @@ spring:
   threads.virtual.enabled: true # Make use of Spring Boot 3.2+ Virtual Threads support
   security.oauth2.resourceserver:
     jwt.issuer-uri: http://${KEYCLOAK_HOST:localhost:8080}/realms/${application-properties.keycloak-properties.realm-name}
+  ai:
+    chat:
+      client:
+        enabled: false
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: gpt-4o-mini
+          temperature: 0.2
+          max-tokens: 1024
+    google:
+      genai:
+        api-key: ${GEMINI_API_KEY}
+        chat:
+          options:
+            model: gemini-1.5-pro
+            temperature: 0.2
+            max-output-tokens: 1024
   liquibase:
     enabled: true
     change-log: classpath:db/changelog/master.yaml
 logging.level:
   # If you are curious about how Spring Security OAuth2 works behind the scene
   org.springframework.security.oauth2: TRACE
+  org.springframework.ai: INFO
+  org.springframework.ai.chat.client.advisor: DEBUG
 
 springdoc.swagger-ui:
   path: /swagger-ui
@@ -73,6 +95,8 @@ management:
     web:
       exposure:
         include: health
+
+
 
 
 

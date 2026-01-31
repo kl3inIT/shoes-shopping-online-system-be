@@ -1,0 +1,21 @@
+---
+description: Package and layer structure for this Spring Boot backend
+globs: **/*.java
+---
+
+# Core Structure (Backend)
+
+Define and follow the project package structure:
+
+- **controller** – REST controllers and `@RestControllerAdvice` (e.g. `controller/advice/`)
+- **service** – business logic, `@Service`
+- **repository** – data access, Spring Data `@Repository` or custom
+- **entity** – JPA entities, domain models
+- **dto/request**, **dto/response** – request/response DTOs (prefer records)
+- **exception** – custom exceptions (e.g. `exception/base/`, `exception/user/`)
+- **mapper** – entity ↔ DTO mapping
+- **configuration** – `@Configuration` beans
+- **security** – security config, JWT, CORS
+- **utils** – stateless utilities
+
+Place new classes in the appropriate package. Keep controllers thin; put business logic in services.
