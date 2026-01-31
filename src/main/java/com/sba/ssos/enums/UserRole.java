@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 public enum UserRole {
     ROLE_ADMIN(Integer.MAX_VALUE),
     ROLE_MANAGER(Integer.MAX_VALUE - 1),
-    ROLE_USER(0),
+    ROLE_CUSTOMER(0),
     ROLE_SEPAY_WEBHOOK(Integer.MAX_VALUE - 2);
     // The higher the value, the more "superior" a role is
     private final int superiority;

@@ -7,8 +7,8 @@ import lombok.Setter;
 @Getter
 @Setter
 @Builder
-public class PaymentResponseDTO {
-    private String transactionCode;
+public class OrderCreateResponse {
+    private String orderCode;
     private String bankNumber;
     private String bankCode;
     private String accountHolder;

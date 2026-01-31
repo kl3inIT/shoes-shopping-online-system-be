@@ -19,6 +19,8 @@ application-properties:
       - { method: POST, path: /api/payments/sepay/hook }
     manager-endpoints:
       - { method: GET, path: /test/manager }
+    customer-endpoints:
+      - { method: POST, path: /api/orders/init }
     webhook-endpoints:
       - { method: POST, path: /api/payments/sepay/hook }
     public-endpoints:

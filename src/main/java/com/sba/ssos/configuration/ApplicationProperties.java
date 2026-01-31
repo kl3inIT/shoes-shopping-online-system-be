@@ -32,6 +32,7 @@ public record ApplicationProperties(
             List<HttpEndpoint> publicEndpoints,
             List<HttpEndpoint> adminEndpoints,
             List<HttpEndpoint> managerEndpoints,
+            List<HttpEndpoint> customerEndpoints,
             List<HttpEndpoint> webhookEndpoints) {
     }
 

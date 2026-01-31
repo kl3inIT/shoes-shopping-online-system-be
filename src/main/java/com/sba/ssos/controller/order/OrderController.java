@@ -2,8 +2,8 @@ package com.sba.ssos.controller.order;
 
 import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.dto.ResponseGeneral;
-import com.sba.ssos.dto.request.order.CreateOrderRequest;
-import com.sba.ssos.dto.response.payment.PaymentResponseDTO;
+import com.sba.ssos.dto.request.order.OrderCreateRequest;
+import com.sba.ssos.dto.response.payment.OrderCreateResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -41,8 +41,8 @@ public class OrderController {
     }
 
     @PostMapping("/init")
-    public ResponseEntity<ResponseGeneral<PaymentResponseDTO>> createPayment(@RequestBody CreateOrderRequest createOrderRequest) {
-        ResponseGeneral<PaymentResponseDTO> responseDTO = new ResponseGeneral<>();
+    public ResponseEntity<ResponseGeneral<OrderCreateResponse>> createPayment(@RequestBody OrderCreateRequest orderCreateRequest) {
+        ResponseGeneral<OrderCreateResponse> responseDTO = new ResponseGeneral<>();
 //        responseDTO.setMessage(SUCCESS);
 //        responseDTO.setData(paymentService.createPayment(paymentRequestDTO));
         return ResponseEntity.ok(responseDTO);

@@ -35,7 +35,10 @@ public class SecurityConfig {
     private final HandlerExceptionResolver handlerExceptionResolver;
     static final String ROLE_ADMIN_NAME = UserRole.ROLE_ADMIN.name();
     static final String ROLE_MANAGER_NAME = UserRole.ROLE_MANAGER.name();
+    static final String ROLE_CUSTOMER_NAME = UserRole.ROLE_CUSTOMER.name();
     static final String ROLE_SEPAY_WEBHOOK = UserRole.ROLE_SEPAY_WEBHOOK.name();
+
+
     @Bean
     @SneakyThrows
     SecurityFilterChain securityFilterChain(
@@ -98,11 +101,18 @@ public class SecurityConfig {
                     .hasAuthority(ROLE_ADMIN_NAME);
         }
 
+        for (var customerEndpoint : securityProperties.customerEndpoints()) {
+            authorizeHttpRequestsCustomizer
+                    .requestMatchers(customerEndpoint.method(), customerEndpoint.path())
+                    .hasAuthority(ROLE_CUSTOMER_NAME);
+        }
+
         for (var webhookEndpoint : securityProperties.webhookEndpoints()) {
             authorizeHttpRequestsCustomizer
                     .requestMatchers(webhookEndpoint.method(), webhookEndpoint.path())
                     .hasAuthority(ROLE_SEPAY_WEBHOOK);
         }
+
         authorizeHttpRequestsCustomizer
                 .requestMatchers(securityProperties.publicUrls().toArray(String[]::new))
                 .permitAll()
