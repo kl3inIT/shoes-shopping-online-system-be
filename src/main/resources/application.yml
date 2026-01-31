@@ -3,7 +3,7 @@ application-properties:
     sepay-username: ${SEPAY_USERNAME}
     sepay-password: ${SEPAY_PASSWORD}
   keycloak-properties:
-    realm-name: ${KEYCLOAK_REALM:ssos-app}
+    realm-name: ${KEYCLOAK_REALM:ssos-realm}
     client-id: ${KEYCLOAK_CLIENT_ID:ssos-app}
     server-url: ${KEYCLOAK_HOST:}
     admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
@@ -54,7 +54,7 @@ spring:
       ddl-auto: create
   threads.virtual.enabled: true # Make use of Spring Boot 3.2+ Virtual Threads support
   security.oauth2.resourceserver:
-    jwt.issuer-uri: http://${KEYCLOAK_HOST:localhost:8080}/realms/${application-properties.keycloak-properties.realm-name}
+    jwt.issuer-uri: https://${KEYCLOAK_HOST:localhost:8080}/realms/${application-properties.keycloak-properties.realm-name}
   ai:
     chat:
       client:
