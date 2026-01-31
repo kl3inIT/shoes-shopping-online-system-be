@@ -47,7 +47,7 @@ RUN jdeps --ignore-missing-deps -q \
 # Create the custom JRE
 RUN jlink \
   --verbose \
-  --add-modules $(cat deps.info),java.desktop,java.management,java.logging,java.naming,java.security.jgss,java.instrument,java.sql,jdk.unsupported,java.compiler \
+  --add-modules $(cat deps.info),java.desktop,java.management,java.logging,java.naming,java.security.jgss,java.instrument,java.sql,jdk.unsupported,java.compiler,java.net.http,java.security.sasl, \
   --compress zip-9 \
   --no-header-files \
   --no-man-pages \
