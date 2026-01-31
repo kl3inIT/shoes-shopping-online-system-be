@@ -3,8 +3,8 @@ application-properties:
     sepay-username: ${SEPAY_USERNAME}
     sepay-password: ${SEPAY_PASSWORD}
   keycloak-properties:
-    realm-name: ${KEYCLOAK_REALM:ssos}
-    client-id: ${KEYCLOAK_CLIENT_ID:ssos-backend}
+    realm-name: ${KEYCLOAK_REALM:ssos-app}
+    client-id: ${KEYCLOAK_CLIENT_ID:ssos-app}
     server-url: ${KEYCLOAK_HOST:}
     admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
     admin-username: ${KEYCLOAK_ADMIN_USERNAME:}

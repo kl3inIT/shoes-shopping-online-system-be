@@ -1,0 +1,86 @@
+services:
+  superset:
+    image: apache/superset:latest
+    container_name: superset
+    ports:
+      - "8088:8088"
+    environment:
+      - SUPERSET_ENV=${SUPERSET_ENV}
+      - SUPERSET_LOAD_EXAMPLES=${SUPERSET_LOAD_EXAMPLES}
+      - SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY}
+      - SUPERSET_REDIS_HOST=${SUPERSET_REDIS_HOST}
+      - SQLALCHEMY_DATABASE_URI=${SQLALCHEMY_DATABASE_URI}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+    volumes:
+      - ./superset_home:/app/superset_home
+      - ./superset_config.py:/app/pythonpath/superset_config.py
+    depends_on:
+      - redis
+    restart: always
+    networks:
+      - app-network
+    command: >
+      /bin/bash -c "
+        pip install --no-cache-dir --no-warn-script-location psycopg2-binary prophet gevent openpyxl pandas-gbq pymysql elasticsearch-dbapi snowflake-connector-python cryptography flask-mail &&
+        export FLASK_APP=superset &&
+        superset db upgrade &&
+        if ! superset fab list-users | grep -q admin; then
+          superset fab create-admin --username ${SUPERSET_ADMIN_USERNAME} --firstname Superset --lastname Admin --email ${SUPERSET_ADMIN_EMAIL} --password '${SUPERSET_ADMIN_PASSWORD}';
+        fi &&
+        superset init &&
+        gunicorn --workers 4 --worker-class gthread --timeout 120 -b 0.0.0.0:8088 'superset.app:create_app()'
+      "
+
+  redis:
+    image: redis:latest
+    container_name: superset_redis
+    restart: always
+    networks:
+      - app-network
+
+  worker:
+    image: apache/superset:latest-dev
+    container_name: superset_worker
+    command: celery --app=superset.tasks.celery_app:app worker --pool=gevent --concurrency=4
+    environment:
+      - SUPERSET_ENV=${SUPERSET_ENV}
+      - SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY}
+      - SQLALCHEMY_DATABASE_URI=${SQLALCHEMY_DATABASE_URI}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+    volumes:
+      - ./superset_home:/app/superset_home
+      - ./superset_config.py:/app/pythonpath/superset_config.py
+    depends_on:
+      - redis
+    restart: always
+    networks:
+      - app-network
+
+  beat:
+    image: apache/superset:latest-dev
+    container_name: superset_beat
+    command: >
+      celery --app=superset.tasks.celery_app:app beat
+      --pidfile=
+      --schedule=/app/superset_home/celerybeat-schedule
+      --loglevel=info
+
+    environment:
+      - SUPERSET_ENV=${SUPERSET_ENV}
+      - SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY}
+      - SQLALCHEMY_DATABASE_URI=${SQLALCHEMY_DATABASE_URI}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+    volumes:
+      - ./superset_home:/app/superset_home
+      - ./superset_config.py:/app/pythonpath/superset_config.py
+    depends_on:
+      - redis
+    restart: always
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    external: true

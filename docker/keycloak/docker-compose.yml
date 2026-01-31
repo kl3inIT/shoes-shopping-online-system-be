@@ -11,16 +11,20 @@ services:
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-      WEBHOOK_URL: http://localhost:8088/keycloak/webhook/user-registration
+      WEBHOOK_URL: https://ssos.it4beginer.io.vn:8088/keycloak/webhook/user-registration
       KC_HEALTH_ENABLED: true
       KC_METRICS_ENABLED: true
-      JAVA_OPTS_KC_HEAP: >
-        -XX:InitialRAMPercentage=35
-        -XX:MaxRAMPercentage=60
-        -XX:MinHeapFreeRatio=20
-        -XX:MaxHeapFreeRatio=30
+      KC_PROXY_HEADERS: xforwarded
+      KC_HOSTNAME: ${KEYCLOAK_DOMAIN}
+      KC_HOSTNAME_STRICT: true
+      KC_HTTP_ENABLED: true
+    #      JAVA_OPTS_KC_HEAP: >
+    #        -XX:InitialRAMPercentage=35
+    #        -XX:MaxRAMPercentage=60
+    #        -XX:MinHeapFreeRatio=20
+    #        -XX:MaxHeapFreeRatio=30
 
-    mem_limit: 1500m
+    #    mem_limit: 1500m
     command: start-dev
     volumes:
       - ./themes:/opt/keycloak/themes
@@ -33,4 +37,9 @@ services:
       timeout: 3s
       retries: 10
       start_period: 30s
+    networks:
+      - app-network
 
+networks:
+  app-network:
+    external: true
