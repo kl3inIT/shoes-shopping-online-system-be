@@ -5,6 +5,8 @@ import com.sba.ssos.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "payments")
 @Getter
@@ -21,10 +23,13 @@ public class Payment extends BaseAuditableEntity {
     @Column(name = "total_amount", nullable = false)
     private Double totalAmount;
 
-    @Column(name = "amount_received", nullable = false)
+    @Column(name = "amount_received")
     private Double amountReceived;
 
     @Column(name = "payment_status", nullable = false, length = 255)
     @Enumerated(EnumType.STRING)
     private PaymentStatus paymentStatus;
+
+    @Column(name = "expiredAt")
+    private LocalDateTime expiredAt;
 }

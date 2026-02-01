@@ -8,7 +8,7 @@ import org.springframework.http.HttpMethod;
 @ConfigurationProperties(prefix = "application-properties")
 public record ApplicationProperties(
 
-        KeycloakProperties keycloakProperties, SecurityProperties securityProperties, SepayProperties sepayProperties) {
+        KeycloakProperties keycloakProperties, SecurityProperties securityProperties, SepayProperties sepayProperties, BankProperties bankProperties) {
 
     public record KeycloakProperties(
             String serverUrl,
@@ -34,6 +34,12 @@ public record ApplicationProperties(
             List<HttpEndpoint> managerEndpoints,
             List<HttpEndpoint> customerEndpoints,
             List<HttpEndpoint> webhookEndpoints) {
+    }
+
+    public record BankProperties(
+            String bankNumber,
+            String bankCode,
+            String accountHolder) {
     }
 
     public record HttpEndpoint(HttpMethod method, String path) {

@@ -1,6 +1,7 @@
 package com.sba.ssos.service.order;
 
 
+import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.dto.request.order.OrderCreateRequest;
 import com.sba.ssos.dto.request.order.OrderItemRequest;
 import com.sba.ssos.dto.response.order.OrderCreateResponse;
@@ -20,6 +21,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +38,9 @@ public class OrderService {
     private final OrderMapper orderMapper;
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
+    private final ApplicationProperties  applicationProperties;
+    private static final long PAYMENT_EXPIRE_MINUTES = 5;
+    private static final String ORDER_CODE_PREFIX = "SSOS";
 
     @Transactional
     public OrderCreateResponse createOrder(OrderCreateRequest orderCreateRequest){
@@ -51,7 +56,7 @@ public class OrderService {
 
         Order order = orderMapper.toEntity(orderCreateRequest);
         order.setId(UUID.randomUUID());
-        order.setOrderCode(OrderCodeUtils.generate("SSOS"));
+        order.setOrderCode(OrderCodeUtils.generate(ORDER_CODE_PREFIX));
         order.setCustomer(customer);
         order.setOrderStatus(OrderStatus.PLACED);
         order.setTotalAmount(totalAmount);
@@ -75,14 +80,22 @@ public class OrderService {
         payment.setOrder(order);
         payment.setTotalAmount(totalAmount);
         payment.setPaymentStatus(PaymentStatus.PENDING);
+        payment.setExpiredAt(LocalDateTime.now().plusMinutes(PAYMENT_EXPIRE_MINUTES));
         paymentRepository.save(payment);
 
 
-        return null;
-
+        return new OrderCreateResponse(
+                order.getId(),
+                order.getOrderCode(),
+                applicationProperties.bankProperties().bankNumber(),
+                applicationProperties.bankProperties().bankCode(),
+                applicationProperties.bankProperties().accountHolder(),
+                order.getTotalAmount(),
+                order.getOrderStatus().toString(),
+                payment.getExpiredAt()
+        );
 
     }
-
 
     private void validateItems(List<OrderItemRequest> items) {
         for (OrderItemRequest item : items) {

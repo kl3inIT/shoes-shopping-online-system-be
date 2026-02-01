@@ -6,7 +6,6 @@ import java.util.UUID;
 public record OrderCreateResponse(
         UUID orderId,
         String orderCode,
-        String transferContent,
         String bankNumber,
         String bankCode,
         String accountHolder,

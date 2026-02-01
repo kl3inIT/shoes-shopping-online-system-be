@@ -2,6 +2,10 @@ application-properties:
   sepay-properties:
     sepay-username: ${SEPAY_USERNAME}
     sepay-password: ${SEPAY_PASSWORD}
+  bank-properties:
+    bank-number: 22226376222
+    bank-code: TPBANK
+    account-holder: NHU DINH NHAT
   keycloak-properties:
     realm-name: ${KEYCLOAK_REALM:ssos-realm}
     client-id: ${KEYCLOAK_CLIENT_ID:ssos-app}
@@ -99,7 +103,10 @@ management:
       exposure:
         include: health
 
-
+bank:
+  number: 22226376222
+  code: TPBANK
+  holder: NHU DINH NHAT
 
 
 
