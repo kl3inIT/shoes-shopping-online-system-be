@@ -7,6 +7,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "orders")
@@ -25,7 +27,7 @@ public class Order extends BaseAuditableEntity {
     private String orderCode;
 
     @Column(name = "total_amount", nullable = false)
-    private Long totalAmount;
+    private Double totalAmount;
 
     @Column(name = "shipping_name", nullable = false, length = 255)
     private String shippingName;
@@ -43,10 +45,11 @@ public class Order extends BaseAuditableEntity {
     @Enumerated(EnumType.STRING)
     private OrderStatus orderStatus;
 
-    @Column(name = "payment_status", nullable = false, length = 255)
-    @Enumerated(EnumType.STRING)
-    private PaymentStatus paymentStatus;
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<OrderDetail> orderDetails = new ArrayList<>();
 
-    @Column(name = "payment_date", nullable = false)
-    private Instant paymentDate;
+    @OneToMany(mappedBy = "order")
+    @Builder.Default
+    private List<Payment> payments = new ArrayList<>();
 }

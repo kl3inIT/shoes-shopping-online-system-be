@@ -1,4 +1,4 @@
-package com.sba.ssos.dto.response.payment.sepay;
+package com.sba.ssos.dto.response.order.sepay;
 
 
 public record SepayTokenData(

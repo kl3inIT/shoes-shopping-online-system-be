@@ -23,9 +23,6 @@ public class Shoe extends BaseAuditableEntity {
     @Enumerated(EnumType.STRING)
     private ShoeStatus status;
 
-    @Column(name = "quantity", nullable = false)
-    private Long quantity;
-
     @Column(name = "material", nullable = false, length = 255)
     private String material;
 

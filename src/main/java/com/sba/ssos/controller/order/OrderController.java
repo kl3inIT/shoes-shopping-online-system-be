@@ -3,7 +3,7 @@ package com.sba.ssos.controller.order;
 import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.order.OrderCreateRequest;
-import com.sba.ssos.dto.response.payment.OrderCreateResponse;
+import com.sba.ssos.dto.response.order.OrderCreateResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

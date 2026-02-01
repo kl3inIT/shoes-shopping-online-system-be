@@ -1,21 +1,21 @@
 package com.sba.ssos.entity;
 
-import com.sba.ssos.entity.base.BaseAuditableEntity;
+import com.sba.ssos.entity.base.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "order_details")
+@Table(name = "cart_items")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class OrderDetail extends BaseAuditableEntity {
+public class CartItem extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id", nullable = false)
-    private Order order;
+    @JoinColumn(name = "cart_id", nullable = false)
+    private Cart cart;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shoe_variant_id", nullable = false)

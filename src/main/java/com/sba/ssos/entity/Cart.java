@@ -4,6 +4,9 @@ import com.sba.ssos.entity.base.BaseAuditableEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "carts")
 @Getter
@@ -17,10 +20,7 @@ public class Cart extends BaseAuditableEntity {
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "shoe_variant_id", nullable = false)
-    private ShoeVariant shoeVariant;
-
-    @Column(name = "shoe_variant_quantity", nullable = false)
-    private Long shoeVariantQuantity;
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<CartItem> cartItems = new ArrayList<>();
 }

@@ -2,7 +2,7 @@ package com.sba.ssos.service.sepay;
 
 import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.dto.request.order.sepay.SepayTokenRequest;
-import com.sba.ssos.dto.response.payment.sepay.SepayTokenData;
+import com.sba.ssos.dto.response.order.sepay.SepayTokenData;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;

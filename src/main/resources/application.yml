@@ -46,9 +46,12 @@ spring:
   application:
     name: shoes-shopping-online-system
   datasource:
-    url: jdbc:postgresql://${POSTGRESQL_HOST:localhost}:${POSTGRESQL_PORT:5432}/${POSTGRESQL_NAME}
-    username: ${POSTGRESQL_USERNAME:postgres}
-    password: ${POSTGRESQL_PASSWORD:123456}
+#    url: jdbc:postgresql://${POSTGRESQL_HOST:localhost}:${POSTGRESQL_PORT:5432}/${POSTGRESQL_NAME}
+#    username: ${POSTGRESQL_USERNAME:postgres}
+#    password: ${POSTGRESQL_PASSWORD:123456}
+    url: jdbc:postgresql://localhost:5432/ssos
+    username: postgres
+    password: 123456
   jpa:
     hibernate:
       ddl-auto: create

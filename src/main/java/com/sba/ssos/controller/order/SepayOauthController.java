@@ -2,7 +2,7 @@ package com.sba.ssos.controller.order;
 
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.order.sepay.SepayTokenRequest;
-import com.sba.ssos.dto.response.payment.sepay.SepayTokenData;
+import com.sba.ssos.dto.response.order.sepay.SepayTokenData;
 import com.sba.ssos.service.sepay.SepayTokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
