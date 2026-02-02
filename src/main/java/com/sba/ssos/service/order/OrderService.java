@@ -54,8 +54,11 @@ public class OrderService {
 
         Double totalAmount = calculatePrice(items);
 
-        Order order = orderMapper.toEntity(orderCreateRequest);
-        order.setId(UUID.randomUUID());
+        Order order = new Order();
+        order.setNotes(orderCreateRequest.notes());
+        order.setShippingAddress(orderCreateRequest.shippingAddress());
+        order.setShippingName(orderCreateRequest.shippingName());
+        order.setShippingPhone(orderCreateRequest.shippingPhone());
         order.setOrderCode(OrderCodeUtils.generate(ORDER_CODE_PREFIX));
         order.setCustomer(customer);
         order.setOrderStatus(OrderStatus.PLACED);
