@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository;
 import java.util.UUID;
 @Repository
 public interface ShoeRepository extends JpaRepository<Shoe, UUID> {
+
+  long countByCategory_Id(UUID categoryId);
 }
