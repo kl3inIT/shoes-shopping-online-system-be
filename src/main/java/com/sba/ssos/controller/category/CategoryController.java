@@ -47,8 +47,8 @@ public class CategoryController {
   }
 
   @DeleteMapping("/{id}")
-  @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void delete(@PathVariable UUID id) {
+  public ResponseGeneral<Void> delete(@PathVariable UUID id) {
     categoryService.delete(id);
+    return ResponseGeneral.ofSuccess(localeUtils.get("success.category.deleted"));
   }
 }
