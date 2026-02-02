@@ -15,12 +15,16 @@ application-properties:
     admin-password: ${KEYCLOAK_ADMIN_PASSWORD:}
     token-url: ${KEYCLOAK_TOKEN_URL}
     accept-clients:
-      - ssos-backend
+      - ssos-app
       - ssos-sepay
   security-properties:
     admin-endpoints:
       - { method: GET, path: /test/admin }
       - { method: POST, path: /api/payments/sepay/hook }
+      - { method: GET, path: /api/categories }
+      - { method: POST, path: /api/categories }
+      - { method: PUT, path: /api/categories/* }
+      - { method: DELETE, path: /categories/* }
     manager-endpoints:
       - { method: GET, path: /test/manager }
     customer-endpoints:
@@ -30,6 +34,8 @@ application-properties:
     public-endpoints:
       - { method: GET, path: /test/free }
       - { method: GET, path: /user }
+      - { method: GET, path: /api/categories }
+      - { method: GET, path: /api/categories/* }
       - { method: POST, path: /api/payments/sepay/hook }
       - { method: POST, path: /webhook/keycloak/register }
       - { method: POST, path: /sepay/auth/token }
@@ -58,7 +64,7 @@ spring:
 #    password: 123456
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
   threads.virtual.enabled: true # Make use of Spring Boot 3.2+ Virtual Threads support
   security.oauth2.resourceserver:
     jwt.issuer-uri: https://${KEYCLOAK_HOST:localhost:8080}/realms/${application-properties.keycloak-properties.realm-name}
