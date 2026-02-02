@@ -42,7 +42,7 @@ public class OrderService {
     private static final long PAYMENT_EXPIRE_MINUTES = 5;
     private static final String ORDER_CODE_PREFIX = "SSOS";
 
-    @Transactional
+//    @Transactional
     public OrderCreateResponse createOrder(OrderCreateRequest orderCreateRequest){
         List<OrderItemRequest> items = orderCreateRequest.items();
 
@@ -63,7 +63,6 @@ public class OrderService {
         order.setCustomer(customer);
         order.setOrderStatus(OrderStatus.PLACED);
         order.setTotalAmount(totalAmount);
-
         List<OrderDetail> orderDetails = new ArrayList<>();
         for (OrderItemRequest item : items) {
             ShoeVariant variant = findById(item.shoeVariantId());
@@ -72,9 +71,9 @@ public class OrderService {
             detail.setShoeVariant(variant);
             detail.setQuantity(item.quantity());
             orderDetails.add(detail);
-
             // trừ stock
             variant.setQuantity(variant.getQuantity() - item.quantity());
+            shoeVariantRepository.saveAndFlush(variant);
         }
         order.setOrderDetails(orderDetails);
         orderRepository.save(order);
@@ -96,6 +95,7 @@ public class OrderService {
                 order.getTotalAmount(),
                 order.getOrderStatus().toString(),
                 payment.getExpiredAt()
+
         );
 
     }

@@ -39,6 +39,7 @@ application-properties:
       - { method: POST, path: /api/payments/sepay/hook }
       - { method: POST, path: /webhook/keycloak/register }
       - { method: POST, path: /sepay/auth/token }
+
     public-urls:
       # OpenAPI Swagger URLs
       - /swagger-ui.html
@@ -56,12 +57,12 @@ spring:
   application:
     name: shoes-shopping-online-system
   datasource:
-    url: jdbc:postgresql://${POSTGRESQL_HOST:localhost}:${POSTGRESQL_PORT:5432}/${POSTGRESQL_NAME}
-    username: ${POSTGRESQL_USERNAME:postgres}
-    password: ${POSTGRESQL_PASSWORD:123456}
-#    url: jdbc:postgresql://localhost:5432/ssos
-#    username: postgres
-#    password: 123456
+#    url: jdbc:postgresql://${POSTGRESQL_HOST:localhost}:${POSTGRESQL_PORT:5432}/${POSTGRESQL_NAME}
+#    username: ${POSTGRESQL_USERNAME:postgres}
+#    password: ${POSTGRESQL_PASSWORD:123456}
+    url: jdbc:postgresql://localhost:5432/ssos
+    username: postgres
+    password: 123456
   jpa:
     hibernate:
       ddl-auto: update
@@ -90,12 +91,17 @@ spring:
   liquibase:
     enabled: true
     change-log: classpath:db/changelog/master.yaml
+
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+
 logging.level:
   # If you are curious about how Spring Security OAuth2 works behind the scene
   org.springframework.security.oauth2: TRACE
   org.springframework.ai: INFO
   org.springframework.ai.chat.client.advisor: DEBUG
-
 springdoc.swagger-ui:
   path: /swagger-ui
   disable-swagger-default-url: true
