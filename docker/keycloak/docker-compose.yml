@@ -11,18 +11,25 @@ services:
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      WEBHOOK_URL: https://ssos.it4beginer.io.vn:8088/keycloak/webhook/user-registration
       KC_HEALTH_ENABLED: true
       KC_METRICS_ENABLED: true
-      JAVA_OPTS_KC_HEAP: >
-        -XX:InitialRAMPercentage=35
-        -XX:MaxRAMPercentage=60
-        -XX:MinHeapFreeRatio=20
-        -XX:MaxHeapFreeRatio=30
+      KC_PROXY_HEADERS: xforwarded
+      KC_HOSTNAME: ${KEYCLOAK_DOMAIN}
+      KC_HOSTNAME_STRICT: true
+      KC_HTTP_ENABLED: true
+    #      JAVA_OPTS_KC_HEAP: >
+    #        -XX:InitialRAMPercentage=35
+    #        -XX:MaxRAMPercentage=60
+    #        -XX:MinHeapFreeRatio=20
+    #        -XX:MaxHeapFreeRatio=30
 
-    mem_limit: 1200m
+    #    mem_limit: 1500m
     command: start-dev
     volumes:
-      - ./keycloak/themes:/opt/keycloak/themes
+      - ./themes:/opt/keycloak/themes
+      # Mount directory for custom extensions (email domain validation)
+      - ./providers:/opt/keycloak/providers
     restart: always
     healthcheck:
       test: [ "CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\n\r\n' >&3 && grep '200 OK' <&3" ]
@@ -30,4 +37,9 @@ services:
       timeout: 3s
       retries: 10
       start_period: 30s
+    networks:
+      - app-network
 
+networks:
+  app-network:
+    external: true

@@ -1,31 +1,124 @@
 application-properties:
-  realm-name: ssos
-  client-name: ssos-backend
-  admin-privilege-urls:
-    - /test/admin/**
-  no-auth-urls:
-    # OpenAPI Swagger URLs
-    - /swagger-ui.html
-    - /swagger-ui/**
-    - /v3/api-docs/**
-    - /v3/api-docs.yaml
-    # Actuator endpoints:
-    - /actuator/**
-    # Custom no-auth URLs:
-    - /test/free
-server.port: 8088
+  sepay-properties:
+    sepay-username: ${SEPAY_USERNAME}
+    sepay-password: ${SEPAY_PASSWORD}
+  bank-properties:
+    bank-number: 22226376222
+    bank-code: TPBANK
+    account-holder: NHU DINH NHAT
+  keycloak-properties:
+    realm-name: ${KEYCLOAK_REALM:ssos-realm}
+    client-id: ${KEYCLOAK_CLIENT_ID:ssos-app}
+    server-url: ${KEYCLOAK_HOST:}
+    admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
+    admin-username: ${KEYCLOAK_ADMIN_USERNAME:}
+    admin-password: ${KEYCLOAK_ADMIN_PASSWORD:}
+    token-url: ${KEYCLOAK_TOKEN_URL}
+    accept-clients:
+      - ssos-app
+      - ssos-sepay
+  security-properties:
+    admin-endpoints:
+      - { method: GET, path: /test/admin }
+      - { method: POST, path: /api/payments/sepay/hook }
+      - { method: GET, path: /api/categories }
+      - { method: POST, path: /api/categories }
+      - { method: PUT, path: /api/categories/* }
+      - { method: DELETE, path: /categories/* }
+    manager-endpoints:
+      - { method: GET, path: /test/manager }
+    customer-endpoints:
+      - { method: POST, path: /api/orders/init }
+    webhook-endpoints:
+      - { method: POST, path: /api/payments/sepay/hook }
+    public-endpoints:
+      - { method: GET, path: /test/free }
+      - { method: GET, path: /user }
+      - { method: GET, path: /api/categories }
+      - { method: GET, path: /api/categories/* }
+      - { method: POST, path: /api/payments/sepay/hook }
+      - { method: POST, path: /webhook/keycloak/register }
+      - { method: POST, path: /sepay/auth/token }
+    public-urls:
+      # OpenAPI Swagger URLs
+      - /swagger-ui.html
+      - /swagger-ui/**
+      - /v3/api-docs/**
+      - /v3/api-docs.yaml
+      # Actuator endpoints:
+      - /actuator/**
+      # Custom no-auth URLs:
+      - /test/free
+      - /chat
+#    sepay-api-key: ${SEPAY_API_KEY}
+
 spring:
+  application:
+    name: shoes-shopping-online-system
   datasource:
     url: jdbc:postgresql://${POSTGRESQL_HOST:localhost}:${POSTGRESQL_PORT:5432}/${POSTGRESQL_NAME}
     username: ${POSTGRESQL_USERNAME:postgres}
     password: ${POSTGRESQL_PASSWORD:123456}
-#  threads.virtual.enabled: true # Make use of Spring Boot 3.2+ Virtual Threads support
+#    url: jdbc:postgresql://localhost:5432/ssos
+#    username: postgres
+#    password: 123456
+  jpa:
+    hibernate:
+      ddl-auto: update
+  threads.virtual.enabled: true # Make use of Spring Boot 3.2+ Virtual Threads support
   security.oauth2.resourceserver:
-    jwt.issuer-uri: http://${KEYCLOAK_HOST:localhost:8080}/realms/${application-properties.realm-name}
+    jwt.issuer-uri: https://${KEYCLOAK_HOST:localhost:8080}/realms/${application-properties.keycloak-properties.realm-name}
+  ai:
+    chat:
+      client:
+        enabled: false
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: gpt-4o-mini
+          temperature: 0.2
+          max-tokens: 1024
+    google:
+      genai:
+        api-key: ${GEMINI_API_KEY}
+        chat:
+          options:
+            model: gemini-1.5-pro
+            temperature: 0.2
+            max-output-tokens: 1024
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/master.yaml
 logging.level:
   # If you are curious about how Spring Security OAuth2 works behind the scene
   org.springframework.security.oauth2: TRACE
+  org.springframework.ai: INFO
+  org.springframework.ai.chat.client.advisor: DEBUG
 
 springdoc.swagger-ui:
   path: /swagger-ui
   disable-swagger-default-url: true
+server:
+  port: 8088
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+bank:
+  number: 22226376222
+  code: TPBANK
+  holder: NHU DINH NHAT
+
+
+
+
+
+
+
+
+
