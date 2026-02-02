@@ -3,12 +3,12 @@ package com.sba.ssos.service.category;
 import com.sba.ssos.dto.request.category.CategoryCreateRequest;
 import com.sba.ssos.dto.response.category.CategoryResponse;
 import com.sba.ssos.entity.Category;
-import com.sba.ssos.exception.base.ConflictException;
 import com.sba.ssos.exception.base.NotFoundException;
 import com.sba.ssos.mapper.CategoryMapper;
 import com.sba.ssos.repository.CategoryRepository;
 import com.sba.ssos.repository.ShoeRepository;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,10 +36,7 @@ public class CategoryService {
   public CategoryResponse create(CategoryCreateRequest request) {
     CategoryCreateRequest trimmed =
         new CategoryCreateRequest(request.name().trim(), request.description().trim());
-    String slug = slugify(trimmed.name());
-    if (categoryRepository.findBySlug(slug).isPresent()) {
-      throw new ConflictException("error.category.slug.exists", "slug", slug);
-    }
+    String slug = generateUniqueSlug(slugify(trimmed.name()), null);
     Category category = categoryMapper.toEntity(trimmed);
     category.setSlug(slug);
     category = categoryRepository.save(category);
@@ -52,14 +49,7 @@ public class CategoryService {
         categoryRepository.findById(id).orElseThrow(() -> new NotFoundException("Category", id));
     CategoryCreateRequest trimmed =
         new CategoryCreateRequest(request.name().trim(), request.description().trim());
-    String slug = slugify(trimmed.name());
-    categoryRepository
-        .findBySlug(slug)
-        .filter(c -> !c.getId().equals(id))
-        .ifPresent(
-            c -> {
-              throw new ConflictException("error.category.slug.exists", "slug", slug);
-            });
+    String slug = generateUniqueSlug(slugify(trimmed.name()), id);
     categoryMapper.updateEntity(category, trimmed);
     category.setSlug(slug);
     category = categoryRepository.save(category);
@@ -77,6 +67,27 @@ public class CategoryService {
   private CategoryResponse toResponse(Category category) {
     long productCount = shoeRepository.countByCategory_Id(category.getId());
     return categoryMapper.toResponse(category, productCount);
+  }
+
+  private String generateUniqueSlug(String baseSlug, UUID excludeId) {
+    if (baseSlug == null || baseSlug.isBlank()) {
+      return "";
+    }
+
+    String candidate = baseSlug;
+    int suffix = 0;
+
+    while (true) {
+      Optional<Category> existing = categoryRepository.findBySlug(candidate);
+      if (existing.isEmpty()) {
+        return candidate;
+      }
+      if (excludeId != null && existing.get().getId().equals(excludeId)) {
+        return candidate;
+      }
+      suffix++;
+      candidate = baseSlug + "-" + suffix;
+    }
   }
 
   private static String slugify(String name) {
