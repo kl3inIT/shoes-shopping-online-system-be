@@ -3,17 +3,25 @@ package com.sba.ssos.service.order;
 
 import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.dto.request.order.OrderCreateRequest;
+import com.sba.ssos.dto.request.order.OrderExpiredRequest;
 import com.sba.ssos.dto.request.order.OrderItemRequest;
 import com.sba.ssos.dto.response.order.OrderCreateResponse;
-import com.sba.ssos.entity.*;
+import com.sba.ssos.entity.CartItem;
+import com.sba.ssos.entity.Customer;
+import com.sba.ssos.entity.Order;
+import com.sba.ssos.entity.OrderDetail;
+import com.sba.ssos.entity.Payment;
+import com.sba.ssos.entity.ShoeVariant;
 import com.sba.ssos.enums.OrderStatus;
 import com.sba.ssos.enums.PaymentStatus;
 import com.sba.ssos.exception.base.BadRequestException;
 import com.sba.ssos.exception.base.NotFoundException;
-import com.sba.ssos.mapper.OrderMapper;
-import com.sba.ssos.repository.*;
+import com.sba.ssos.repository.CartItemRepository;
+import com.sba.ssos.repository.CustomerRepository;
+import com.sba.ssos.repository.OrderRepository;
+import com.sba.ssos.repository.PaymentRepository;
+import com.sba.ssos.repository.ShoeVariantRepository;
 import com.sba.ssos.service.UserService;
-import com.sba.ssos.service.cart.CartService;
 import com.sba.ssos.service.shoevariants.ShoeVariantService;
 import com.sba.ssos.utils.OrderCodeUtils;
 import jakarta.transaction.Transactional;
@@ -34,11 +42,10 @@ public class OrderService {
     private final ShoeVariantService shoeVariantService;
     private final ShoeVariantRepository shoeVariantRepository;
     private final UserService userService;
-    private final CustomerRepository  customerRepository;
+    private final CustomerRepository customerRepository;
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
-    private final ApplicationProperties  applicationProperties;
-    private final CartService cartService;
+    private final ApplicationProperties applicationProperties;
     private final CartItemRepository cartItemRepository;
 
     private static final long PAYMENT_EXPIRE_MINUTES = 5;
@@ -51,7 +58,7 @@ public class OrderService {
         Customer customer = customerRepository
                 .findByUser_Id(userService.getCurrentUser().userId())
                 .orElseThrow(() -> new NotFoundException("Customer not found"));
-        List<CartItem> cartItems = cartService.findByCustomerId(customer.getId()).getCartItems();
+        List<CartItem> cartItems = customer.getCartItems();
 
         validateItems(requestItems, cartItems);
 
@@ -103,14 +110,23 @@ public class OrderService {
     }
 
     @Transactional
-    public void handlePaymentTimeout(UUID orderId) {
+    public void handlePaymentTimeout(OrderExpiredRequest  orderExpiredRequest) {
 
-        Order order = findOrderById(orderId);
+        Order order = findOrderById(orderExpiredRequest.orderId());
         order.setOrderStatus(OrderStatus.PAYMENT_EXPIRED);
         orderRepository.saveAndFlush(order);
 
         List<Payment> payments = order.getPayments();
+        for(Payment payment : payments){
+            payment.setPaymentStatus(PaymentStatus.TIME_OUT);
+        }
+        paymentRepository.saveAllAndFlush(payments);
 
+        List<CartItem> cartItems = order.getCustomer().getCartItems();
+        for(CartItem cartItem : cartItems){
+            cartItem.setActive(true);
+        }
+        cartItemRepository.saveAllAndFlush(cartItems);
 
     }
 
