@@ -46,7 +46,6 @@ public class WishlistService {
                 wishlistRepository.existsByCustomer_IdAndShoe_Id(customer.getId(), shoeId);
 
         if (alreadyExists) {
-            // Idempotent behaviour: return existing item
             return wishlistRepository
                     .findAllByCustomer_Id(customer.getId())
                     .stream()
@@ -54,7 +53,6 @@ public class WishlistService {
                     .findFirst()
                     .map(this::toResponse)
                     .orElseGet(() -> {
-                        // Fallback in case of race condition
                         Wishlist wishlist = Wishlist.builder()
                                 .customer(customer)
                                 .shoe(shoe)
@@ -80,7 +78,6 @@ public class WishlistService {
                 wishlistRepository.existsByCustomer_IdAndShoe_Id(customer.getId(), shoeId);
 
         if (!exists) {
-            // Silently ignore if not present to keep DELETE idempotent
             return;
         }
 
@@ -98,7 +95,6 @@ public class WishlistService {
         Shoe shoe = wishlist.getShoe();
         String brandName = shoe.getBrand() != null ? shoe.getBrand().getName() : null;
 
-        // For now there is no explicit main image relation here; leave null or extend later
         String mainImageUrl = null;
 
         return new WishlistItemResponse(

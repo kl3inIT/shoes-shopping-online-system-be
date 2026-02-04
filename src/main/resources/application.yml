@@ -21,13 +21,18 @@ application-properties:
     admin-endpoints:
       - { method: GET, path: /test/admin }
       - { method: POST, path: /api/payments/sepay/hook }
+      - { method: GET, path: /api/brands }
+      - { method: GET, path: /api/brands/{id} }
+      - { method: POST, path: /api/brands }
+      - { method: DELETE, path: /api/brands/{id} }
+      - { method: PUT, path: /api/brands/{id} }
     manager-endpoints:
       - { method: GET, path: /test/manager }
     customer-endpoints:
       - { method: POST, path: /api/orders/init }
       - { method: GET, path: /api/wishlist }
       - { method: POST, path: /api/wishlist }
-      - { method: DELETE, path: /api/wishlist/** }
+      - { method: DELETE, path: /api/wishlist/{shoeId} }
     webhook-endpoints:
       - { method: POST, path: /api/payments/sepay/hook }
     public-endpoints:
