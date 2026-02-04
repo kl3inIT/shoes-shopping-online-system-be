@@ -4,7 +4,10 @@ import jakarta.annotation.Nullable;
 
 public enum ShoeStatus {
   ACTIVE("ACTIVE"),
-  INACTIVE("INACTIVE");
+  INACTIVE("INACTIVE"),
+  OUT_OF_STOCK("OUT_OF_STOCK"),
+  DRAFT("DRAFT"),
+  DISCONTINUED("DISCONTINUED");
 
   private final String id;
 

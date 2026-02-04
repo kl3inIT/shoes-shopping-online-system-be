@@ -3,6 +3,7 @@ package com.sba.ssos.service.category;
 import com.sba.ssos.dto.request.category.CategoryCreateRequest;
 import com.sba.ssos.dto.response.category.CategoryResponse;
 import com.sba.ssos.entity.Category;
+import com.sba.ssos.entity.ShoeVariant;
 import com.sba.ssos.exception.base.NotFoundException;
 import com.sba.ssos.mapper.CategoryMapper;
 import com.sba.ssos.repository.CategoryRepository;
@@ -67,6 +68,11 @@ public class CategoryService {
   private CategoryResponse toResponse(Category category) {
     long productCount = shoeRepository.countByCategory_Id(category.getId());
     return categoryMapper.toResponse(category, productCount);
+  }
+
+  public Category findById(UUID categoryId){
+    return categoryRepository.findById(categoryId)
+            .orElseThrow(() -> new NotFoundException("Category", categoryId));
   }
 
   private String generateUniqueSlug(String baseSlug, UUID excludeId) {

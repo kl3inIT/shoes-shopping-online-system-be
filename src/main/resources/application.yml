@@ -24,7 +24,8 @@ application-properties:
       - { method: GET, path: /api/categories }
       - { method: POST, path: /api/categories }
       - { method: PUT, path: /api/categories/* }
-      - { method: DELETE, path: /categories/* }
+      - { method: DELETE, path: /api/categories/* }
+      - { method: POST, path: /api/shoes}
       - { method: GET, path: /api/brands }
       - { method: GET, path: /api/brands/* }
       - { method: POST, path: /api/brands }
@@ -44,6 +45,10 @@ application-properties:
       - { method: GET, path: /user }
       - { method: GET, path: /api/categories }
       - { method: GET, path: /api/categories/* }
+      - { method: POST, path: /api/categories }
+      - { method: PUT, path: /api/categories/* }
+      - { method: DELETE, path: /api/categories/* }
+      - { method: POST, path: /api/shoes }
       - { method: POST, path: /api/payments/sepay/hook }
       - { method: POST, path: /webhook/keycloak/register }
       - { method: POST, path: /sepay/auth/token }

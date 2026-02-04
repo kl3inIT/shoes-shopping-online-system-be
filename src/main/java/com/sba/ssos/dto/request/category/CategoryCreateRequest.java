@@ -8,5 +8,6 @@ public record CategoryCreateRequest(
         @Size(max = 255)
         String name,
 
-        @NotBlank(message = "validation.category.description.required") String description) {
-}
+        @NotBlank(message = "validation.category.description.required")
+        String description
+) {}
