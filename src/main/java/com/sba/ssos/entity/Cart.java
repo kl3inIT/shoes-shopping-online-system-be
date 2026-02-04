@@ -16,7 +16,7 @@ import java.util.List;
 @Builder
 public class Cart extends BaseAuditableEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
