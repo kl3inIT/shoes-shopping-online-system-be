@@ -3,6 +3,7 @@ package com.sba.ssos.controller.order;
 import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.order.OrderCreateRequest;
+import com.sba.ssos.dto.request.order.OrderExpiredRequest;
 import com.sba.ssos.dto.response.order.OrderCreateResponse;
 import com.sba.ssos.service.order.OrderService;
 import com.sba.ssos.utils.LocaleUtils;
@@ -46,8 +47,16 @@ public class OrderController {
     @PostMapping("/init")
     public ResponseGeneral<OrderCreateResponse> createPayment(@RequestBody OrderCreateRequest orderCreateRequest) {
         OrderCreateResponse response = orderService.createOrder(orderCreateRequest);
-        return ResponseGeneral.ofSuccess(localeUtils.get("success.user.fetched"), response);
+        return ResponseGeneral.ofSuccess(localeUtils.get("success.order.created"), response);
     }
+
+    @PostMapping("/expired")
+    public ResponseGeneral<OrderCreateResponse> handPaymentExpired(@RequestBody OrderExpiredRequest orderExpiredRequest) {
+        orderService.handlePaymentTimeout(orderExpiredRequest);
+        return ResponseGeneral.ofSuccess(localeUtils.get("success.order.expired.updated"));
+    }
+
+
 
 
 }
