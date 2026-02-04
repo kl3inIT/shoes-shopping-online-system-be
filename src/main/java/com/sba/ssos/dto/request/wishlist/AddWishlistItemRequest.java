@@ -2,6 +2,7 @@ package com.sba.ssos.dto.request.wishlist;
 
 import java.util.UUID;
 
-public record AddWishlistItemRequest(UUID shoeId) {
+import javax.validation.constraints.NotNull;
+public record AddWishlistItemRequest(@NotNull UUID shoeId) {
 }
 

@@ -42,23 +42,14 @@ public class WishlistService {
                 .findById(shoeId)
                 .orElseThrow(() -> new NotFoundException("Shoe not found " + shoeId));
 
-        boolean alreadyExists =
-                wishlistRepository.existsByCustomer_IdAndShoe_Id(customer.getId(), shoeId);
-
-        if (alreadyExists) {
-            return wishlistRepository
-                    .findAllByCustomer_Id(customer.getId())
-                    .stream()
-                    .filter(w -> w.getShoe().getId().equals(shoeId))
-                    .findFirst()
-                    .map(this::toResponse)
-                    .orElseGet(() -> {
-                        Wishlist wishlist = Wishlist.builder()
-                                .customer(customer)
-                                .shoe(shoe)
-                                .build();
-                        return toResponse(wishlistRepository.save(wishlist));
-                    });
+        Wishlist existingWishlist = wishlistRepository
+                .findAllByCustomer_Id(customer.getId())
+                .stream()
+                .filter(w -> w.getShoe().getId().equals(shoeId))
+                .findFirst()
+                .orElse(null);
+        if (existingWishlist != null) {
+            return toResponse(existingWishlist);
         }
 
         Wishlist wishlist = Wishlist.builder()
@@ -93,7 +84,7 @@ public class WishlistService {
 
     private WishlistItemResponse toResponse(Wishlist wishlist) {
         Shoe shoe = wishlist.getShoe();
-        String brandName = shoe.getBrand() != null ? shoe.getBrand().getName() : null;
+        String brandName = shoe.getBrand().getName();
 
         String mainImageUrl = null;
 
