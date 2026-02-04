@@ -17,5 +17,8 @@ public class Wishlist extends BaseAuditableEntity {
     @JoinColumn(name = "shoe_id", nullable = false)
     private Shoe shoe;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id", nullable = false)
+    private Customer customer;
 
 }
