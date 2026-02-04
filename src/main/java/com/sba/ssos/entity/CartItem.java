@@ -23,4 +23,7 @@ public class CartItem extends BaseEntity {
 
     @Column(name = "quantity", nullable = false)
     private Long quantity;
+
+    @Column(name = "is_active")
+    private boolean isActive = true;
 }
