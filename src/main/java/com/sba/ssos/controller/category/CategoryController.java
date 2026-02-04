@@ -22,27 +22,27 @@ public class CategoryController {
 
   @GetMapping
   public ResponseGeneral<List<CategoryResponse>> getAll() {
-    var data = categoryService.getAllCategories();
+    List<CategoryResponse> data = categoryService.getAllCategories();
     return ResponseGeneral.ofSuccess(localeUtils.get("success.category.fetched"), data);
   }
 
   @GetMapping("/{id}")
   public ResponseGeneral<CategoryResponse> getById(@PathVariable UUID id) {
-    var data = categoryService.getById(id);
+    CategoryResponse data = categoryService.getById(id);
     return ResponseGeneral.ofSuccess(localeUtils.get("success.category.fetched"), data);
   }
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   public ResponseGeneral<CategoryResponse> create(@Valid @RequestBody CategoryCreateRequest request) {
-    var data = categoryService.create(request);
+    CategoryResponse data = categoryService.create(request);
     return ResponseGeneral.ofCreated(localeUtils.get("success.category.created"), data);
   }
 
   @PutMapping("/{id}")
   public ResponseGeneral<CategoryResponse> update(
       @PathVariable UUID id, @Valid @RequestBody CategoryCreateRequest request) {
-    var data = categoryService.update(id, request);
+    CategoryResponse data = categoryService.update(id, request);
     return ResponseGeneral.ofSuccess(localeUtils.get("success.category.updated"), data);
   }
 
