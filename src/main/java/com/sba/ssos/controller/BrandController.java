@@ -3,7 +3,7 @@ package com.sba.ssos.controller;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.brand.BrandRequest;
 import com.sba.ssos.dto.response.brand.BrandResponse;
-import com.sba.ssos.service.BrandService;
+import com.sba.ssos.service.brand.BrandService;
 import com.sba.ssos.utils.LocaleUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

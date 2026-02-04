@@ -1,4 +1,4 @@
-package com.sba.ssos.service.shoevariants;
+package com.sba.ssos.service.product.shoevariant;
 
 import com.sba.ssos.entity.ShoeVariant;
 import com.sba.ssos.exception.base.NotFoundException;

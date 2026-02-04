@@ -22,7 +22,7 @@ import com.sba.ssos.repository.OrderRepository;
 import com.sba.ssos.repository.PaymentRepository;
 import com.sba.ssos.repository.ShoeVariantRepository;
 import com.sba.ssos.service.UserService;
-import com.sba.ssos.service.shoevariants.ShoeVariantService;
+import com.sba.ssos.service.product.shoevariant.ShoeVariantService;
 import com.sba.ssos.utils.OrderCodeUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
