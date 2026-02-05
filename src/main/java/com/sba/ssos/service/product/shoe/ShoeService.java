@@ -1,20 +1,25 @@
 package com.sba.ssos.service.product.shoe;
 
 import com.sba.ssos.dto.request.product.shoe.ShoeCreateRequest;
+import com.sba.ssos.dto.request.product.shoevariant.ShoeVariantRequest;
 import com.sba.ssos.dto.response.product.shoe.ShoeResponse;
+import com.sba.ssos.dto.response.product.shoevariant.ShoeVariantResponse;
 import com.sba.ssos.entity.Brand;
 import com.sba.ssos.entity.Category;
 import com.sba.ssos.entity.Shoe;
+import com.sba.ssos.entity.ShoeVariant;
 import com.sba.ssos.exception.base.NotFoundException;
 import com.sba.ssos.mapper.ShoeMapper;
 import com.sba.ssos.repository.ShoeRepository;
+import com.sba.ssos.repository.ShoeVariantRepository;
 import com.sba.ssos.utils.SlugUtils;
+import com.sba.ssos.utils.SkuUtils;
 import com.sba.ssos.service.brand.BrandService;
 import com.sba.ssos.service.category.CategoryService;
 import lombok.RequiredArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -25,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ShoeService {
 
     private final ShoeRepository shoeRepository;
+    private final ShoeVariantRepository shoeVariantRepository;
     private final CategoryService categoryService;
     private final BrandService brandService;
     private final ShoeMapper shoeMapper;
@@ -52,6 +58,37 @@ public class ShoeService {
 
         shoeRepository.save(shoe);
 
+        List<ShoeVariant> savedVariants = new ArrayList<>();
+        for (ShoeVariantRequest vr : request.variants()) {
+            String size = vr.size().trim();
+            String color = vr.color().trim();
+            String baseSku = SkuUtils.buildBaseSku(shoe.getSlug(), size, color);
+            String uniqueSku = generateUniqueSku(baseSku);
+
+            ShoeVariant variant = ShoeVariant.builder()
+                    .shoe(shoe)
+                    .size(size)
+                    .color(color)
+                    .quantity(vr.quantity())
+                    .sku(uniqueSku)
+                    .build();
+
+            savedVariants.add(shoeVariantRepository.save(variant));
+        }
+
+        List<ShoeVariantResponse> variantResponses = savedVariants.stream()
+                .map(v -> new ShoeVariantResponse(
+                        v.getId(),
+                        v.getShoe().getId(),
+                        v.getSize(),
+                        v.getColor(),
+                        v.getQuantity(),
+                        v.getSku(),
+                        v.getCreatedAt(),
+                        v.getLastUpdatedAt()
+                ))
+                .toList();
+
         return new ShoeResponse(
                 shoe.getId(),
                 shoe.getName(),
@@ -65,39 +102,75 @@ public class ShoeService {
                 shoe.getBrand().getId(),
                 shoe.getBrand().getName(),
                 shoe.getPrice(),
-                List.of(),
+                variantResponses,
                 shoe.getCreatedAt(),
                 shoe.getLastUpdatedAt()
         );
     }
 
     public List<ShoeResponse> getAll() {
-        var shoes = shoeRepository.findAll();
+        List<Shoe> shoes = shoeRepository.findAll();
+        List<ShoeResponse> responses = new ArrayList<>();
 
-        return shoes.stream()
-                .map(shoe -> new ShoeResponse(
-                        shoe.getId(),
-                        shoe.getName(),
-                        shoe.getDescription(),
-                        shoe.getSlug(),
-                        shoe.getMaterial(),
-                        shoe.getGender(),
-                        shoe.getStatus(),
-                        shoe.getCategory().getId(),
-                        shoe.getCategory().getName(),
-                        shoe.getBrand().getId(),
-                        shoe.getBrand().getName(),
-                        shoe.getPrice(),
-                        List.of(),                // chưa có variants
-                        shoe.getCreatedAt(),
-                        shoe.getLastUpdatedAt()
-                ))
-                .toList();
+        for (Shoe shoe : shoes) {
+            List<ShoeVariant> variants = shoeVariantRepository.findByShoe_Id(shoe.getId());
+            List<ShoeVariantResponse> variantResponses = new ArrayList<>();
+
+            for (ShoeVariant v : variants) {
+                ShoeVariantResponse vr = new ShoeVariantResponse(
+                        v.getId(),
+                        v.getShoe().getId(),
+                        v.getSize(),
+                        v.getColor(),
+                        v.getQuantity(),
+                        v.getSku(),
+                        v.getCreatedAt(),
+                        v.getLastUpdatedAt()
+                );
+                variantResponses.add(vr);
+            }
+
+            ShoeResponse shoeResponse = new ShoeResponse(
+                    shoe.getId(),
+                    shoe.getName(),
+                    shoe.getDescription(),
+                    shoe.getSlug(),
+                    shoe.getMaterial(),
+                    shoe.getGender(),
+                    shoe.getStatus(),
+                    shoe.getCategory().getId(),
+                    shoe.getCategory().getName(),
+                    shoe.getBrand().getId(),
+                    shoe.getBrand().getName(),
+                    shoe.getPrice(),
+                    variantResponses,
+                    shoe.getCreatedAt(),
+                    shoe.getLastUpdatedAt()
+            );
+
+            responses.add(shoeResponse);
+        }
+
+        return responses;
     }
 
     public ShoeResponse getById(UUID id) {
         Shoe shoe = shoeRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Shoe", id));
+
+        List<ShoeVariant> variants = shoeVariantRepository.findByShoe_Id(id);
+        List<ShoeVariantResponse> variantResponses = variants.stream()
+                .map(v -> new ShoeVariantResponse(
+                        v.getId(),
+                        v.getShoe().getId(),
+                        v.getSize(),
+                        v.getColor(),
+                        v.getQuantity(),
+                        v.getSku(),
+                        v.getCreatedAt(),
+                        v.getLastUpdatedAt()
+                ))
+                .toList();
 
         return new ShoeResponse(
                 shoe.getId(),
@@ -112,7 +185,7 @@ public class ShoeService {
                 shoe.getBrand().getId(),
                 shoe.getBrand().getName(),
                 shoe.getPrice(),
-                List.of(),               // hiện tại chưa map variants
+                variantResponses,
                 shoe.getCreatedAt(),
                 shoe.getLastUpdatedAt()
         );
@@ -128,16 +201,31 @@ public class ShoeService {
     int suffix = 0;
 
     while (true) {
-      Optional<Shoe> existing = shoeRepository.findBySlug(candidate);
-      if (existing.isEmpty()) {
+      boolean exists;
+      if (excludeId != null) {
+        exists = shoeRepository.existsBySlugAndIdNot(candidate, excludeId);
+      } else {
+        exists = shoeRepository.existsBySlug(candidate);
+      }
+
+      if (!exists) {
         return candidate;
       }
-      if (excludeId != null && existing.get().getId().equals(excludeId)) {
-        return candidate;
-      }
+
       suffix++;
       candidate = baseSlug + "-" + suffix;
     }
   }
 
+    private String generateUniqueSku(String baseSku) {
+        String candidate = baseSku;
+        int suffix = 0;
+
+        while (shoeVariantRepository.existsBySku(candidate)) {
+            suffix++;
+            candidate = SkuUtils.appendNumericSuffix(baseSku, suffix);
+        }
+
+        return candidate;
+    }
 }

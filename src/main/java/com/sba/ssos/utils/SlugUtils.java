@@ -3,7 +3,6 @@ package com.sba.ssos.utils;
 public final class SlugUtils {
 
   private SlugUtils() {
-    // Utility class
   }
 
   public static String slugify(String name) {
