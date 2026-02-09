@@ -1,59 +1,62 @@
 package com.sba.ssos.service.storage;
 
 import com.sba.ssos.configuration.MinioProperties;
+import com.sba.ssos.exception.base.InternalServerErrorException;
 import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class MinioFileStorageService {
 
     private final MinioClient minioClient;
     private final MinioProperties minioProperties;
 
-    public String upload(MultipartFile file) throws Exception {
-        String original = file.getOriginalFilename();
-        String ext = "";
-        if (original != null && original.contains(".")) {
-            ext = original.substring(original.lastIndexOf("."));
+    public String upload(MultipartFile file) {
+        String originalFilename = file.getOriginalFilename();
+        String fileExtension = "";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            fileExtension = originalFilename.substring(originalFilename.lastIndexOf('.'));
         }
 
-        String objectName = UUID.randomUUID() + ext;
-        String bucket = minioProperties.getBucket();
+        String objectKey = UUID.randomUUID() + fileExtension;
+        String bucketName = minioProperties.bucket();
 
-        ensureBucketExists(bucket);
+        ensureBucketExists(bucketName);
 
-        minioClient.putObject(
-                PutObjectArgs.builder()
-                        .bucket(bucket)
-                        .object(objectName)
-                        .contentType(file.getContentType())
-                        .stream(file.getInputStream(), file.getSize(), -1)
-                        .build()
-        );
+        try {
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(objectKey)
+                            .contentType(file.getContentType())
+                            .stream(file.getInputStream(), file.getSize(), -1)
+                            .build()
+            );
+        } catch (Exception e) {
+            throw new InternalServerErrorException("error.storage.minio", e);
+        }
 
-        // URL dùng endpoint từ config (local hoặc 139.59.106.68)
-        String base = minioProperties.getEndpoint().replaceFirst("/$", "");
-        return base + "/" + bucket + "/" + objectName;
+        String endpoint = minioProperties.endpoint().replaceFirst("/$", "");
+        return endpoint + "/" + bucketName + "/" + objectKey;
     }
 
-    private void ensureBucketExists(String bucket) {
+    //phan chinh sua path
+    private void ensureBucketExists(String bucketName) {
         try {
-            if (!minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucket).build())) {
-                minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
-                log.info("MinIO bucket created: {}", bucket);
+            if (!minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build())) {
+                minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
             }
         } catch (Exception e) {
-            log.warn("Could not ensure bucket exists: {}", e.getMessage());
+            throw new InternalServerErrorException("error.storage.minio", e);
         }
     }
 }
