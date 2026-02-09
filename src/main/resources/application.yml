@@ -15,7 +15,7 @@ application-properties:
     admin-password: ${KEYCLOAK_ADMIN_PASSWORD:}
     token-url: ${KEYCLOAK_TOKEN_URL}
     accept-clients:
-      - ssos-backend
+      - ssos-app
       - ssos-sepay
   security-properties:
     admin-endpoints:
