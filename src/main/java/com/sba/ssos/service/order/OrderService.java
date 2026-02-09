@@ -4,28 +4,27 @@ package com.sba.ssos.service.order;
 import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.dto.request.order.OrderCreateRequest;
 import com.sba.ssos.dto.request.order.OrderExpiredRequest;
+import com.sba.ssos.dto.request.order.OrderHistoryRequest;
 import com.sba.ssos.dto.request.order.OrderItemRequest;
 import com.sba.ssos.dto.response.order.OrderCreateResponse;
-import com.sba.ssos.entity.CartItem;
-import com.sba.ssos.entity.Customer;
-import com.sba.ssos.entity.Order;
-import com.sba.ssos.entity.OrderDetail;
-import com.sba.ssos.entity.Payment;
-import com.sba.ssos.entity.ShoeVariant;
+import com.sba.ssos.dto.response.order.OrderHistoryResponse;
+import com.sba.ssos.entity.*;
 import com.sba.ssos.enums.OrderStatus;
 import com.sba.ssos.enums.PaymentStatus;
 import com.sba.ssos.exception.base.BadRequestException;
 import com.sba.ssos.exception.base.NotFoundException;
 import com.sba.ssos.repository.CartItemRepository;
-import com.sba.ssos.repository.CustomerRepository;
 import com.sba.ssos.repository.OrderRepository;
 import com.sba.ssos.repository.PaymentRepository;
 import com.sba.ssos.repository.ShoeVariantRepository;
-import com.sba.ssos.service.UserService;
+import com.sba.ssos.service.customer.CustomerService;
 import com.sba.ssos.service.product.shoevariant.ShoeVariantService;
 import com.sba.ssos.utils.OrderCodeUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -41,12 +40,11 @@ public class OrderService {
 
     private final ShoeVariantService shoeVariantService;
     private final ShoeVariantRepository shoeVariantRepository;
-    private final UserService userService;
-    private final CustomerRepository customerRepository;
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
     private final ApplicationProperties applicationProperties;
     private final CartItemRepository cartItemRepository;
+    private final CustomerService customerService;
 
     private static final long PAYMENT_EXPIRE_MINUTES = 5;
     private static final String ORDER_CODE_PREFIX = "SSOS";
@@ -55,9 +53,7 @@ public class OrderService {
     public OrderCreateResponse createOrder(OrderCreateRequest orderCreateRequest){
         List<OrderItemRequest> requestItems = orderCreateRequest.items();
 
-        Customer customer = customerRepository
-                .findByUser_Id(userService.getCurrentUser().userId())
-                .orElseThrow(() -> new NotFoundException("Customer not found"));
+        Customer customer = customerService.getCurrentCustomer();
         List<CartItem> cartItems = customer.getCartItems();
 
         validateItems(requestItems, cartItems);
@@ -131,8 +127,35 @@ public class OrderService {
     }
 
 
+    public List<OrderHistoryResponse> getOrderhistoryByCustomer(OrderHistoryRequest orderHistoryRequest) {
 
+        Customer customer = customerService.getCurrentCustomer();
 
+        Pageable pageable = PageRequest.of(
+                orderHistoryRequest.page(),
+                orderHistoryRequest.size()
+        );
+
+        Page<Order> orderPage = orderRepository.findByCustomer_Id(customer.getId(), pageable);
+
+        if(!orderPage.hasContent()){
+            throw  new BadRequestException("No order by you");
+        }
+
+        return orderPage.getContent().stream().map(order -> {
+            return new OrderHistoryResponse(
+                    order.getId(),
+                    order.getOrderCode(),
+                    order.getCreatedAt(),
+                    order.getOrderStatus().toString(),
+                    order.getPayments().getFirst().getPaymentStatus(),
+                    "ONLINE",
+                    orderPage.getContent().size(),
+                    order.getTotalAmount()
+            );
+        }).toList();
+
+    }
 
     public Order findOrderById(UUID orderId){
         return orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
