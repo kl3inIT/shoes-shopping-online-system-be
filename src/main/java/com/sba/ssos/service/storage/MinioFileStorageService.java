@@ -1,8 +1,10 @@
 package com.sba.ssos.service.storage;
 
 import com.sba.ssos.configuration.MinioProperties;
+import com.sba.ssos.dto.response.upload.FileResource;
 import com.sba.ssos.exception.base.InternalServerErrorException;
 import io.minio.BucketExistsArgs;
+import io.minio.GetObjectArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
@@ -10,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
+import java.io.InputStream;
 import java.util.UUID;
 
 @Service
@@ -45,8 +47,23 @@ public class MinioFileStorageService {
             throw new InternalServerErrorException("error.storage.minio", e);
         }
 
-        String endpoint = minioProperties.endpoint().replaceFirst("/$", "");
-        return endpoint + "/" + bucketName + "/" + objectKey;
+        return objectKey;
+    }
+
+    public FileResource getFile(String objectKey) {
+        String bucketName = minioProperties.bucket();
+        try {
+            InputStream stream = minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(objectKey)
+                            .build()
+            );
+            String contentType = guessContentType(objectKey);
+            return new FileResource(stream, contentType);
+        } catch (Exception e) {
+            throw new InternalServerErrorException("error.storage.minio", e);
+        }
     }
 
     //phan chinh sua path
@@ -58,6 +75,17 @@ public class MinioFileStorageService {
         } catch (Exception e) {
             throw new InternalServerErrorException("error.storage.minio", e);
         }
+    }
+
+    private String guessContentType(String objectKey) {
+        String lower = objectKey.toLowerCase();
+        if (lower.endsWith(".png")) {
+            return "image/png";
+        }
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
+            return "image/jpeg";
+        }
+        return "application/octet-stream";
     }
 }
 
