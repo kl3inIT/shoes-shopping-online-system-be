@@ -3,31 +3,32 @@ package com.sba.ssos.enums;
 import jakarta.annotation.Nullable;
 
 public enum PaymentStatus {
-  PENDING("PENDING"),
-  PAID("PAID"),
-  FAILED("FAILED"),
-  REFUNDED("REFUNDED");
+    PENDING("PENDING"),
+    TIME_OUT("TIME_OUT"),
+    PAID("PAID"),
+    FAILED("FAILED"),
+    REFUNDED("REFUNDED");
 
-  private final String id;
+    private final String id;
 
-  PaymentStatus(String id) {
-    this.id = id;
-  }
-
-  public String getId() {
-    return id;
-  }
-
-  @Nullable
-  public static PaymentStatus fromId(String id) {
-    if (id == null) {
-      return null;
+    PaymentStatus(String id) {
+        this.id = id;
     }
-    for (PaymentStatus status : PaymentStatus.values()) {
-      if (status.getId().equalsIgnoreCase(id)) {
-        return status;
-      }
+
+    public String getId() {
+        return id;
     }
-    return null;
-  }
+
+    @Nullable
+    public static PaymentStatus fromId(String id) {
+        if (id == null) {
+            return null;
+        }
+        for (PaymentStatus status : PaymentStatus.values()) {
+            if (status.getId().equalsIgnoreCase(id)) {
+                return status;
+            }
+        }
+        return null;
+    }
 }

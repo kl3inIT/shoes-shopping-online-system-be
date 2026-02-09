@@ -3,7 +3,10 @@ package com.sba.ssos.controller.order;
 import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.order.OrderCreateRequest;
+import com.sba.ssos.dto.request.order.OrderExpiredRequest;
 import com.sba.ssos.dto.response.order.OrderCreateResponse;
+import com.sba.ssos.service.order.OrderService;
+import com.sba.ssos.utils.LocaleUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,8 +20,9 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class OrderController {
 
-
+    private final OrderService orderService;
     private final ApplicationProperties props;
+    private final LocaleUtils localeUtils;
 
     // cmd: cloudflared tunnel run sepay-webhook
     @PostMapping("/sepay/hook")
@@ -41,12 +45,18 @@ public class OrderController {
     }
 
     @PostMapping("/init")
-    public ResponseEntity<ResponseGeneral<OrderCreateResponse>> createPayment(@RequestBody OrderCreateRequest orderCreateRequest) {
-        ResponseGeneral<OrderCreateResponse> responseDTO = new ResponseGeneral<>();
-//        responseDTO.setMessage(SUCCESS);
-//        responseDTO.setData(paymentService.createPayment(paymentRequestDTO));
-        return ResponseEntity.ok(responseDTO);
+    public ResponseGeneral<OrderCreateResponse> createPayment(@RequestBody OrderCreateRequest orderCreateRequest) {
+        OrderCreateResponse response = orderService.createOrder(orderCreateRequest);
+        return ResponseGeneral.ofSuccess(localeUtils.get("success.order.created"), response);
     }
+
+    @PostMapping("/expired")
+    public ResponseGeneral<OrderCreateResponse> handPaymentExpired(@RequestBody OrderExpiredRequest orderExpiredRequest) {
+        orderService.handlePaymentTimeout(orderExpiredRequest);
+        return ResponseGeneral.ofSuccess(localeUtils.get("success.order.expired.updated"));
+    }
+
+
 
 
 }
