@@ -1,7 +1,7 @@
 package com.sba.ssos.controller.upload;
 
-import com.sba.ssos.dto.response.upload.FileResource;
 import com.sba.ssos.dto.ResponseGeneral;
+import com.sba.ssos.dto.response.upload.FileResource;
 import com.sba.ssos.service.storage.MinioFileStorageService;
 import com.sba.ssos.utils.LocaleUtils;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/files")
@@ -35,6 +36,19 @@ public class FileController {
         return ResponseGeneral.ofCreated(
                 localeUtils.get("success.file.uploaded"),
                 objectKey
+        );
+    }
+
+    @PostMapping("/upload-multiple")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseGeneral<List<String>> uploadMultiple(@RequestParam("files") List<MultipartFile> files) {
+        List<String> objectKeys = files.stream()
+                .map(storageService::upload)
+                .toList();
+
+        return ResponseGeneral.ofCreated(
+                localeUtils.get("success.file.uploaded"),
+                objectKeys
         );
     }
 
