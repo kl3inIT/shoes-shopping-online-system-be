@@ -8,6 +8,7 @@ import com.sba.ssos.dto.request.order.OrderHistoryRequest;
 import com.sba.ssos.dto.request.order.OrderItemRequest;
 import com.sba.ssos.dto.response.order.OrderCreateResponse;
 import com.sba.ssos.dto.response.order.OrderHistoryResponse;
+import com.sba.ssos.dto.response.order.OrderPaid;
 import com.sba.ssos.entity.*;
 import com.sba.ssos.enums.OrderStatus;
 import com.sba.ssos.enums.PaymentStatus;
@@ -25,13 +26,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,7 +50,7 @@ public class OrderService {
     private final ApplicationProperties applicationProperties;
     private final CartItemRepository cartItemRepository;
     private final CustomerService customerService;
-
+    private SimpMessagingTemplate messagingTemplate;
     private static final long PAYMENT_EXPIRE_MINUTES = 5;
     private static final String ORDER_CODE_PREFIX = "SSOS";
 
@@ -127,7 +132,7 @@ public class OrderService {
     }
 
 
-    public List<OrderHistoryResponse> getOrderhistoryByCustomer(OrderHistoryRequest orderHistoryRequest) {
+    public List<OrderHistoryResponse> getOrderHistoryByCustomer(OrderHistoryRequest orderHistoryRequest) {
 
         Customer customer = customerService.getCurrentCustomer();
 
@@ -155,6 +160,50 @@ public class OrderService {
             );
         }).toList();
 
+    }
+
+    public void verifyPayment( Map<String, Object> payload) {
+        String regex = "SSOS-\\d{8}-[A-Z0-9]{6}";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher((String) payload.get("content"));
+
+        String orderCode = null;
+        if (matcher.find()) {
+            orderCode = matcher.group();
+        } else {
+            throw new NotFoundException("Not Found order code");
+        }
+
+        Order order = getOrderByCode(orderCode);
+        Double totalPaid = order.getPayments().stream()
+                .filter(p -> p.getPaymentStatus() == PaymentStatus.PAID)
+                .map(Payment::getAmountReceived)
+                .reduce(0.0, Double::sum);
+        Double orderTotalAmount = order.getTotalAmount();
+        if (totalPaid.compareTo(orderTotalAmount) >= 0) {
+            order.setOrderStatus(OrderStatus.PAID); // hoặc COMPLETED
+            orderRepository.save(order);
+
+            messagingTemplate.convertAndSendToUser(
+                    order.getCustomer().getId().toString(),
+                    "/queue/orders",
+                    new OrderPaid(order.getOrderCode(), order.getOrderStatus())
+            );
+
+//            client.subscribe('/user/queue/orders', (message) => {
+//              const data = JSON.parse(message.body);
+//
+//              console.log('Order event:', data);
+//
+//              if (data.status === 'PAID') {
+//                // check orderCode trong payload để map UI
+//                showSuccess(`Đơn ${data.orderCode} đã thanh toán thành công`);
+//            }
+//});
+
+        } else {
+            throw new BadRequestException("Not enough payment amount");
+        }
     }
 
     public Order findOrderById(UUID orderId){
@@ -228,6 +277,10 @@ public class OrderService {
         }
 
         return totalPrice;
+    }
+
+    public Order getOrderByCode(String orderCode) {
+        return orderRepository.findByOrderCode(orderCode).orElseThrow(() -> new NotFoundException("Order not found"));
     }
 
 }
