@@ -19,6 +19,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MultipartException;
 
 @RestControllerAdvice
 @RequiredArgsConstructor
@@ -109,6 +110,21 @@ public class GlobalExceptionHandler {
     return problem;
   }
 
+  @ExceptionHandler(MultipartException.class)
+  public ProblemDetail handleMultipart(MultipartException ex, HttpServletRequest request) {
+    log.warn("Multipart error: {}", ex.getMessage());
+
+    String detail =
+        "Request must be multipart/form-data with a part named 'file'. "
+            + "Do not set Content-Type header manually; use form-data in Postman/curl -F \"file=@path\".";
+
+    ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail);
+    problem.setTitle("Bad Request");
+    problem.setInstance(URI.create(request.getRequestURI()));
+    problem.setProperty("cause", ex.getMessage());
+    return problem;
+  }
+
   @ExceptionHandler(Exception.class)
   public ProblemDetail handleGeneric(Exception ex, HttpServletRequest request) {
     log.error("Unhandled exception", ex);
@@ -119,6 +135,8 @@ public class GlobalExceptionHandler {
         ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail);
     problem.setTitle(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
     problem.setInstance(URI.create(request.getRequestURI()));
+    // Ghi thêm nguyên nhân để debug (vd: MinIO connection, bucket not found)
+    problem.setProperty("cause", ex.getMessage());
     return problem;
   }
 }
