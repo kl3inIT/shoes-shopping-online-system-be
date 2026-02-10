@@ -31,6 +31,7 @@ application-properties:
       - { method: POST, path: /api/brands }
       - { method: DELETE, path: /api/brands/* }
       - { method: PUT, path: /api/brands/* }
+      - { method: GET, path: /api/orders/admin }
     manager-endpoints:
       - { method: GET, path: /test/manager }
     customer-endpoints:

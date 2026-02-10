@@ -1,6 +1,7 @@
 package com.sba.ssos.service.order;
 
 
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.dto.request.order.OrderCreateRequest;
 import com.sba.ssos.dto.request.order.OrderExpiredRequest;
@@ -9,13 +10,15 @@ import com.sba.ssos.dto.request.order.OrderItemRequest;
 import com.sba.ssos.dto.response.order.OrderCreateResponse;
 import com.sba.ssos.dto.response.order.OrderHistoryResponse;
 import com.sba.ssos.dto.response.order.OrderPaid;
+import com.sba.ssos.dto.response.order.sepay.SePayWebhookRequest;
 import com.sba.ssos.entity.*;
 import com.sba.ssos.enums.OrderStatus;
+import com.sba.ssos.enums.PaymentMethod;
 import com.sba.ssos.enums.PaymentStatus;
 import com.sba.ssos.exception.base.BadRequestException;
 import com.sba.ssos.exception.base.NotFoundException;
 import com.sba.ssos.repository.CartItemRepository;
-import com.sba.ssos.repository.OrderRepository;
+import com.sba.ssos.repository.order.OrderRepository;
 import com.sba.ssos.repository.PaymentRepository;
 import com.sba.ssos.repository.ShoeVariantRepository;
 import com.sba.ssos.service.customer.CustomerService;
@@ -29,7 +32,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +45,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrderService {
 
+    private final JPAQueryFactory queryFactory;
     private final ShoeVariantService shoeVariantService;
     private final ShoeVariantRepository shoeVariantRepository;
     private final OrderRepository orderRepository;
@@ -50,7 +53,7 @@ public class OrderService {
     private final ApplicationProperties applicationProperties;
     private final CartItemRepository cartItemRepository;
     private final CustomerService customerService;
-    private SimpMessagingTemplate messagingTemplate;
+    private final SimpMessagingTemplate messagingTemplate;
     private static final long PAYMENT_EXPIRE_MINUTES = 5;
     private static final String ORDER_CODE_PREFIX = "SSOS";
 
@@ -131,7 +134,6 @@ public class OrderService {
 
     }
 
-
     public List<OrderHistoryResponse> getOrderHistoryByCustomer(OrderHistoryRequest orderHistoryRequest) {
 
         Customer customer = customerService.getCurrentCustomer();
@@ -152,20 +154,52 @@ public class OrderService {
                     order.getId(),
                     order.getOrderCode(),
                     order.getCreatedAt(),
+                    order.getCustomer().getUser().getFirstName() + " " + order.getCustomer().getUser().getLastName(),
+                    order.getCustomer().getUser().getEmail(),
                     order.getOrderStatus().toString(),
                     order.getPayments().getFirst().getPaymentStatus(),
-                    "ONLINE",
-                    orderPage.getContent().size(),
+                    PaymentMethod.ONLINE,
+                    orderPage.getTotalElements(),
                     order.getTotalAmount()
             );
         }).toList();
 
     }
 
-    public void verifyPayment( Map<String, Object> payload) {
+    public List<OrderHistoryResponse> getOrderHistoryByAdmin(OrderHistoryRequest orderHistoryRequest) {
+
+        Pageable pageable = PageRequest.of(
+                orderHistoryRequest.page(),
+                orderHistoryRequest.size() != 0 ? orderHistoryRequest.size() : 5
+        );
+
+        Page<Order> pageOrder = orderRepository.findOrderHistory(orderHistoryRequest, pageable);
+
+
+        if(!pageOrder.hasContent()){
+            throw  new BadRequestException("No order by you");
+        }
+
+        return pageOrder.getContent().stream().map(orderItem -> new OrderHistoryResponse(
+                orderItem.getId(),
+                orderItem.getOrderCode(),
+                orderItem.getCreatedAt(),
+                orderItem.getCustomer().getUser().getFirstName() + " " + orderItem.getCustomer().getUser().getLastName(),
+                orderItem.getCustomer().getUser().getEmail(),
+                orderItem.getOrderStatus().toString(),
+                orderItem.getPayments().getFirst().getPaymentStatus(),
+                PaymentMethod.ONLINE,
+                pageOrder.getTotalElements(),
+                orderItem.getTotalAmount()
+        )).toList();
+
+    }
+
+    public void verifyPayment(SePayWebhookRequest request) {
+
         String regex = "SSOS-\\d{8}-[A-Z0-9]{6}";
         Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher((String) payload.get("content"));
+        Matcher matcher = pattern.matcher(request.content());
 
         String orderCode = null;
         if (matcher.find()) {
@@ -174,16 +208,25 @@ public class OrderService {
             throw new NotFoundException("Not Found order code");
         }
 
+        // get order và set vào
         Order order = getOrderByCode(orderCode);
+
+        Double amountReceived = Double.parseDouble(request.transferAmount().toString());
+
+        order.getPayments().getFirst().setAmountReceived(amountReceived);
+
         Double totalPaid = order.getPayments().stream()
                 .filter(p -> p.getPaymentStatus() == PaymentStatus.PAID)
                 .map(Payment::getAmountReceived)
                 .reduce(0.0, Double::sum);
+
         Double orderTotalAmount = order.getTotalAmount();
         if (totalPaid.compareTo(orderTotalAmount) >= 0) {
             order.setOrderStatus(OrderStatus.PAID); // hoặc COMPLETED
             orderRepository.save(order);
+            paymentRepository.saveAllAndFlush(order.getPayments());
 
+            // socket to FE
             messagingTemplate.convertAndSendToUser(
                     order.getCustomer().getId().toString(),
                     "/queue/orders",
@@ -209,8 +252,6 @@ public class OrderService {
     public Order findOrderById(UUID orderId){
         return orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
     }
-
-
 
     private void validateItems(List<OrderItemRequest> items, List<CartItem> cartItems) {
         // 1. Check size
@@ -253,9 +294,6 @@ public class OrderService {
             }
         }
     }
-
-//    private void deactiveCartitems()
-
 
     private Double calculatePrice(List<OrderItemRequest> items) {
         List<UUID> ids = items.stream()

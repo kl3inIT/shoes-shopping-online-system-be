@@ -2,11 +2,9 @@ package com.sba.ssos.entity;
 
 import com.sba.ssos.entity.base.BaseAuditableEntity;
 import com.sba.ssos.enums.OrderStatus;
-import com.sba.ssos.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
