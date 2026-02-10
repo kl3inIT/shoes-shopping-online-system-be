@@ -4,13 +4,18 @@ import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.order.OrderCreateRequest;
 import com.sba.ssos.dto.request.order.OrderExpiredRequest;
+import com.sba.ssos.dto.request.order.OrderHistoryRequest;
 import com.sba.ssos.dto.response.order.OrderCreateResponse;
+import com.sba.ssos.dto.response.order.OrderHistoryResponse;
+import com.sba.ssos.dto.response.order.sepay.SePayWebhookRequest;
+import com.sba.ssos.exception.base.NotFoundException;
 import com.sba.ssos.service.order.OrderService;
 import com.sba.ssos.utils.LocaleUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,34 +31,33 @@ public class OrderController {
 
     // cmd: cloudflared tunnel run sepay-webhook
     @PostMapping("/sepay/hook")
-    public Void verifyOrder(@RequestBody Map<String, Object> payload) {
-
-        String regex = "[A-Za-z0-9]{12}";
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher((String) payload.get("content"));
-        String transactionCode = null;
-        if (matcher.find()) {
-            transactionCode = matcher.group();
-        } else {
-            throw new IllegalArgumentException("Not Found transaction code");
-        }
-//        paymentService.completePayment(transactionCode);
-//
-//        String downloadLink = domain + "/api/payments/download/invoice/" + transactionCode;
-//        paymentService.sendInvoiceToEmail(payload, transactionCode, downloadLink);
+    public Void verifyOrder(@RequestBody SePayWebhookRequest request) {
+        orderService.verifyPayment(request);
         return null;
     }
 
     @PostMapping("/init")
-    public ResponseGeneral<OrderCreateResponse> createPayment(@RequestBody OrderCreateRequest orderCreateRequest) {
+    public ResponseGeneral<OrderCreateResponse> createOrder(@RequestBody OrderCreateRequest orderCreateRequest) {
         OrderCreateResponse response = orderService.createOrder(orderCreateRequest);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.order.created"), response);
     }
 
     @PostMapping("/expired")
-    public ResponseGeneral<OrderCreateResponse> handPaymentExpired(@RequestBody OrderExpiredRequest orderExpiredRequest) {
+    public ResponseGeneral<OrderCreateResponse> handlePaymentExpired(@RequestBody OrderExpiredRequest orderExpiredRequest) {
         orderService.handlePaymentTimeout(orderExpiredRequest);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.order.expired.updated"));
+    }
+
+    @GetMapping()
+    public ResponseGeneral<List<OrderHistoryResponse>> getOrders(@ModelAttribute OrderHistoryRequest orderHistoryRequest) {
+        List<OrderHistoryResponse> orders = orderService.getOrderHistoryByCustomer(orderHistoryRequest);
+        return ResponseGeneral.ofSuccess(localeUtils.get("success.order.get"), orders);
+    }
+
+    @GetMapping("/admin")
+    public ResponseGeneral<List<OrderHistoryResponse>> getOrdersByAdmin(@ModelAttribute OrderHistoryRequest orderHistoryRequest) {
+        List<OrderHistoryResponse> orders = orderService.getOrderHistoryByAdmin(orderHistoryRequest);
+        return ResponseGeneral.ofSuccess(localeUtils.get("success.order.get"), orders);
     }
 
 

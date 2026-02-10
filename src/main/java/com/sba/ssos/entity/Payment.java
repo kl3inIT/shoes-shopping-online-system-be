@@ -1,6 +1,7 @@
 package com.sba.ssos.entity;
 
 import com.sba.ssos.entity.base.BaseAuditableEntity;
+import com.sba.ssos.enums.PaymentMethod;
 import com.sba.ssos.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -32,4 +33,8 @@ public class Payment extends BaseAuditableEntity {
 
     @Column(name = "expiredAt")
     private LocalDateTime expiredAt;
+
+    @Column(name = "method")
+    @Enumerated(EnumType.STRING)
+    private PaymentMethod paymentMethod;
 }
