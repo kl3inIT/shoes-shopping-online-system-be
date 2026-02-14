@@ -145,10 +145,6 @@ public class OrderService {
 
         Page<Order> orderPage = orderRepository.findByCustomer_Id(customer.getId(), pageable);
 
-        if(!orderPage.hasContent()){
-            throw  new BadRequestException("No order by you");
-        }
-
         return orderPage.getContent().stream().map(order -> {
             return new OrderHistoryResponse(
                     order.getId(),
@@ -174,11 +170,6 @@ public class OrderService {
         );
 
         Page<Order> pageOrder = orderRepository.findOrderHistory(orderHistoryRequest, pageable);
-
-
-        if(!pageOrder.hasContent()){
-            throw  new BadRequestException("No order by you");
-        }
 
         return pageOrder.getContent().stream().map(orderItem -> new OrderHistoryResponse(
                 orderItem.getId(),

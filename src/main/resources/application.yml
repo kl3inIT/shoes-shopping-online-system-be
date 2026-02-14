@@ -31,7 +31,6 @@ application-properties:
       - { method: POST, path: /api/brands }
       - { method: DELETE, path: /api/brands/* }
       - { method: PUT, path: /api/brands/* }
-      - { method: GET, path: /api/orders/admin }
     manager-endpoints:
       - { method: GET, path: /test/manager }
     customer-endpoints:
@@ -54,7 +53,8 @@ application-properties:
       - { method: POST, path: /api/payments/sepay/hook }
       - { method: POST, path: /webhook/keycloak/register }
       - { method: POST, path: /sepay/auth/token }
-
+# Thằng Đạt m fix keycloak hộ anh cái, cứ để anh phải đặt ra ngoài này
+      - { method: GET, path: /api/orders/admin }
     public-urls:
       # OpenAPI Swagger URLs
       - /swagger-ui.html
