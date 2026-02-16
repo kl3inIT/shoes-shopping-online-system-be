@@ -162,7 +162,7 @@ public class OrderService {
 
     }
 
-    public List<OrderHistoryResponse> getOrderHistoryByAdmin(OrderHistoryRequest orderHistoryRequest) {
+    public Page<OrderHistoryResponse> getOrderHistoryByAdmin(OrderHistoryRequest orderHistoryRequest) {
 
         Pageable pageable = PageRequest.of(
                 orderHistoryRequest.page(),
@@ -171,7 +171,7 @@ public class OrderService {
 
         Page<Order> pageOrder = orderRepository.findOrderHistory(orderHistoryRequest, pageable);
 
-        return pageOrder.getContent().stream().map(orderItem -> new OrderHistoryResponse(
+        return pageOrder.map(orderItem -> new OrderHistoryResponse(
                 orderItem.getId(),
                 orderItem.getOrderCode(),
                 orderItem.getCreatedAt(),
@@ -182,7 +182,7 @@ public class OrderService {
                 PaymentMethod.ONLINE,
                 pageOrder.getTotalElements(),
                 orderItem.getTotalAmount()
-        )).toList();
+        ));
 
     }
 

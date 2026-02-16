@@ -12,6 +12,7 @@ import com.sba.ssos.exception.base.NotFoundException;
 import com.sba.ssos.service.order.OrderService;
 import com.sba.ssos.utils.LocaleUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -55,8 +56,8 @@ public class OrderController {
     }
 
     @GetMapping("/admin")
-    public ResponseGeneral<List<OrderHistoryResponse>> getOrdersByAdmin(@ModelAttribute OrderHistoryRequest orderHistoryRequest) {
-        List<OrderHistoryResponse> orders = orderService.getOrderHistoryByAdmin(orderHistoryRequest);
+    public ResponseGeneral<Page<OrderHistoryResponse>> getOrdersByAdmin(@ModelAttribute OrderHistoryRequest orderHistoryRequest) {
+        Page<OrderHistoryResponse> orders = orderService.getOrderHistoryByAdmin(orderHistoryRequest);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.order.get"), orders);
     }
 
