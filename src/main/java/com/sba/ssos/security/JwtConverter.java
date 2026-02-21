@@ -20,7 +20,6 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class JwtConverter implements Converter<Jwt, UsernamePasswordAuthenticationToken> {
-
   static final String RESOURCE_ACCESS_CLAIM = "resource_access";
   static final String EMAIL_CLAIM = "email";
 
@@ -37,7 +36,6 @@ public class JwtConverter implements Converter<Jwt, UsernamePasswordAuthenticati
         || acceptClients == null
         || acceptClients.isEmpty()
         || acceptClients.stream().noneMatch(c -> c.equalsIgnoreCase(clientName))) {
-
       throw new UnauthorizedException(
           "error.jwt.invalid_azp", "expected", acceptClients, "actual", clientName);
     }
