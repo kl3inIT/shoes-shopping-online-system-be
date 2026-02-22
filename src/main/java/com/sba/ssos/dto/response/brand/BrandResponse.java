@@ -12,5 +12,6 @@ public record BrandResponse(
     String logoUrl,
     String country,
     Instant createdAt,
-    Instant updatedAt
+    Instant updatedAt,
+    long productCount
 ) implements Serializable {}

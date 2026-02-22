@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -105,6 +106,23 @@ public class GlobalExceptionHandler {
 
     ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, detail);
     problem.setTitle(HttpStatus.UNAUTHORIZED.getReasonPhrase());
+    problem.setInstance(URI.create(request.getRequestURI()));
+    return problem;
+  }
+
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  public ProblemDetail handleDataIntegrity(
+      DataIntegrityViolationException ex, HttpServletRequest request) {
+    log.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
+
+    String detail = localeUtils.get("error.data.integrity");
+    String cause = ex.getMostSpecificCause().getMessage();
+    if (cause != null && !cause.isBlank()) {
+      detail = detail + " " + cause;
+    }
+
+    ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, detail);
+    problem.setTitle(HttpStatus.CONFLICT.getReasonPhrase());
     problem.setInstance(URI.create(request.getRequestURI()));
     return problem;
   }

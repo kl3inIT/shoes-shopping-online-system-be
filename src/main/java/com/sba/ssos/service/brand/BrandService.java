@@ -7,6 +7,7 @@ import com.sba.ssos.exception.base.ConflictException;
 import com.sba.ssos.exception.base.NotFoundException;
 import com.sba.ssos.mapper.BrandMapper;
 import com.sba.ssos.repository.BrandRepository;
+import com.sba.ssos.repository.ShoeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,12 +19,20 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class BrandService {
     private final BrandRepository brandRepository;
+    private final ShoeRepository shoeRepository;
     private final BrandMapper brandMapper;
 
     @Transactional(readOnly = true)
     public List<BrandResponse> getAllBrands() {
         return brandRepository.findAll().stream()
-                .map(brandMapper::toResponse)
+                .map(brand -> {
+                    BrandResponse base = brandMapper.toResponse(brand);
+                    long productCount = shoeRepository.countByBrandId(brand.getId());
+                    return new BrandResponse(
+                            base.id(), base.name(), base.slug(), base.description(),
+                            base.logoUrl(), base.country(), base.createdAt(), base.updatedAt(),
+                            productCount);
+                })
                 .toList();
     }
 
@@ -31,7 +40,12 @@ public class BrandService {
     public BrandResponse getBrandById(UUID id) {
         Brand brand = brandRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Brand not found with id: " + id));
-        return brandMapper.toResponse(brand);
+        BrandResponse base = brandMapper.toResponse(brand);
+        long productCount = shoeRepository.countByBrandId(brand.getId());
+        return new BrandResponse(
+                base.id(), base.name(), base.slug(), base.description(),
+                base.logoUrl(), base.country(), base.createdAt(), base.updatedAt(),
+                productCount);
     }
 
     @Transactional
@@ -60,6 +74,9 @@ public class BrandService {
     public void deleteBrand(UUID id) {
         if (!brandRepository.existsById(id)) {
             throw new NotFoundException("Brand not found with id: " + id);
+        }
+        if (shoeRepository.countByBrandId(id) > 0) {
+            throw new ConflictException("error.brand.delete.has_products");
         }
         brandRepository.deleteById(id);
     }

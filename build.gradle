@@ -46,6 +46,7 @@ dependencies {
     implementation("org.springframework.ai:spring-ai-starter-model-google-genai:2.0.0-M2")
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
     implementation("org.springframework:spring-websocket:6.2.15")
+    implementation 'io.minio:minio:8.5.11'
 }
 
 tasks.named('test') {
