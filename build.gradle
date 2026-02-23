@@ -54,6 +54,7 @@ dependencies {
     implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
     implementation("org.springframework:spring-websocket:6.2.15")
+    implementation 'io.minio:minio:8.5.11'
 
     // QueryDSL for Jakarta Persistence (Spring Boot 3+ uses jakarta.*)
     implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'

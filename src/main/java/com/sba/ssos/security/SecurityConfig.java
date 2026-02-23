@@ -1,17 +1,8 @@
 package com.sba.ssos.security;
 
-import static com.sba.ssos.security.CorsConfig.corsConfigurationSource;
-
-import com.sba.ssos.configuration.ApplicationProperties;
-import com.sba.ssos.configuration.ApplicationProperties.SecurityProperties;
-import com.sba.ssos.enums.UserRole;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.util.Arrays;
 import java.util.Comparator;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
@@ -24,6 +15,17 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
+
+import com.sba.ssos.configuration.ApplicationProperties;
+import com.sba.ssos.configuration.ApplicationProperties.SecurityProperties;
+import com.sba.ssos.enums.UserRole;
+import static com.sba.ssos.security.CorsConfig.corsConfigurationSource;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @EnableWebSecurity
