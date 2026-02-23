@@ -12,9 +12,7 @@ public record ApplicationProperties(
         KeycloakProperties keycloakProperties,
         SecurityProperties securityProperties,
         SepayProperties sepayProperties,
-        BankProperties bankProperties,
-        /** Tạm thời: UUID user dùng khi không đăng nhập (xóa sau khi bật Keycloak). */
-        UUID defaultUserId) {
+        BankProperties bankProperties) {
 
     public record KeycloakProperties(
             String serverUrl,
