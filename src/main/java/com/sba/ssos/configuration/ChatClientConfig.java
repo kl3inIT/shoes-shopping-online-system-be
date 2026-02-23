@@ -9,13 +9,25 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ChatClientConfig {
 
-  @Bean("chatGptClient")
-  public ChatClient openAiChatClient(OpenAiChatModel chatModel) {
-    return ChatClient.create(chatModel);
+  @Bean(name = "chatGptClient")
+  ChatClient openAiChatClient(OpenAiChatModel model) {
+    return ChatClient.builder(model)
+        .defaultSystem(
+            """
+                    You are an AI assistant for an e-commerce platform.
+                    Be concise, accurate, and helpful.
+                """)
+        .build();
   }
 
-  @Bean("geminiClient")
-  public ChatClient geminiAiChatClient(GoogleGenAiChatModel googleGenAiChatModel) {
-    return ChatClient.create(googleGenAiChatModel);
+  @Bean(name = "geminiClient")
+  ChatClient geminiChatClient(GoogleGenAiChatModel model) {
+    return ChatClient.builder(model)
+        .defaultSystem(
+            """
+                    You are an AI assistant for an e-commerce platform.
+                    Be concise, accurate, and helpful.
+                """)
+        .build();
   }
 }
