@@ -1,4 +1,4 @@
-package com.sba.ssos.configuration;
+package com.sba.ssos.ai.config;
 
 import javax.sql.DataSource;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -12,13 +12,11 @@ public class ChatMemoryConfig {
 
   @Bean
   public ChatMemory chatMemory(DataSource dataSource) {
-    var repository = JdbcChatMemoryRepository.builder()
-            .dataSource(dataSource)
-            .build();
+    var repository = JdbcChatMemoryRepository.builder().dataSource(dataSource).build();
 
     return MessageWindowChatMemory.builder()
-            .chatMemoryRepository(repository)
-            .maxMessages(50)
-            .build();
+        .chatMemoryRepository(repository)
+        .maxMessages(50)
+        .build();
   }
 }

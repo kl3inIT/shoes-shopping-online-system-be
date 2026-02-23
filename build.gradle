@@ -20,6 +20,10 @@ configurations {
     }
 }
 
+ext {
+    set('springAiVersion', "2.0.0-M2")
+}
+
 repositories {
     mavenCentral()
 }
@@ -43,9 +47,11 @@ dependencies {
     testImplementation 'com.h2database:h2'
     implementation 'org.keycloak:keycloak-admin-client:26.0.8'
     implementation 'org.mapstruct:mapstruct:1.6.3'
-    implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-repository-jdbc:2.0.0-M2'
-    implementation("org.springframework.ai:spring-ai-starter-model-openai:2.0.0-M2")
-    implementation("org.springframework.ai:spring-ai-starter-model-google-genai:2.0.0-M2")
+    implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-repository-jdbc'
+    implementation("org.springframework.ai:spring-ai-starter-model-openai")
+    implementation("org.springframework.ai:spring-ai-starter-model-google-genai")
+    implementation 'org.springframework.ai:spring-ai-advisors-vector-store'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
     implementation("org.springframework:spring-websocket:6.2.15")
 
@@ -54,7 +60,7 @@ dependencies {
     annotationProcessor 'com.querydsl:querydsl-apt:5.1.0:jakarta'
 
     // Ensure jakarta.persistence annotations are visible on annotationProcessor classpath
-    annotationProcessor 'jakarta.persistence:jakarta.persistence-api:3.1.0'
+    annotationProcessor 'jakarta.persistence:jakarta.persistence-api:3.2.0'
 }
 
 sourceSets {
@@ -62,6 +68,12 @@ sourceSets {
         java {
             srcDirs += 'build/generated/source/apt/main'
         }
+    }
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
     }
 }
 

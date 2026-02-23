@@ -9,14 +9,11 @@ import com.sba.ssos.mapper.ShoeMapper;
 import com.sba.ssos.repository.ShoeRepository;
 import com.sba.ssos.service.brand.BrandService;
 import com.sba.ssos.service.category.CategoryService;
-import lombok.RequiredArgsConstructor;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor

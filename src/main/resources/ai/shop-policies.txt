@@ -1,0 +1,35 @@
+SHOP_POLICIES:
+
+1. Sản phẩm & chất lượng
+- Tất cả sản phẩm giày là hàng mới 100%, còn nguyên tem, hộp, phụ kiện (nếu có).
+- Màu sắc và hình ảnh sản phẩm trên website mang tính minh họa, có thể chênh lệch nhẹ tùy màn hình hiển thị.
+- Nếu sản phẩm bị lỗi do nhà sản xuất, chúng tôi hỗ trợ đổi/trả theo chính sách bảo hành.
+
+2. Đặt hàng & thanh toán
+- Đơn hàng chỉ được coi là hợp lệ sau khi bạn hoàn tất bước xác nhận thông tin nhận hàng và phương thức thanh toán.
+- Hệ thống có thể tự động hủy đơn nếu phát hiện dấu hiệu gian lận, bất thường hoặc sai thông tin liên lạc.
+- Các phương thức thanh toán hỗ trợ: COD (thanh toán khi nhận hàng), chuyển khoản ngân hàng, ví điện tử và các cổng thanh toán trực tuyến được tích hợp trên hệ thống.
+
+3. Vận chuyển & giao hàng
+- Thời gian giao hàng dự kiến: 2–5 ngày làm việc tùy khu vực (không tính ngày lễ, Tết).
+- Phí vận chuyển được hiển thị rõ trước khi bạn xác nhận đặt hàng.
+- Vui lòng kiểm tra tình trạng gói hàng khi nhận; nếu phát hiện hư hỏng, móp méo, có dấu hiệu bị mở, bạn nên từ chối nhận và liên hệ ngay với bộ phận chăm sóc khách hàng.
+
+4. Đổi trả & hoàn tiền
+- Thời hạn yêu cầu đổi/trả: trong vòng 7 ngày kể từ ngày nhận hàng (dựa trên trạng thái giao hàng của đơn vị vận chuyển).
+- Điều kiện đổi/trả: sản phẩm chưa qua sử dụng, còn đầy đủ tem mác, hộp, phụ kiện, không bị bẩn, trầy xước, biến dạng.
+- Không áp dụng đổi/trả với các sản phẩm giảm giá sâu, thanh lý, hoặc sản phẩm đã ghi chú “không hỗ trợ đổi trả”.
+- Hoàn tiền (nếu được chấp nhận) sẽ thực hiện qua cùng phương thức thanh toán ban đầu, trong vòng 3–7 ngày làm việc tùy ngân hàng/đối tác.
+
+5. Chính sách bảo mật & tài khoản
+- Thông tin cá nhân của bạn (họ tên, số điện thoại, địa chỉ, email, lịch sử mua hàng) được lưu trữ và xử lý theo mục đích phục vụ đơn hàng và nâng cao trải nghiệm mua sắm.
+- Chúng tôi không bán, trao đổi dữ liệu cá nhân của bạn cho bên thứ ba, trừ khi được yêu cầu bởi cơ quan có thẩm quyền hoặc cần thiết để thực hiện dịch vụ (đơn vị vận chuyển, cổng thanh toán).
+- Bạn có trách nhiệm bảo mật thông tin đăng nhập tài khoản; mọi hoạt động phát sinh từ tài khoản sẽ được coi là do bạn thực hiện.
+
+6. Quy định về đánh giá & bình luận
+- Nội dung đánh giá phải trung thực, lịch sự, không chứa từ ngữ thô tục, xúc phạm, kích động thù hằn, phân biệt đối xử hoặc vi phạm pháp luật.
+- Chúng tôi có quyền ẩn/xóa các đánh giá, bình luận vi phạm quy định hoặc có dấu hiệu spam, quảng cáo.
+
+7. Điều khoản chung
+- Các chính sách, điều khoản có thể được cập nhật theo thời gian để phù hợp với quy định pháp luật và hoạt động của hệ thống.
+- Khi tiếp tục sử dụng hệ thống và đặt hàng, bạn được hiểu là đã đọc, hiểu và đồng ý với các chính sách trên.

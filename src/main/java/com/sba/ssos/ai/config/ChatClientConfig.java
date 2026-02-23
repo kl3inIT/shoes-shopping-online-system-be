@@ -1,4 +1,4 @@
-package com.sba.ssos.configuration;
+package com.sba.ssos.ai.config;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;

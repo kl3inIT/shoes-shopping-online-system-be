@@ -1,11 +1,14 @@
 application-properties:
+
   sepay-properties:
     sepay-username: ${SEPAY_USERNAME}
     sepay-password: ${SEPAY_PASSWORD}
+
   bank-properties:
     bank-number: 22226376222
     bank-code: TPBANK
     account-holder: NHU DINH NHAT
+
   keycloak-properties:
     realm-name: ${KEYCLOAK_REALM:ssos-realm}
     client-id: ${KEYCLOAK_CLIENT_ID:ssos-app}
@@ -17,6 +20,15 @@ application-properties:
     accept-clients:
       - ssos-app
       - ssos-sepay
+
+  rag-properties:
+    schema: public
+    table: ai_documents
+    dimensions: 1536
+    ingest-on-boot: true
+    chunk-size: 800
+    distance: COSINE
+
   security-properties:
     admin-endpoints:
       - { method: GET, path: /test/admin }
@@ -116,7 +128,6 @@ spring:
             model: gemini-2.0-flash
             temperature: 0.2
             max-output-tokens: 1024
-
 
 logging.level:
   # If you are curious about how Spring Security OAuth2 works behind the scene
