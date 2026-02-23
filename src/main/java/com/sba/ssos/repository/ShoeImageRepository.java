@@ -4,6 +4,8 @@ import com.sba.ssos.entity.ShoeImage;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -11,4 +13,6 @@ import java.util.UUID;
 public interface ShoeImageRepository extends JpaRepository<ShoeImage, UUID> {
 
     Optional<ShoeImage> findFirstByShoe_IdOrderByIdAsc(UUID shoeId);
+
+    List<ShoeImage> findByShoe_IdIn(Collection<UUID> shoeIds);
 }
