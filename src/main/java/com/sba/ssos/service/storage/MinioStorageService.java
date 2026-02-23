@@ -50,7 +50,7 @@ public class MinioStorageService {
                             .method(Method.PUT)
                             .bucket(props.getBucket())
                             .object(objectKey)
-                            .expiry(15, TimeUnit.MINUTES)
+                            .expiry(props.getPresignedExpirySeconds(), TimeUnit.SECONDS)
                             .build()
             );
         } catch (Exception e) {

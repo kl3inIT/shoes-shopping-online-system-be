@@ -116,10 +116,7 @@ public class GlobalExceptionHandler {
     log.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
 
     String detail = localeUtils.get("error.data.integrity");
-    String cause = ex.getMostSpecificCause().getMessage();
-    if (cause != null && !cause.isBlank()) {
-      detail = detail + " " + cause;
-    }
+
 
     ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, detail);
     problem.setTitle(HttpStatus.CONFLICT.getReasonPhrase());

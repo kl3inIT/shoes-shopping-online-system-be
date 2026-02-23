@@ -11,7 +11,7 @@ import org.mapstruct.MappingTarget;
 public interface BrandMapper {
 
     @Mapping(source = "lastUpdatedAt", target = "updatedAt")
-    @Mapping(target = "productCount", constant = "0L")
+    @Mapping(target = "productCount", expression = "java(0L)")
     BrandResponse toResponse(Brand brand);
 
     Brand toEntity(BrandRequest request);
