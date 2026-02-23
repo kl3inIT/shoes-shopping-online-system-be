@@ -21,8 +21,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,8 +42,22 @@ public class CartService {
         Customer customer = getCurrentCustomer();
         List<CartItem> cartItems = cartItemRepository.findAllByCustomer_IdAndIsActiveTrue(customer.getId());
 
+        List<UUID> shoeIds = cartItems.stream()
+                .map(item -> item.getShoeVariant().getShoe().getId())
+                .distinct()
+                .toList();
+
+        Map<UUID, String> mainImageByShoeId = shoeImageRepository.findByShoe_IdIn(shoeIds)
+                .stream()
+                .sorted(Comparator.comparing(ShoeImage::getId))
+                .collect(Collectors.toMap(
+                        img -> img.getShoe().getId(),
+                        ShoeImage::getUrl,
+                        (existing, replacement) -> existing
+                ));
+
         List<CartItemResponse> items = cartItems.stream()
-                .map(this::toCartItemResponse)
+                .map(item -> toCartItemResponse(item, mainImageByShoeId))
                 .toList();
 
         BigDecimal totalPrice = items.stream()
@@ -151,13 +168,11 @@ public class CartService {
                 .orElseThrow(() -> new NotFoundException("Customer not found for user: " + userId));
     }
 
-    private CartItemResponse toCartItemResponse(CartItem cartItem) {
+    private CartItemResponse toCartItemResponse(CartItem cartItem, Map<UUID, String> mainImageByShoeId) {
         ShoeVariant variant = cartItem.getShoeVariant();
         Shoe shoe = variant.getShoe();
 
-        String mainImageUrl = shoeImageRepository.findFirstByShoe_IdOrderByIdAsc(shoe.getId())
-                .map(ShoeImage::getUrl)
-                .orElse(null);
+        String mainImageUrl = mainImageByShoeId.get(shoe.getId());
 
         BigDecimal price = BigDecimal.valueOf(shoe.getPrice());
         BigDecimal subtotal = price.multiply(BigDecimal.valueOf(cartItem.getQuantity()));
