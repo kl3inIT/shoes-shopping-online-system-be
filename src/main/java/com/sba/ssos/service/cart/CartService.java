@@ -65,7 +65,8 @@ public class CartService {
                 .orElse(null);
 
         if (existingItem != null) {
-            existingItem.setQuantity(existingItem.getQuantity() + request.quantity());
+            long newQty = existingItem.getQuantity() + request.quantity();
+            existingItem.setQuantity(newQty);
             cartItemRepository.save(existingItem);
         } else {
             CartItem newItem = CartItem.builder()
@@ -88,11 +89,13 @@ public class CartService {
                 .findByIdAndCustomer_IdAndIsActiveTrue(cartItemId, customer.getId())
                 .orElseThrow(() -> new NotFoundException("Cart item not found: " + cartItemId));
 
-        if (request.quantity() > cartItem.getShoeVariant().getQuantity()) {
+        long reqQty = request.quantity();
+
+        if (reqQty > cartItem.getShoeVariant().getQuantity()) {
             throw new BadRequestException("Requested quantity exceeds available stock");
         }
 
-        cartItem.setQuantity(request.quantity());
+        cartItem.setQuantity(reqQty);
         cartItemRepository.save(cartItem);
 
         return getMyCart();
