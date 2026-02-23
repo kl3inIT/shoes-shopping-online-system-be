@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -24,10 +25,11 @@ public class BrandService {
 
     @Transactional(readOnly = true)
     public List<BrandResponse> getAllBrands() {
+        Map<UUID, Long> countPerBrand = shoeRepository.countPerBrand();
         return brandRepository.findAll().stream()
                 .map(brand -> {
                     BrandResponse base = brandMapper.toResponse(brand);
-                    long productCount = shoeRepository.countByBrandId(brand.getId());
+                    long productCount = countPerBrand.getOrDefault(brand.getId(), 0L);
                     return new BrandResponse(
                             base.id(), base.name(), base.slug(), base.description(),
                             base.logoUrl(), base.country(), base.createdAt(), base.updatedAt(),
