@@ -65,9 +65,18 @@ public class CartService {
                 .orElse(null);
 
         if (existingItem != null) {
-            existingItem.setQuantity(existingItem.getQuantity() + request.quantity());
+            int availableStock = shoeVariant.getQuantity();
+            int newQuantity = existingItem.getQuantity() + request.quantity();
+            if (newQuantity > availableStock) {
+                throw new BadRequestException("Requested quantity exceeds available stock");
+            }
+            existingItem.setQuantity(newQuantity);
             cartItemRepository.save(existingItem);
         } else {
+            int availableStock = shoeVariant.getQuantity();
+            if (request.quantity() > availableStock) {
+                throw new BadRequestException("Requested quantity exceeds available stock");
+            }
             CartItem newItem = CartItem.builder()
                     .customer(customer)
                     .shoeVariant(shoeVariant)
