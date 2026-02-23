@@ -28,7 +28,7 @@ public class ShoeImageService {
 
     for (int sortOrder = 0; sortOrder < shoeImageFiles.size(); sortOrder++) {
       MultipartFile shoeImageFile = shoeImageFiles.get(sortOrder);
-      String objectKey = storageService.upload(shoeImageFile);
+      String objectKey = storageService.upload(shoeImageFile, "shoes");
 
       ShoeImage shoeImage = ShoeImage.builder()
           .shoe(shoe)
@@ -63,7 +63,7 @@ public class ShoeImageService {
 
       for (int sortOrder = 0; sortOrder < variantImageFiles.size(); sortOrder++) {
         MultipartFile variantImageFile = variantImageFiles.get(sortOrder);
-        String objectKey = storageService.upload(variantImageFile);
+        String objectKey = storageService.upload(variantImageFile, "shoevariants");
 
         ShoeImage shoeImage = ShoeImage.builder()
             .shoe(shoe)
@@ -102,4 +102,3 @@ public class ShoeImageService {
         .toList();
   }
 }
-
