@@ -1,4 +1,4 @@
-package com.sba.ssos.repository;
+package com.sba.ssos.repository.order;
 
 import com.sba.ssos.entity.Order;
 
@@ -12,10 +12,12 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface OrderRepository extends JpaRepository<Order, UUID> {
+public interface OrderRepository extends JpaRepository<Order, UUID>, OrderRepositoryCustom {
 
     Page<Order> findByCustomer_Id(UUID customerId, Pageable pageable);
 
     Optional<Order> findByOrderCode(String orderCode);
+
+
 
 }

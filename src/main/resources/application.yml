@@ -33,6 +33,7 @@ application-properties:
       - { method: DELETE, path: /api/brands/* }
       - { method: GET, path: /api/storage/presigned-url }
       - { method: DELETE, path: /api/storage }
+      - { method: GET, path: /api/orders/admin }
     manager-endpoints:
       - { method: GET, path: /test/manager }
     customer-endpoints:
@@ -73,19 +74,32 @@ application-properties:
 spring:
   application:
     name: shoes-shopping-online-system
+
   datasource:
     url: jdbc:postgresql://${POSTGRESQL_HOST:localhost}:${POSTGRESQL_PORT:5432}/${POSTGRESQL_NAME:ssos}
     username: ${POSTGRESQL_USERNAME:postgres}
     password: ${POSTGRESQL_PASSWORD:123456}
+
+  sql:
+    init:
+      mode: always
   #    url: jdbc:postgresql://localhost:5432/ssos
   #    username: postgres
   #    password: 123456
+
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none # Disable Hibernate's automatic schema generation
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/master.yaml
+
   threads.virtual.enabled: true # Make use of Spring Boot 3.2+ Virtual Threads support
+
   security.oauth2.resourceserver:
-    jwt.issuer-uri: https://${KEYCLOAK_HOST:auth.it4beginer.io.vn}/realms/${application-properties.keycloak-properties.realm-name}
+    jwt.issuer-uri: https://${KEYCLOAK_HOST:localhost:8080}/realms/${application-properties.keycloak-properties.realm-name}
+
   ai:
     chat:
       client:
@@ -102,17 +116,10 @@ spring:
         api-key: ${GEMINI_API_KEY}
         chat:
           options:
-            model: gemini-1.5-pro
+            model: gemini-2.0-flash
             temperature: 0.2
             max-output-tokens: 1024
-  liquibase:
-    enabled: true
-    change-log: classpath:db/changelog/master.yaml
 
-    properties:
-      hibernate:
-        format_sql: true
-        use_sql_comments: true
 
 logging.level:
   # If you are curious about how Spring Security OAuth2 works behind the scene
@@ -132,10 +139,6 @@ management:
       exposure:
         include: health
 
-bank:
-  number: 22226376222
-  code: TPBANK
-  holder: NHU DINH NHAT
 
 minio:
   endpoint: ${MINIO_ENDPOINT:https://s3.nhuxuanviet.com}

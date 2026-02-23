@@ -11,9 +11,7 @@ public class MinioConfig {
     public MinioClient minioClient(MinioProperties props) {
         if (props.getAccessKey() == null || props.getAccessKey().isBlank()
                 || props.getSecretKey() == null || props.getSecretKey().isBlank()) {
-            return MinioClient.builder()
-                    .endpoint(props.getEndpoint())
-                    .build();
+            throw new IllegalStateException("MinIO accessKey/secretKey must be configured and non-blank when using MinioClient.");
         }
         return MinioClient.builder()
                 .endpoint(props.getEndpoint())
