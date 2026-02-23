@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class JwtConverter implements Converter<Jwt, UsernamePasswordAuthenticationToken> {
+
   static final String RESOURCE_ACCESS_CLAIM = "resource_access";
   static final String EMAIL_CLAIM = "email";
 
@@ -33,20 +34,21 @@ public class JwtConverter implements Converter<Jwt, UsernamePasswordAuthenticati
 
     var clientName = jwt.getClaimAsString("azp");
     if (clientName == null
-        || acceptClients == null
-        || acceptClients.isEmpty()
-        || acceptClients.stream().noneMatch(c -> c.equalsIgnoreCase(clientName))) {
+            || acceptClients == null
+            || acceptClients.isEmpty()
+            || acceptClients.stream().noneMatch(c -> c.equalsIgnoreCase(clientName))) {
+
       throw new UnauthorizedException(
-          "error.jwt.invalid_azp", "expected", acceptClients, "actual", clientName);
+              "error.jwt.invalid_azp", "expected", acceptClients, "actual", clientName);
     }
     // get the top-level "resource_access" claim.
     var resourceAccess =
-        nonMissing(jwt.getClaimAsMap(RESOURCE_ACCESS_CLAIM), RESOURCE_ACCESS_CLAIM);
+            nonMissing(jwt.getClaimAsMap(RESOURCE_ACCESS_CLAIM), RESOURCE_ACCESS_CLAIM);
 
     // get the map specific to our client ID.
     var clientRolesMap =
-        (Map<String, Collection<String>>)
-            getMapValue(resourceAccess, clientName, RESOURCE_ACCESS_CLAIM);
+            (Map<String, Collection<String>>)
+                    getMapValue(resourceAccess, clientName, RESOURCE_ACCESS_CLAIM);
 
     // get the collection of role strings from that map.
     var roleNames = getMapValue(clientRolesMap, "roles", RESOURCE_ACCESS_CLAIM, clientName);
@@ -54,27 +56,27 @@ public class JwtConverter implements Converter<Jwt, UsernamePasswordAuthenticati
     var validRoles = UserRole.fromRawRole(roleNames);
 
     Set<GrantedAuthority> authorities =
-        validRoles.stream()
-            .map(UserRole::name)
-            .map(SimpleGrantedAuthority::new)
-            .collect(Collectors.toUnmodifiableSet());
+            validRoles.stream()
+                    .map(UserRole::name)
+                    .map(SimpleGrantedAuthority::new)
+                    .collect(Collectors.toUnmodifiableSet());
 
     var userDetails =
-        AuthorizedUserDetails.builder()
-            .userId(UUID.fromString(nonMissing(jwt.getSubject(), "subject")))
-            .username(nonMissing(jwt.getClaimAsString("preferred_username"), "username"))
-            .email(nonMissing(jwt.getClaimAsString(EMAIL_CLAIM), EMAIL_CLAIM))
-            .authorities(authorities)
-            .build();
+            AuthorizedUserDetails.builder()
+                    .userId(UUID.fromString(nonMissing(jwt.getSubject(), "subject")))
+                    .username(nonMissing(jwt.getClaimAsString("preferred_username"), "username"))
+                    .email(nonMissing(jwt.getClaimAsString(EMAIL_CLAIM), EMAIL_CLAIM))
+                    .authorities(authorities)
+                    .build();
 
     return UsernamePasswordAuthenticationToken.authenticated(
-        userDetails, jwt.getTokenValue(), authorities);
+            userDetails, jwt.getTokenValue(), authorities);
   }
 
   private static <T> T getMapValue(Map<String, T> map, String key, String... origins) {
     return nonMissing(
-        map.get(key),
-        ArrayUtils.isEmpty(origins) ? key : "%s.%s".formatted(String.join(".", origins), key));
+            map.get(key),
+            ArrayUtils.isEmpty(origins) ? key : "%s.%s".formatted(String.join(".", origins), key));
   }
 
   private static <T> T nonMissing(T object, String name) {

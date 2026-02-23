@@ -1,7 +1,6 @@
 package com.sba.ssos.configuration;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.http.HttpMethod;
@@ -9,10 +8,7 @@ import org.springframework.http.HttpMethod;
 @ConfigurationProperties(prefix = "application-properties")
 public record ApplicationProperties(
 
-        KeycloakProperties keycloakProperties,
-        SecurityProperties securityProperties,
-        SepayProperties sepayProperties,
-        BankProperties bankProperties) {
+        KeycloakProperties keycloakProperties, SecurityProperties securityProperties, SepayProperties sepayProperties, BankProperties bankProperties) {
 
     public record KeycloakProperties(
             String serverUrl,
