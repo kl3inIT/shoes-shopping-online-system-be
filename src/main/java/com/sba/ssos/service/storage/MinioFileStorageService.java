@@ -13,23 +13,33 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class MinioFileStorageService {
 
+    private static final Set<String> ALLOWED_FOLDERS = Set.of("shoes", "shoevariants");
+
     private final MinioClient minioClient;
     private final MinioProperties minioProperties;
 
     public String upload(MultipartFile file) {
+        return upload(file, "");
+    }
+
+    public String upload(MultipartFile file, String folder) {
+        String safeFolder = normalizeFolder(folder);
+
         String originalFilename = file.getOriginalFilename();
         String fileExtension = "";
         if (originalFilename != null && originalFilename.contains(".")) {
             fileExtension = originalFilename.substring(originalFilename.lastIndexOf('.'));
         }
 
-        String objectKey = UUID.randomUUID() + fileExtension;
+        String fileName = UUID.randomUUID() + fileExtension;
+        String objectKey = safeFolder.isEmpty() ? fileName : safeFolder + "/" + fileName;
         String bucketName = minioProperties.getBucket();
 
         ensureBucketExists(bucketName);
@@ -64,6 +74,22 @@ public class MinioFileStorageService {
         } catch (Exception e) {
             throw new InternalServerErrorException("error.storage.minio", e);
         }
+    }
+
+    private String normalizeFolder(String folder) {
+        if (folder == null || folder.trim().isEmpty()) {
+            return "";
+        }
+        String trimmed = folder.trim().toLowerCase();
+
+        if (trimmed.contains("/") || trimmed.contains("\\") || trimmed.contains("..")) {
+            throw new InternalServerErrorException("error.storage.minio", new IllegalArgumentException("Invalid folder"));
+        }
+
+        if (!ALLOWED_FOLDERS.contains(trimmed)) {
+            throw new InternalServerErrorException("error.storage.minio", new IllegalArgumentException("Folder not allowed"));
+        }
+        return trimmed;
     }
 
     //phan chinh sua path

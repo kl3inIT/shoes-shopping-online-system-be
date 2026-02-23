@@ -68,6 +68,8 @@ application-properties:
       - { method: POST, path: /api/shoes }
       - { method: GET, path: /api/shoes }
       - { method: GET, path: /api/shoes/* }
+      - { method: GET, path: /api/shoes/*/variants }
+      - { method: GET, path: /api/files/** }
       - { method: POST, path: /api/payments/sepay/hook }
       - { method: POST, path: /webhook/keycloak/register }
       - { method: POST, path: /sepay/auth/token }

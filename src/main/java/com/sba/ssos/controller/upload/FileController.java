@@ -12,13 +12,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.HandlerMapping;
+
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 
 @RestController
@@ -31,8 +33,11 @@ public class FileController {
 
     @PostMapping("/upload")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseGeneral<String> upload(@RequestParam("file") MultipartFile file) {
-        String objectKey = storageService.upload(file);
+    public ResponseGeneral<String> upload(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("folder") String folder
+    ) {
+        String objectKey = storageService.upload(file, folder);
         return ResponseGeneral.ofCreated(
                 localeUtils.get("success.file.uploaded"),
                 objectKey
@@ -41,9 +46,12 @@ public class FileController {
 
     @PostMapping("/upload-multiple")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseGeneral<List<String>> uploadMultiple(@RequestParam("files") List<MultipartFile> files) {
+    public ResponseGeneral<List<String>> uploadMultiple(
+            @RequestParam("files") List<MultipartFile> files,
+            @RequestParam("folder") String folder
+    ) {
         List<String> objectKeys = files.stream()
-                .map(storageService::upload)
+                .map(file -> storageService.upload(file, folder))
                 .toList();
 
         return ResponseGeneral.ofCreated(
@@ -52,8 +60,12 @@ public class FileController {
         );
     }
 
-    @GetMapping("/{objectKey}")
-    public ResponseEntity<Resource> getImage(@PathVariable String objectKey) {
+    @GetMapping("/**")
+    public ResponseEntity<Resource> getFile(HttpServletRequest request) {
+        String fullPath = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
+        
+        String objectKey = fullPath.substring("/api/files/".length());
+        
         FileResource file = storageService.getFile(objectKey);
         InputStreamResource resource = new InputStreamResource(file.inputStream());
         MediaType mediaType = MediaType.parseMediaType(file.contentType());
@@ -65,4 +77,3 @@ public class FileController {
                 .body(resource);
     }
 }
-
