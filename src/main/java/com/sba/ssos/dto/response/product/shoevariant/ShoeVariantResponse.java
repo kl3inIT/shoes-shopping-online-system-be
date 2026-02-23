@@ -1,6 +1,7 @@
 package com.sba.ssos.dto.response.product.shoevariant;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public record ShoeVariantResponse(
@@ -10,6 +11,7 @@ public record ShoeVariantResponse(
        String color,
        Long quantity,
        String sku,
+       List<String> imageUrls,
        Instant createdAt,
        Instant updatedAt
 ) {}

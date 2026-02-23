@@ -12,6 +12,7 @@ import com.sba.ssos.exception.base.NotFoundException;
 import com.sba.ssos.mapper.ShoeMapper;
 import com.sba.ssos.repository.ShoeRepository;
 import com.sba.ssos.repository.ShoeVariantRepository;
+import com.sba.ssos.service.product.shoeimage.ShoeImageService;
 import com.sba.ssos.utils.SlugUtils;
 import com.sba.ssos.utils.SkuUtils;
 import com.sba.ssos.service.brand.BrandService;
@@ -24,6 +25,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -34,9 +36,14 @@ public class ShoeService {
     private final CategoryService categoryService;
     private final BrandService brandService;
     private final ShoeMapper shoeMapper;
+    private final ShoeImageService shoeImageService;
 
     @Transactional
-    public ShoeResponse create(ShoeCreateRequest request){
+    public ShoeResponse create(ShoeCreateRequest request, List<MultipartFile> shoeImageFiles, List<List<MultipartFile>> variantImageFilesList){
+        if (request.variants() != null && request.variants().size() > 80) {
+            throw new IllegalArgumentException("Shoe variants must not exceed 80");
+        }
+
         Category category = categoryService.findById(request.categoryId());
         Brand brand = brandService.findById(request.brandId());
 
@@ -59,9 +66,10 @@ public class ShoeService {
         shoeRepository.save(shoe);
 
         List<ShoeVariant> savedVariants = new ArrayList<>();
-        for (ShoeVariantRequest vr : request.variants()) {
-            String size = vr.size().trim();
-            String color = vr.color().trim();
+        for (int i = 0; i < request.variants().size(); i++) {
+            ShoeVariantRequest variantRequest = request.variants().get(i);
+            String size = variantRequest.size().trim();
+            String color = variantRequest.color().trim();
             String baseSku = SkuUtils.buildBaseSku(shoe.getSlug(), size, color);
             String uniqueSku = generateUniqueSku(baseSku);
 
@@ -69,25 +77,32 @@ public class ShoeService {
                     .shoe(shoe)
                     .size(size)
                     .color(color)
-                    .quantity(vr.quantity())
+                    .quantity(variantRequest.quantity())
                     .sku(uniqueSku)
                     .build();
 
             savedVariants.add(shoeVariantRepository.save(variant));
         }
 
-        List<ShoeVariantResponse> variantResponses = savedVariants.stream()
-                .map(v -> new ShoeVariantResponse(
-                        v.getId(),
-                        v.getShoe().getId(),
-                        v.getSize(),
-                        v.getColor(),
-                        v.getQuantity(),
-                        v.getSku(),
-                        v.getCreatedAt(),
-                        v.getLastUpdatedAt()
-                ))
-                .toList();
+        List<String> shoeImageUrls = shoeImageService.uploadShoeImages(shoe, savedVariants, shoeImageFiles);
+        shoeImageService.uploadVariantImages(shoe, savedVariants, variantImageFilesList);
+
+        List<ShoeVariantResponse> variantResponses = new ArrayList<>();
+        for (ShoeVariant variant : savedVariants) {
+            List<String> variantImageUrls = shoeImageService.getVariantImageUrls(variant);
+
+            variantResponses.add(new ShoeVariantResponse(
+                    variant.getId(),
+                    variant.getShoe().getId(),
+                    variant.getSize(),
+                    variant.getColor(),
+                    variant.getQuantity(),
+                    variant.getSku(),
+                    variantImageUrls,
+                    variant.getCreatedAt(),
+                    variant.getLastUpdatedAt()
+            ));
+        }
 
         return new ShoeResponse(
                 shoe.getId(),
@@ -102,6 +117,7 @@ public class ShoeService {
                 shoe.getBrand().getId(),
                 shoe.getBrand().getName(),
                 shoe.getPrice(),
+                shoeImageUrls,
                 variantResponses,
                 shoe.getCreatedAt(),
                 shoe.getLastUpdatedAt()
@@ -110,24 +126,31 @@ public class ShoeService {
 
     public List<ShoeResponse> getAll() {
         List<Shoe> shoes = shoeRepository.findAll();
-        List<ShoeResponse> responses = new ArrayList<>();
+        List<ShoeResponse> shoeResponses = new ArrayList<>();
 
         for (Shoe shoe : shoes) {
             List<ShoeVariant> variants = shoeVariantRepository.findByShoe_Id(shoe.getId());
             List<ShoeVariantResponse> variantResponses = new ArrayList<>();
 
-            for (ShoeVariant v : variants) {
-                ShoeVariantResponse vr = new ShoeVariantResponse(
-                        v.getId(),
-                        v.getShoe().getId(),
-                        v.getSize(),
-                        v.getColor(),
-                        v.getQuantity(),
-                        v.getSku(),
-                        v.getCreatedAt(),
-                        v.getLastUpdatedAt()
+            // Lấy ảnh của shoe - chỉ lấy từ variant đầu tiên thông qua service
+            List<String> shoeImageUrls = shoeImageService.getShoeImageUrls(shoe, variants);
+
+            for (ShoeVariant variant : variants) {
+                // Lấy ảnh của variant đầu tiên
+                List<String> variantImageUrls = shoeImageService.getVariantImageUrls(variant);
+
+                ShoeVariantResponse variantResponse = new ShoeVariantResponse(
+                        variant.getId(),
+                        variant.getShoe().getId(),
+                        variant.getSize(),
+                        variant.getColor(),
+                        variant.getQuantity(),
+                        variant.getSku(),
+                        variantImageUrls,
+                        variant.getCreatedAt(),
+                        variant.getLastUpdatedAt()
                 );
-                variantResponses.add(vr);
+                variantResponses.add(variantResponse);
             }
 
             ShoeResponse shoeResponse = new ShoeResponse(
@@ -143,15 +166,16 @@ public class ShoeService {
                     shoe.getBrand().getId(),
                     shoe.getBrand().getName(),
                     shoe.getPrice(),
+                    shoeImageUrls,
                     variantResponses,
                     shoe.getCreatedAt(),
                     shoe.getLastUpdatedAt()
             );
 
-            responses.add(shoeResponse);
+            shoeResponses.add(shoeResponse);
         }
 
-        return responses;
+        return shoeResponses;
     }
 
     public ShoeResponse getById(UUID id) {
@@ -159,17 +183,25 @@ public class ShoeService {
                 .orElseThrow(() -> new NotFoundException("Shoe", id));
 
         List<ShoeVariant> variants = shoeVariantRepository.findByShoe_Id(id);
+
+        List<String> shoeImageUrls = shoeImageService.getShoeImageUrls(shoe, variants);
+
         List<ShoeVariantResponse> variantResponses = variants.stream()
-                .map(v -> new ShoeVariantResponse(
-                        v.getId(),
-                        v.getShoe().getId(),
-                        v.getSize(),
-                        v.getColor(),
-                        v.getQuantity(),
-                        v.getSku(),
-                        v.getCreatedAt(),
-                        v.getLastUpdatedAt()
-                ))
+                .map(variant -> {
+                    List<String> variantImageUrls = shoeImageService.getVariantImageUrls(variant);
+
+                    return new ShoeVariantResponse(
+                            variant.getId(),
+                            variant.getShoe().getId(),
+                            variant.getSize(),
+                            variant.getColor(),
+                            variant.getQuantity(),
+                            variant.getSku(),
+                            variantImageUrls,
+                            variant.getCreatedAt(),
+                            variant.getLastUpdatedAt()
+                    );
+                })
                 .toList();
 
         return new ShoeResponse(
@@ -185,6 +217,7 @@ public class ShoeService {
                 shoe.getBrand().getId(),
                 shoe.getBrand().getName(),
                 shoe.getPrice(),
+                shoeImageUrls,
                 variantResponses,
                 shoe.getCreatedAt(),
                 shoe.getLastUpdatedAt()
