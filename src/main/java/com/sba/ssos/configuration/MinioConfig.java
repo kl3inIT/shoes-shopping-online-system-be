@@ -1,22 +1,21 @@
 package com.sba.ssos.configuration;
 
 import io.minio.MinioClient;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@RequiredArgsConstructor
 public class MinioConfig {
 
-    private final MinioProperties minioProperties;
-
     @Bean
-    public MinioClient minioClient() {
+    public MinioClient minioClient(MinioProperties props) {
+        if (props.getAccessKey() == null || props.getAccessKey().isBlank()
+                || props.getSecretKey() == null || props.getSecretKey().isBlank()) {
+            throw new IllegalStateException("MinIO accessKey/secretKey must be configured and non-blank when using MinioClient.");
+        }
         return MinioClient.builder()
-                .endpoint(minioProperties.endpoint())
-                .credentials(minioProperties.accessKey(), minioProperties.secretKey())
+                .endpoint(props.getEndpoint())
+                .credentials(props.getAccessKey(), props.getSecretKey())
                 .build();
     }
 }
-

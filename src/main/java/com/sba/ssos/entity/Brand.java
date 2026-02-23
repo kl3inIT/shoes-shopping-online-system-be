@@ -22,7 +22,7 @@ public class Brand extends BaseAuditableEntity {
     @Column(name = "description", nullable = false, columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "logo_url", nullable = false, length = 255)
+    @Column(name = "logo_url", nullable = false, columnDefinition = "TEXT")
     private String logoUrl;
 
     @Column(name = "country", nullable = false, length = 255)

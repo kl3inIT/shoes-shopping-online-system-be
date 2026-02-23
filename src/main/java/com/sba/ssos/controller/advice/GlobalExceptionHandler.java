@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -115,13 +116,27 @@ public class GlobalExceptionHandler {
     log.warn("Multipart error: {}", ex.getMessage());
 
     String detail =
-        "Request must be multipart/form-data with a part named 'file'. "
-            + "Do not set Content-Type header manually; use form-data in Postman/curl -F \"file=@path\".";
+            "Request must be multipart/form-data with a part named 'file'. "
+                    + "Do not set Content-Type header manually; use form-data in Postman/curl -F \"file=@path\".";
 
     ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail);
     problem.setTitle("Bad Request");
     problem.setInstance(URI.create(request.getRequestURI()));
     problem.setProperty("cause", ex.getMessage());
+    return problem;
+  }
+
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  public ProblemDetail handleDataIntegrity(
+      DataIntegrityViolationException ex, HttpServletRequest request) {
+    log.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
+
+    String detail = localeUtils.get("error.data.integrity");
+
+
+    ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, detail);
+    problem.setTitle(HttpStatus.CONFLICT.getReasonPhrase());
+    problem.setInstance(URI.create(request.getRequestURI()));
     return problem;
   }
 

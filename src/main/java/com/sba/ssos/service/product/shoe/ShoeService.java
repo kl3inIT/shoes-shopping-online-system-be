@@ -13,7 +13,6 @@ import com.sba.ssos.mapper.ShoeMapper;
 import com.sba.ssos.repository.ShoeRepository;
 import com.sba.ssos.repository.ShoeVariantRepository;
 import com.sba.ssos.service.product.shoeimage.ShoeImageService;
-import com.sba.ssos.utils.SlugUtils;
 import com.sba.ssos.utils.SkuUtils;
 import com.sba.ssos.service.brand.BrandService;
 import com.sba.ssos.service.category.CategoryService;
@@ -26,6 +25,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import static com.sba.ssos.utils.SlugUtils.slugify;
 
 @Service
 @RequiredArgsConstructor
@@ -50,7 +51,7 @@ public class ShoeService {
         String name = request.name().trim();
         String description = request.description().trim();
         String material = request.material().trim();
-        String slug = generateUniqueSlug(SlugUtils.slugify(name), null);
+        String slug = generateUniqueSlug(slugify(name), null);
 
         Shoe shoe = new Shoe();
         shoe.setName(name);

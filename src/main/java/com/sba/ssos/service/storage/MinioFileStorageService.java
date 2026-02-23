@@ -30,7 +30,7 @@ public class MinioFileStorageService {
         }
 
         String objectKey = UUID.randomUUID() + fileExtension;
-        String bucketName = minioProperties.bucket();
+        String bucketName = minioProperties.getBucket();
 
         ensureBucketExists(bucketName);
 
@@ -51,7 +51,7 @@ public class MinioFileStorageService {
     }
 
     public FileResource getFile(String objectKey) {
-        String bucketName = minioProperties.bucket();
+        String bucketName = minioProperties.getBucket();
         try {
             InputStream stream = minioClient.getObject(
                     GetObjectArgs.builder()

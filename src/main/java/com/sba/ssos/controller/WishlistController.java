@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -26,8 +27,10 @@ public class WishlistController {
     private final LocaleUtils localeUtils;
 
     @GetMapping
-    public ResponseGeneral<List<WishlistItemResponse>> getMyWishlist() {
-        List<WishlistItemResponse> data = wishlistService.getCurrentUserWishlist();
+    public ResponseGeneral<List<WishlistItemResponse>> getMyWishlist(
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortOrder) {
+        List<WishlistItemResponse> data = wishlistService.getCurrentUserWishlist(sortBy, sortOrder);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.wishlist.fetched"), data);
     }
 

@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.product.shoe.ShoeCreateRequest;
 import com.sba.ssos.dto.response.product.shoe.ShoeResponse;
+import com.sba.ssos.dto.response.product.shoevariant.ShoeVariantResponse;
 import com.sba.ssos.service.product.shoe.ShoeService;
+import com.sba.ssos.service.product.shoevariant.ShoeVariantService;
 import com.sba.ssos.utils.LocaleUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +23,7 @@ import java.util.UUID;
 public class ShoeController {
 
     private final ShoeService shoeService;
+    private final ShoeVariantService shoeVariantService;
     private final LocaleUtils localeUtils;
     private final ObjectMapper objectMapper;
 
@@ -60,5 +63,11 @@ public class ShoeController {
     public ResponseGeneral<ShoeResponse> getById(@PathVariable UUID id) {
         ShoeResponse data = shoeService.getById(id);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.fetched"), data);
+    }
+
+    @GetMapping("/{id}/variants")
+    public ResponseGeneral<List<ShoeVariantResponse>> getVariantsByShoeId(@PathVariable UUID id) {
+        List<ShoeVariantResponse> data = shoeVariantService.getVariantsByShoeId(id);
+        return ResponseGeneral.ofSuccess(localeUtils.get("success.generic"), data);
     }
 }
