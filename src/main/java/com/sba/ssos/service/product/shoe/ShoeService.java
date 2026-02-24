@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -114,8 +115,10 @@ public class ShoeService {
                 shoe.getStatus(),
                 shoe.getCategory().getId(),
                 shoe.getCategory().getName(),
+                shoe.getCategory().getSlug(),
                 shoe.getBrand().getId(),
                 shoe.getBrand().getName(),
+                shoe.getBrand().getSlug(),
                 shoe.getPrice(),
                 shoeImageUrls,
                 variantResponses,
@@ -163,8 +166,10 @@ public class ShoeService {
                     shoe.getStatus(),
                     shoe.getCategory().getId(),
                     shoe.getCategory().getName(),
+                    shoe.getCategory().getSlug(),
                     shoe.getBrand().getId(),
                     shoe.getBrand().getName(),
+                    shoe.getBrand().getSlug(),
                     shoe.getPrice(),
                     shoeImageUrls,
                     variantResponses,
@@ -214,8 +219,10 @@ public class ShoeService {
                 shoe.getStatus(),
                 shoe.getCategory().getId(),
                 shoe.getCategory().getName(),
+                shoe.getCategory().getSlug(),
                 shoe.getBrand().getId(),
                 shoe.getBrand().getName(),
+                shoe.getBrand().getSlug(),
                 shoe.getPrice(),
                 shoeImageUrls,
                 variantResponses,
@@ -224,31 +231,30 @@ public class ShoeService {
         );
     }
 
+    private String generateUniqueSlug(String baseSlug, UUID excludeId) {
+        if (baseSlug == null || baseSlug.isBlank()) {
+            return "";
+        }
 
-  private String generateUniqueSlug(String baseSlug, UUID excludeId) {
-    if (baseSlug == null || baseSlug.isBlank()) {
-      return "";
+        String candidate = baseSlug;
+        int suffix = 0;
+
+        while (true) {
+            boolean exists;
+            if (excludeId != null) {
+                exists = shoeRepository.existsBySlugAndIdNot(candidate, excludeId);
+            } else {
+                exists = shoeRepository.existsBySlug(candidate);
+            }
+
+            if (!exists) {
+                return candidate;
+            }
+
+            suffix++;
+            candidate = baseSlug + "-" + suffix;
+        }
     }
-
-    String candidate = baseSlug;
-    int suffix = 0;
-
-    while (true) {
-      boolean exists;
-      if (excludeId != null) {
-        exists = shoeRepository.existsBySlugAndIdNot(candidate, excludeId);
-      } else {
-        exists = shoeRepository.existsBySlug(candidate);
-      }
-
-      if (!exists) {
-        return candidate;
-      }
-
-      suffix++;
-      candidate = baseSlug + "-" + suffix;
-    }
-  }
 
     private String generateUniqueSku(String baseSku) {
         String candidate = baseSku;
