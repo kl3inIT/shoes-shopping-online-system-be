@@ -146,27 +146,12 @@ public class CartService {
     }
 
     private ShoeVariant resolveShoeVariant(AddToCartRequest request) {
-        if (request.shoeVariantId() != null) {
-            return shoeVariantRepository.findById(request.shoeVariantId())
-                    .orElseThrow(() -> new NotFoundException("Shoe variant not found: " + request.shoeVariantId()));
+        if (request.shoeVariantId() == null) {
+            throw new BadRequestException("Shoe variant id is required");
         }
 
-        if (request.shoeId() != null && request.size() != null && request.color() != null) {
-            String size = request.size().trim();
-            String color = request.color().trim();
-            return shoeVariantRepository.findByShoe_IdAndSizeAndColorIgnoreCase(
-                            request.shoeId(),
-                            size,
-                            color
-                    )
-                    .orElseThrow(() -> new NotFoundException(
-                            "Shoe variant not found for shoe: " + request.shoeId() +
-                                    ", size: " + size +
-                                    ", color: " + color
-                    ));
-        }
-
-        throw new BadRequestException("Either shoeVariantId or (shoeId + size + color) must be provided");
+        return shoeVariantRepository.findById(request.shoeVariantId())
+                .orElseThrow(() -> new NotFoundException("Shoe variant not found: " + request.shoeVariantId()));
     }
 
     private Customer getCurrentCustomer() {
