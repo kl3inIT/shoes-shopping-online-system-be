@@ -8,6 +8,7 @@ import com.sba.ssos.exception.base.NotFoundException;
 import com.sba.ssos.mapper.CategoryMapper;
 import com.sba.ssos.repository.CategoryRepository;
 import com.sba.ssos.repository.ShoeRepository;
+import com.sba.ssos.utils.SlugUtils;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,7 +38,7 @@ public class CategoryService {
   public CategoryResponse create(CategoryCreateRequest request) {
     CategoryCreateRequest trimmed =
         new CategoryCreateRequest(request.name().trim(), request.description().trim());
-    String slug = generateUniqueSlug(slugify(trimmed.name()), null);
+    String slug = generateUniqueSlug(SlugUtils.slugify(trimmed.name()), null);
     Category category = categoryMapper.toEntity(trimmed);
     category.setSlug(slug);
     category = categoryRepository.save(category);
@@ -50,7 +51,7 @@ public class CategoryService {
         categoryRepository.findById(id).orElseThrow(() -> new NotFoundException("Category", id));
     CategoryCreateRequest trimmed =
         new CategoryCreateRequest(request.name().trim(), request.description().trim());
-    String slug = generateUniqueSlug(slugify(trimmed.name()), id);
+    String slug = generateUniqueSlug(SlugUtils.slugify(trimmed.name()), id);
     categoryMapper.updateEntity(category, trimmed);
     category.setSlug(slug);
     category = categoryRepository.save(category);
@@ -96,15 +97,4 @@ public class CategoryService {
     }
   }
 
-  private static String slugify(String name) {
-    if (name == null || name.isBlank()) {
-      return "";
-    }
-    return name.trim()
-        .toLowerCase()
-        .replaceAll("[^a-z0-9\\s-]", "")
-        .replaceAll("\\s+", "-")
-        .replaceAll("-+", "-")
-        .replaceAll("^-|-$", "");
-  }
 }
