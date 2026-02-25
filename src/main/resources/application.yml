@@ -46,7 +46,7 @@ application-properties:
       - { method: POST, path: /api/categories }
       - { method: PUT, path: /api/categories/* }
       - { method: DELETE, path: /api/categories/* }
-      - { method: POST, path: /api/shoes}
+      - { method: POST, path: /api/shoes }
       - { method: GET, path: /api/shoes }
       - { method: GET, path: /api/shoes/* }
       - { method: POST, path: /api/shoes }
@@ -132,9 +132,9 @@ spring:
   sql:
     init:
       mode: always
-#      url: jdbc:postgresql://localhost:5432/ssos
-#      username: postgres
-#      password: 123456
+  #      url: jdbc:postgresql://localhost:5432/ssos
+  #      username: postgres
+  #      password: 123456
 
   jpa:
     hibernate:
@@ -153,6 +153,7 @@ spring:
     chat:
       client:
         enabled: false
+
     openai:
       api-key: ${OPENAI_API_KEY}
       chat:
