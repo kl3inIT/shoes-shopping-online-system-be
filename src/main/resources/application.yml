@@ -35,6 +35,9 @@ application-properties:
     bucket: ${MINIO_BUCKET:ssos-images}
     presigned-expiry-seconds: ${MINIO_PRESIGNED_EXPIRY_SECONDS:3600}
 
+  chat-properties:
+    max-request-length: 2000
+
   security-properties:
     admin-endpoints:
       - { method: GET, path: /test/admin }
@@ -76,6 +79,7 @@ application-properties:
       - { method: PUT, path: /api/cart/* }
       - { method: DELETE, path: /api/cart/* }
       - { method: DELETE, path: /api/cart }
+      - { method: POST, path: /api/v1/chat }
     webhook-endpoints:
       - { method: POST, path: /api/payments/sepay/hook }
     public-endpoints:
@@ -113,6 +117,7 @@ application-properties:
       - { method: GET, path: /api/categories }
       - { method: GET, path: /api/categories/* }
       - { method: GET, path: /api/shoes/*/variants }
+      - { method: POST, path: /api/v1/chat }
 
     public-urls:
       # OpenAPI Swagger URLs

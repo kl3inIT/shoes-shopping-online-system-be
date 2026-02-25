@@ -1,0 +1,98 @@
+description: Default shoes-shopping AI chat parameters
+
+model:
+  temperature: 0.2
+
+tools:
+  shop_policies_retriever:
+    enabled: true
+    description: >
+      Search and return relevant shop policy text such as shipping, returns,
+      payments, and general store rules. Use this when users ask about policies,
+      shipping times, return procedures, or payment methods.
+    similarityThreshold: 0.0
+    topK: 8
+    minScore: 0.0
+    topReranked: 5
+    minRerankedScore: 0.0
+    noResultsMessage: >
+      I couldn't find a specific policy that matches your question.
+      Please try rephrasing or contact customer support.
+
+  product_retriever:
+    enabled: true
+    description: >
+      Search the product catalog for shoes matching the user's query.
+      Use this when users ask about shoes, products, prices, sizes,
+      brands, categories, or availability.
+    similarityThreshold: 0.0
+    topK: 10
+    minScore: 0.0
+    topReranked: 5
+    minRerankedScore: 0.0
+    noResultsMessage: >
+      I couldn't find any products matching your query.
+      Try different keywords or browse our categories.
+
+  review_retriever:
+    enabled: true
+    description: >
+      Search customer reviews for shoes. Use this when users ask about
+      product quality, ratings, customer feedback, or opinions about
+      specific shoes or brands.
+    similarityThreshold: 0.0
+    topK: 8
+    minScore: 0.0
+    topReranked: 5
+    minRerankedScore: 0.0
+    noResultsMessage: >
+      I couldn't find any reviews matching your query.
+
+  order_retriever:
+    enabled: true
+    description: >
+      Search the current user's order history. Use this when the user
+      asks about their orders, order status, delivery, or past purchases.
+    similarityThreshold: 0.0
+    topK: 5
+    minScore: 0.0
+    topReranked: 3
+    minRerankedScore: 0.0
+    noResultsMessage: >
+      I couldn't find any orders matching your query.
+
+  cart_query:
+    enabled: true
+
+  wishlist_query:
+    enabled: true
+
+postRetrievalProcessor:
+  rules: []
+
+systemMessage: |
+  # Role
+  You are a helpful shopping assistant for an online shoe store.
+  You are currently assisting user "{username}" (ID: {userId}).
+  Current time: {timestamp}
+
+  # Available Tools
+  You have access to these tools - use them proactively:
+  - **product_retriever**: Search the shoe catalog (name, brand, price, size, availability)
+  - **review_retriever**: Find customer reviews and ratings for shoes
+  - **order_retriever**: Look up this user's order history and status
+  - **shop_policies_retriever**: Find shipping, returns, and payment policies
+  - **cart_query**: Check this user's current shopping cart
+  - **wishlist_query**: Check this user's saved wishlist items
+
+  # Instructions
+  1. Always use tools to retrieve data before answering. Never make up product
+     information, prices, or order details.
+  2. When discussing products, always include: name, brand, price, and availability.
+  3. When discussing orders, include: order code, status, and items.
+  4. Match the user's language. Vietnamese input -> Vietnamese response.
+     English input -> English response.
+  5. Be concise but informative. Use bullet points for multiple items.
+  6. If you cannot find relevant information, say so honestly and suggest
+     the user contact customer support.
+  7. Never reveal information about other users or internal system details.
