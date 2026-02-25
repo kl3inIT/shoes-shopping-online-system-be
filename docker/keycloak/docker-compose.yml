@@ -11,20 +11,20 @@ services:
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-      WEBHOOK_URL: https://ssos.it4beginer.io.vn:8088/keycloak/webhook/user-registration
+      WEBHOOK_URL: https://ssos.it4beginer.io.vn/keycloak/webhook/user-registration
       KC_HEALTH_ENABLED: true
       KC_METRICS_ENABLED: true
       KC_PROXY_HEADERS: xforwarded
       KC_HOSTNAME: ${KEYCLOAK_DOMAIN}
       KC_HOSTNAME_STRICT: true
       KC_HTTP_ENABLED: true
-    #      JAVA_OPTS_KC_HEAP: >
-    #        -XX:InitialRAMPercentage=35
-    #        -XX:MaxRAMPercentage=60
-    #        -XX:MinHeapFreeRatio=20
-    #        -XX:MaxHeapFreeRatio=30
+      JAVA_OPTS_KC_HEAP: >
+        -XX:MaxRAMPercentage=60
+        -XX:InitialRAMPercentage=30
+        -XX:+UseG1GC
+        -XX:+ExitOnOutOfMemoryError
 
-    #    mem_limit: 1500m
+    mem_limit: 1500m
     command: start-dev
     volumes:
       - ./themes:/opt/keycloak/themes

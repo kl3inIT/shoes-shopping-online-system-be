@@ -33,7 +33,6 @@ public class CategoryController {
   }
 
   @PostMapping
-  @ResponseStatus(HttpStatus.CREATED)
   public ResponseGeneral<CategoryResponse> create(@Valid @RequestBody CategoryCreateRequest request) {
     CategoryResponse data = categoryService.create(request);
     return ResponseGeneral.ofCreated(localeUtils.get("success.category.created"), data);
