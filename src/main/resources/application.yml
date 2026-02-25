@@ -29,6 +29,9 @@ application-properties:
     chunk-size: 800
     distance: COSINE
 
+  chat-properties:
+    max-request-length: 2000
+
   security-properties:
     admin-endpoints:
       - { method: GET, path: /test/admin }
@@ -59,6 +62,7 @@ application-properties:
       - { method: PUT, path: /api/cart/* }
       - { method: DELETE, path: /api/cart/* }
       - { method: DELETE, path: /api/cart }
+      - { method: POST, path: /api/v1/chat }
     webhook-endpoints:
       - { method: POST, path: /api/payments/sepay/hook }
     public-endpoints:
@@ -69,6 +73,7 @@ application-properties:
       - { method: GET, path: /api/categories }
       - { method: GET, path: /api/categories/* }
       - { method: GET, path: /api/shoes/*/variants }
+      - { method: POST, path: /api/v1/chat }
 
     public-urls:
       # OpenAPI Swagger URLs
@@ -101,7 +106,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: none # Disable Hibernate's automatic schema generation
+      ddl-auto: update # Disable Hibernate's automatic schema generation
 
   liquibase:
     enabled: true
