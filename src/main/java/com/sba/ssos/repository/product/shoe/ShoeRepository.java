@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,4 +46,14 @@ public interface ShoeRepository extends JpaRepository<Shoe, UUID>, ShoeRepositor
   Optional<Shoe> findByIdAndDeletedFalse(UUID id);
 
   List<Shoe> findByDeletedTrue();
+
+  List<Shoe> findByDeletedFalseOrderByCreatedAtDesc(Pageable pageable);
+
+  @Query("""
+      SELECT od.shoeVariant.shoe FROM OrderDetail od
+      WHERE od.shoeVariant.shoe.deleted = false
+      GROUP BY od.shoeVariant.shoe
+      ORDER BY SUM(od.quantity) DESC
+      """)
+  List<Shoe> findBestSellers(Pageable pageable);
 }

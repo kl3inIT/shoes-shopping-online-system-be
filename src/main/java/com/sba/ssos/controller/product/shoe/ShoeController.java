@@ -104,6 +104,22 @@ public class ShoeController {
         return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.fetched"), data);
     }
 
+    @GetMapping("/best-sellers")
+    public ResponseGeneral<List<ShoeResponse>> getBestSellers(
+            @RequestParam(defaultValue = "5") int limit
+    ) {
+        List<ShoeResponse> data = shoeService.getBestSellers(limit);
+        return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.fetched"), data);
+    }
+
+    @GetMapping("/new-arrivals")
+    public ResponseGeneral<List<ShoeResponse>> getNewArrivals(
+            @RequestParam(defaultValue = "5") int limit
+    ) {
+        List<ShoeResponse> data = shoeService.getNewArrivals(limit);
+        return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.fetched"), data);
+    }
+
     @GetMapping("/{id}")
     public ResponseGeneral<ShoeResponse> getById(@PathVariable UUID id) {
         ShoeResponse data = shoeService.getById(id);

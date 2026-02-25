@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -536,6 +537,67 @@ public class ShoeService {
                     shoe.isDeleted()
             );
         });
+    }
+
+    public List<ShoeResponse> getNewArrivals(int limit) {
+        List<Shoe> shoes = shoeRepository.findByDeletedFalseOrderByCreatedAtDesc(PageRequest.of(0, limit));
+        return shoes.stream().map(this::toShoeResponse).toList();
+    }
+
+    public List<ShoeResponse> getBestSellers(int limit) {
+        List<Shoe> shoes = shoeRepository.findBestSellers(PageRequest.of(0, limit));
+        if (shoes.size() < limit) {
+            List<UUID> existingIds = shoes.stream().map(Shoe::getId).toList();
+            List<Shoe> fallback = shoeRepository.findByDeletedFalseOrderByCreatedAtDesc(PageRequest.of(0, limit));
+            for (Shoe s : fallback) {
+                if (shoes.size() >= limit) break;
+                if (!existingIds.contains(s.getId())) {
+                    shoes.add(s);
+                }
+            }
+        }
+        return shoes.stream().map(this::toShoeResponse).toList();
+    }
+
+    private ShoeResponse toShoeResponse(Shoe shoe) {
+        List<ShoeVariant> variants = shoeVariantRepository.findByShoe_Id(shoe.getId());
+        List<String> shoeImageUrls = shoeImageService.getShoeImageUrls(shoe, variants);
+
+        List<ShoeVariantResponse> variantResponses = variants.stream()
+                .map(variant -> new ShoeVariantResponse(
+                        variant.getId(),
+                        variant.getShoe().getId(),
+                        variant.getSize(),
+                        variant.getColor(),
+                        variant.getQuantity(),
+                        variant.getSku(),
+                        shoeImageService.getVariantImageUrls(variant),
+                        variant.getCreatedAt(),
+                        variant.getLastUpdatedAt()
+                ))
+                .toList();
+
+        return new ShoeResponse(
+                shoe.getId(),
+                shoe.getName(),
+                shoe.getDescription(),
+                shoe.getSlug(),
+                shoe.getMaterial(),
+                shoe.getGender(),
+                shoe.getStatus(),
+                shoe.getCategory().getId(),
+                shoe.getCategory().getName(),
+                shoe.getCategory().getSlug(),
+                shoe.getBrand().getId(),
+                shoe.getBrand().getName(),
+                shoe.getBrand().getSlug(),
+                shoe.getPrice(),
+                shoeImageUrls,
+                variantResponses,
+                shoe.getCreatedAt(),
+                shoe.getLastUpdatedAt(),
+                shoe.isDeleted()
+        );
     }
 
     private String generateUniqueSlug(String baseSlug, UUID excludeId) {
