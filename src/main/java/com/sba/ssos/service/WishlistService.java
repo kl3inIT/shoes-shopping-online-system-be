@@ -9,10 +9,12 @@ import com.sba.ssos.repository.CustomerRepository;
 import com.sba.ssos.repository.ShoeRepository;
 import com.sba.ssos.repository.WishlistRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -24,15 +26,25 @@ public class WishlistService {
     private final ShoeRepository shoeRepository;
     private final UserService userService;
 
+    /** sortBy: property path (createdAt, shoe.name, shoe.price). sortOrder: asc | desc. */
     @Transactional(readOnly = true)
-    public List<WishlistItemResponse> getCurrentUserWishlist() {
+    public List<WishlistItemResponse> getCurrentUserWishlist(String sortBy, String sortOrder) {
         Customer customer = getCurrentCustomer();
-        return wishlistRepository
-                .findAllByCustomer_Id(customer.getId())
+        String property = ALLOWED_SORT_PROPERTIES.contains(sortBy != null ? sortBy : "")
+                ? sortBy
+                : "createdAt";
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortOrder != null ? sortOrder : "desc")
+                ? Sort.Direction.ASC
+                : Sort.Direction.DESC;
+        Sort sort = Sort.by(direction, property);
+        return wishlistRepository.findAllByCustomer_Id(customer.getId(), sort)
                 .stream()
                 .map(this::toResponse)
                 .toList();
     }
+
+    private static final Set<String> ALLOWED_SORT_PROPERTIES =
+            Set.of("createdAt", "shoe.name", "shoe.price");
 
     @Transactional
     public WishlistItemResponse addToWishlist(UUID shoeId) {

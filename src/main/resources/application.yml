@@ -1,11 +1,14 @@
 application-properties:
+
   sepay-properties:
     sepay-username: ${SEPAY_USERNAME}
     sepay-password: ${SEPAY_PASSWORD}
+
   bank-properties:
     bank-number: 22226376222
     bank-code: TPBANK
     account-holder: NHU DINH NHAT
+
   keycloak-properties:
     realm-name: ${KEYCLOAK_REALM:ssos-realm}
     client-id: ${KEYCLOAK_CLIENT_ID:ssos-app}
@@ -17,6 +20,21 @@ application-properties:
     accept-clients:
       - ssos-app
       - ssos-sepay
+
+  rag-properties:
+    schema: public
+    table: ai_documents
+    dimensions: 1536
+    ingest-on-boot: true
+    chunk-size: 800
+    distance: COSINE
+  minio-properties:
+    endpoint: ${MINIO_ENDPOINT}
+    access-key: ${MINIO_ACCESS_KEY}
+    secret-key: ${MINIO_SECRET_KEY}
+    bucket: ${MINIO_BUCKET:ssos-images}
+    presigned-expiry-seconds: ${MINIO_PRESIGNED_EXPIRY_SECONDS:3600}
+
   security-properties:
     admin-endpoints:
       - { method: GET, path: /test/admin }
@@ -26,11 +44,20 @@ application-properties:
       - { method: PUT, path: /api/categories/* }
       - { method: DELETE, path: /api/categories/* }
       - { method: POST, path: /api/shoes}
+      - { method: GET, path: /api/shoes }
+      - { method: GET, path: /api/shoes/* }
+      - { method: POST, path: /api/shoes }
       - { method: GET, path: /api/brands }
       - { method: GET, path: /api/brands/* }
       - { method: POST, path: /api/brands }
-      - { method: DELETE, path: /api/brands/* }
       - { method: PUT, path: /api/brands/* }
+      - { method: POST, path: /api/files/upload }
+      - { method: POST, path: /api/files/upload-multiple }
+      - { method: GET, path: /api/files/* }
+      - { method: DELETE, path: /api/brands/* }
+      - { method: GET, path: /api/storage/presigned-url }
+      - { method: DELETE, path: /api/storage }
+      - { method: GET, path: /api/orders/admin }
     manager-endpoints:
       - { method: GET, path: /test/manager }
     customer-endpoints:
@@ -39,22 +66,44 @@ application-properties:
       - { method: GET, path: /api/wishlist }
       - { method: POST, path: /api/wishlist }
       - { method: DELETE, path: /api/wishlist/* }
+      - { method: GET, path: /api/cart }
+      - { method: POST, path: /api/cart }
+      - { method: PUT, path: /api/cart/* }
+      - { method: DELETE, path: /api/cart/* }
+      - { method: DELETE, path: /api/cart }
     webhook-endpoints:
       - { method: POST, path: /api/payments/sepay/hook }
     public-endpoints:
       - { method: GET, path: /test/free }
       - { method: GET, path: /user }
+      - { method: POST, path: /webhook/keycloak/register }
+      - { method: POST, path: /sepay/auth/token }
       - { method: GET, path: /api/categories }
       - { method: GET, path: /api/categories/* }
+      - { method: GET, path: /api/brands }
+      - { method: GET, path: /api/brands/* }
       - { method: POST, path: /api/categories }
       - { method: PUT, path: /api/categories/* }
       - { method: DELETE, path: /api/categories/* }
       - { method: POST, path: /api/shoes }
+      - { method: GET, path: /api/shoes }
+      - { method: GET, path: /api/shoes/* }
+      - { method: GET, path: /api/shoes/*/variants }
+      - { method: GET, path: /api/files/** }
       - { method: POST, path: /api/payments/sepay/hook }
       - { method: POST, path: /webhook/keycloak/register }
       - { method: POST, path: /sepay/auth/token }
-# Thằng Đạt m fix keycloak hộ anh cái, cứ để anh phải đặt ra ngoài này
+
       - { method: GET, path: /api/orders/admin }
+      - { method: POST, path: /api/files/upload }
+      - { method: POST, path: /api/files/upload-multiple }
+      - { method: GET, path: /api/files/* }
+
+      - { method: POST, path: /webhook/keycloak/register }
+      - { method: POST, path: /sepay/auth/token }
+      - { method: GET, path: /api/categories }
+      - { method: GET, path: /api/categories/* }
+      - { method: GET, path: /api/shoes/*/variants }
     public-urls:
       # OpenAPI Swagger URLs
       - /swagger-ui.html
@@ -67,23 +116,35 @@ application-properties:
       - /test/free
       - /chat
 #    sepay-api-key: ${SEPAY_API_KEY}
-
 spring:
   application:
     name: shoes-shopping-online-system
+
   datasource:
     url: jdbc:postgresql://${POSTGRESQL_HOST:localhost}:${POSTGRESQL_PORT:5432}/${POSTGRESQL_NAME:ssos}
     username: ${POSTGRESQL_USERNAME:postgres}
     password: ${POSTGRESQL_PASSWORD:123456}
-#    url: jdbc:postgresql://localhost:5432/ssos
-#    username: postgres
-#    password: 123456
+
+  sql:
+    init:
+      mode: always
+#      url: jdbc:postgresql://localhost:5432/ssos
+#      username: postgres
+#      password: 123456
+
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none # Disable Hibernate's automatic schema generation
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/master.yaml
+
   threads.virtual.enabled: true # Make use of Spring Boot 3.2+ Virtual Threads support
+
   security.oauth2.resourceserver:
     jwt.issuer-uri: https://${KEYCLOAK_HOST:localhost:8080}/realms/${application-properties.keycloak-properties.realm-name}
+
   ai:
     chat:
       client:
@@ -100,17 +161,9 @@ spring:
         api-key: ${GEMINI_API_KEY}
         chat:
           options:
-            model: gemini-1.5-pro
+            model: gemini-2.0-flash
             temperature: 0.2
             max-output-tokens: 1024
-  liquibase:
-    enabled: true
-    change-log: classpath:db/changelog/master.yaml
-
-    properties:
-      hibernate:
-        format_sql: true
-        use_sql_comments: true
 
 logging.level:
   # If you are curious about how Spring Security OAuth2 works behind the scene
@@ -130,16 +183,10 @@ management:
       exposure:
         include: health
 
-bank:
-  number: 22226376222
-  code: TPBANK
-  holder: NHU DINH NHAT
 
-
-
-
-
-
-
-
-
+minio:
+  endpoint: ${MINIO_ENDPOINT:https://s3.nhuxuanviet.com}
+  bucket: ${MINIO_BUCKET:ssos-images}
+  access-key: ${MINIO_ACCESS_KEY:}
+  secret-key: ${MINIO_SECRET_KEY:}
+  presigned-expiry-seconds: 3600

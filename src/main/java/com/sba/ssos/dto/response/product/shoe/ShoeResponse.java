@@ -20,6 +20,7 @@ public record ShoeResponse(
         UUID brandId,
         String brandName,
         Double price,
+        List<String> imageUrls,
         List<ShoeVariantResponse> variants,
         Instant createdAt,
         Instant updatedAt

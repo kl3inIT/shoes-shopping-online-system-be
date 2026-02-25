@@ -10,6 +10,7 @@ import com.sba.ssos.dto.request.order.OrderItemRequest;
 import com.sba.ssos.dto.response.order.OrderCreateResponse;
 import com.sba.ssos.dto.response.order.OrderHistoryResponse;
 import com.sba.ssos.dto.response.order.OrderPaid;
+import com.sba.ssos.dto.response.order.PaymentInfoResponse;
 import com.sba.ssos.dto.response.order.sepay.SePayWebhookRequest;
 import com.sba.ssos.entity.*;
 import com.sba.ssos.enums.OrderStatus;
@@ -45,7 +46,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrderService {
 
-    private final JPAQueryFactory queryFactory;
     private final ShoeVariantService shoeVariantService;
     private final ShoeVariantRepository shoeVariantRepository;
     private final OrderRepository orderRepository;
@@ -59,12 +59,15 @@ public class OrderService {
 
     @Transactional
     public OrderCreateResponse createOrder(OrderCreateRequest orderCreateRequest){
-        List<OrderItemRequest> requestItems = orderCreateRequest.items();
-
         Customer customer = customerService.getCurrentCustomer();
-        List<CartItem> cartItems = customer.getCartItems();
 
-        validateItems(requestItems, cartItems);
+        List<OrderItemRequest> requestItems = customer.getCartItems().stream().map(cartItem -> new OrderItemRequest(
+                cartItem.getShoeVariant().getId(),
+                cartItem.getQuantity()
+        )).toList();
+
+
+        validateItems(requestItems);
 
         Double totalAmount = calculatePrice(requestItems);
 
@@ -97,6 +100,7 @@ public class OrderService {
         payment.setTotalAmount(totalAmount);
         payment.setPaymentStatus(PaymentStatus.PENDING);
         payment.setExpiredAt(LocalDateTime.now().plusMinutes(PAYMENT_EXPIRE_MINUTES));
+        payment.setPaymentMethod(PaymentMethod.ONLINE);
         paymentRepository.save(payment);
 
         return new OrderCreateResponse(
@@ -112,6 +116,22 @@ public class OrderService {
         );
 
     }
+
+
+    public PaymentInfoResponse getPaymentInfo(UUID orderId) {
+        Order order = getOrderById(orderId);
+        return new PaymentInfoResponse(
+                order.getId(),
+                order.getOrderCode(),
+                applicationProperties.bankProperties().bankNumber(),
+                applicationProperties.bankProperties().bankCode(),
+                applicationProperties.bankProperties().accountHolder(),
+                order.getTotalAmount(),
+                order.getOrderStatus().toString(),
+                order.getPayments().getFirst().getExpiredAt()
+        );
+    }
+
 
     @Transactional
     public void handlePaymentTimeout(OrderExpiredRequest  orderExpiredRequest) {
@@ -224,17 +244,6 @@ public class OrderService {
                     new OrderPaid(order.getOrderCode(), order.getOrderStatus())
             );
 
-//            client.subscribe('/user/queue/orders', (message) => {
-//              const data = JSON.parse(message.body);
-//
-//              console.log('Order event:', data);
-//
-//              if (data.status === 'PAID') {
-//                // check orderCode trong payload để map UI
-//                showSuccess(`Đơn ${data.orderCode} đã thanh toán thành công`);
-//            }
-//});
-
         } else {
             throw new BadRequestException("Not enough payment amount");
         }
@@ -244,35 +253,7 @@ public class OrderService {
         return orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
     }
 
-    private void validateItems(List<OrderItemRequest> items, List<CartItem> cartItems) {
-        // 1. Check size
-        if (cartItems.size() != items.size()) {
-            throw new BadRequestException("Items in your cart do not match");
-        }
-
-        // 2. Build map from request: shoeVariantId -> quantity
-        Map<UUID, Long> requestItemMap = items.stream()
-                .collect(Collectors.toMap(
-                        OrderItemRequest::shoeVariantId,
-                        OrderItemRequest::quantity
-                ));
-
-        // 3. Validate cart items match request + active
-        for (CartItem cartItem : cartItems) {
-            if (!cartItem.isActive()) {
-                throw new BadRequestException("Inactive item in cart");
-            }
-
-            UUID variantId = cartItem.getShoeVariant().getId();
-
-            if (!requestItemMap.containsKey(variantId)) {
-                throw new BadRequestException("Items in your cart do not match");
-            }
-
-            cartItem.setActive(false);
-        }
-
-        cartItemRepository.saveAllAndFlush(cartItems);
+    private void validateItems(List<OrderItemRequest> items) {
 
         // 4. Validate stock
         for (OrderItemRequest item : items) {
@@ -311,5 +292,10 @@ public class OrderService {
     public Order getOrderByCode(String orderCode) {
         return orderRepository.findByOrderCode(orderCode).orElseThrow(() -> new NotFoundException("Order not found"));
     }
+
+    public Order getOrderById(UUID orderId) {
+        return orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
+    }
+
 
 }
