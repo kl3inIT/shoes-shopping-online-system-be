@@ -28,6 +28,12 @@ application-properties:
     ingest-on-boot: true
     chunk-size: 800
     distance: COSINE
+  minio-properties:
+    endpoint: ${MINIO_ENDPOINT}
+    access-key: ${MINIO_ACCESS_KEY}
+    secret-key: ${MINIO_SECRET_KEY}
+    bucket: ${MINIO_BUCKET:ssos-images}
+    presigned-expiry-seconds: ${MINIO_PRESIGNED_EXPIRY_SECONDS:3600}
 
   chat-properties:
     max-request-length: 2000
@@ -40,11 +46,17 @@ application-properties:
       - { method: POST, path: /api/categories }
       - { method: PUT, path: /api/categories/* }
       - { method: DELETE, path: /api/categories/* }
+      - { method: POST, path: /api/shoes}
+      - { method: GET, path: /api/shoes }
+      - { method: GET, path: /api/shoes/* }
       - { method: POST, path: /api/shoes }
       - { method: GET, path: /api/brands }
       - { method: GET, path: /api/brands/* }
       - { method: POST, path: /api/brands }
       - { method: PUT, path: /api/brands/* }
+      - { method: POST, path: /api/files/upload }
+      - { method: POST, path: /api/files/upload-multiple }
+      - { method: GET, path: /api/files/* }
       - { method: DELETE, path: /api/brands/* }
       - { method: GET, path: /api/storage/presigned-url }
       - { method: DELETE, path: /api/storage }
@@ -72,6 +84,27 @@ application-properties:
       - { method: POST, path: /sepay/auth/token }
       - { method: GET, path: /api/categories }
       - { method: GET, path: /api/categories/* }
+      - { method: GET, path: /api/brands }
+      - { method: GET, path: /api/brands/* }
+      - { method: POST, path: /api/categories }
+      - { method: PUT, path: /api/categories/* }
+      - { method: DELETE, path: /api/categories/* }
+      - { method: POST, path: /api/shoes }
+      - { method: GET, path: /api/shoes }
+      - { method: GET, path: /api/shoes/* }
+      - { method: GET, path: /api/shoes/*/variants }
+      - { method: GET, path: /api/files/** }
+      - { method: POST, path: /api/payments/sepay/hook }
+      - { method: POST, path: /webhook/keycloak/register }
+      - { method: POST, path: /sepay/auth/token }
+      - { method: POST, path: /api/files/upload }
+      - { method: POST, path: /api/files/upload-multiple }
+      - { method: GET, path: /api/files/* }
+
+      - { method: POST, path: /webhook/keycloak/register }
+      - { method: POST, path: /sepay/auth/token }
+      - { method: GET, path: /api/categories }
+      - { method: GET, path: /api/categories/* }
       - { method: GET, path: /api/shoes/*/variants }
       - { method: POST, path: /api/v1/chat }
 
@@ -87,7 +120,6 @@ application-properties:
       - /test/free
       - /chat
 #    sepay-api-key: ${SEPAY_API_KEY}
-
 spring:
   application:
     name: shoes-shopping-online-system
@@ -100,9 +132,9 @@ spring:
   sql:
     init:
       mode: always
-  #    url: jdbc:postgresql://localhost:5432/ssos
-  #    username: postgres
-  #    password: 123456
+#      url: jdbc:postgresql://localhost:5432/ssos
+#      username: postgres
+#      password: 123456
 
   jpa:
     hibernate:

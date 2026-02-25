@@ -12,6 +12,9 @@ import java.util.UUID;
 public interface ShoeVariantRepository extends JpaRepository<ShoeVariant, UUID> {
 
     Optional<ShoeVariant> findByShoe_IdAndSizeAndColor(UUID shoeId, String size, String color);
+    List<ShoeVariant> findByShoe_Id(UUID shoeId);
+
+    boolean existsBySku(String sku);
 
     Optional<ShoeVariant> findByShoe_IdAndSizeAndColorIgnoreCase(UUID shoeId, String size, String color);
 

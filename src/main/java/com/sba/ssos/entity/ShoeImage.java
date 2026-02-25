@@ -16,11 +16,17 @@ public class ShoeImage extends BaseAuditableEntity {
     @Column(name = "url", nullable = false, length = 255)
     private String url;
 
+    @Column(name = "is_primary", nullable = false)
+    private boolean isPrimary;
+
+    @Column(name = "sort_order", nullable = false)
+    private int sortOrder;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shoe_id", nullable = false)
     private Shoe shoe;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "shoe_variant_id", nullable = false)
+    @JoinColumn(name = "shoe_variant_id", nullable = true)
     private ShoeVariant shoeVariant;
 }

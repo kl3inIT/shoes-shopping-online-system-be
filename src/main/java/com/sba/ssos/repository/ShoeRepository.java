@@ -17,6 +17,10 @@ public interface ShoeRepository extends JpaRepository<Shoe, UUID> {
 
   long countByCategory_Id(UUID categoryId);
 
+  boolean existsBySlug(String slug);
+
+  boolean existsBySlugAndIdNot(String slug, UUID id);
+
   @Query("SELECT COUNT(s) FROM Shoe s WHERE s.brand.id = :brandId")
   long countByBrandId(@Param("brandId") UUID brandId);
 

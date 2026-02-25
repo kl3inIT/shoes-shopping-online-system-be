@@ -2,9 +2,9 @@ package com.sba.ssos.service.storage;
 
 import java.util.concurrent.TimeUnit;
 
+import com.sba.ssos.configuration.ApplicationProperties;
 import org.springframework.stereotype.Service;
 
-import com.sba.ssos.configuration.MinioProperties;
 
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
@@ -15,11 +15,11 @@ import io.minio.http.Method;
 public class MinioStorageService {
 
     private final MinioClient minioClient;
-    private final MinioProperties props;
+    private final ApplicationProperties ap;
 
-    public MinioStorageService(MinioClient minioClient, MinioProperties props) {
+    public MinioStorageService(MinioClient minioClient, ApplicationProperties ap) {
         this.minioClient = minioClient;
-        this.props = props;
+        this.ap = ap;
     }
 
     /**
@@ -30,9 +30,9 @@ public class MinioStorageService {
             return minioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.GET)
-                            .bucket(props.getBucket())
+                            .bucket(ap.minioProperties().bucket())
                             .object(objectKey)
-                            .expiry(props.getPresignedExpirySeconds(), TimeUnit.SECONDS)
+                            .expiry(ap.minioProperties().presignedExpirySeconds(), TimeUnit.SECONDS)
                             .build()
             );
         } catch (Exception e) {
@@ -48,9 +48,9 @@ public class MinioStorageService {
             return minioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.PUT)
-                            .bucket(props.getBucket())
+                            .bucket(ap.minioProperties().bucket())
                             .object(objectKey)
-                            .expiry(props.getPresignedExpirySeconds(), TimeUnit.SECONDS)
+                            .expiry(ap.minioProperties().presignedExpirySeconds(), TimeUnit.SECONDS)
                             .build()
             );
         } catch (Exception e) {
@@ -65,7 +65,7 @@ public class MinioStorageService {
         try {
             minioClient.removeObject(
                     RemoveObjectArgs.builder()
-                            .bucket(props.getBucket())
+                            .bucket(ap.minioProperties().bucket())
                             .object(objectKey)
                             .build()
             );

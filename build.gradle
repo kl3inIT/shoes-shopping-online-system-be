@@ -54,6 +54,7 @@ dependencies {
     implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
     implementation 'org.springframework.ai:spring-ai-rag'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+    implementation 'io.minio:minio:8.6.0'
     implementation("org.springframework:spring-websocket:6.2.15")
     implementation 'io.minio:minio:8.6.0'
     implementation 'com.google.guava:guava:33.4.0-jre'
