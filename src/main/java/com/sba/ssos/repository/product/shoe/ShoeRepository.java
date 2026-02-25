@@ -1,4 +1,4 @@
-package com.sba.ssos.repository;
+package com.sba.ssos.repository.product.shoe;
 
 import com.sba.ssos.entity.Shoe;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,7 +13,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Repository
-public interface ShoeRepository extends JpaRepository<Shoe, UUID> {
+public interface ShoeRepository extends JpaRepository<Shoe, UUID>, ShoeRepositoryCustom {
 
   long countByCategory_Id(UUID categoryId);
 
@@ -38,4 +38,10 @@ public interface ShoeRepository extends JpaRepository<Shoe, UUID> {
   }
 
   Optional<Shoe> findBySlug(String slug);
+
+  List<Shoe> findByDeletedFalse();
+
+  Optional<Shoe> findByIdAndDeletedFalse(UUID id);
+
+  List<Shoe> findByDeletedTrue();
 }

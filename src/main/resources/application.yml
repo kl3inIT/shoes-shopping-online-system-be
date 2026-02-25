@@ -43,10 +43,15 @@ application-properties:
       - { method: POST, path: /api/categories }
       - { method: PUT, path: /api/categories/* }
       - { method: DELETE, path: /api/categories/* }
-      - { method: POST, path: /api/shoes}
       - { method: GET, path: /api/shoes }
       - { method: GET, path: /api/shoes/* }
       - { method: POST, path: /api/shoes }
+      - { method: PUT, path: /api/shoes/* }
+      - { method: DELETE, path: /api/shoes/* }
+      - { method: PATCH, path: /api/shoes/*/status }
+      - { method: GET, path: /api/shoes/admin/all }
+      - { method: GET, path: /api/shoes/admin/deleted }
+      - { method: GET, path: /api/shoes/admin/not-deleted }
       - { method: GET, path: /api/brands }
       - { method: GET, path: /api/brands/* }
       - { method: POST, path: /api/brands }
@@ -88,6 +93,12 @@ application-properties:
       - { method: POST, path: /api/shoes }
       - { method: GET, path: /api/shoes }
       - { method: GET, path: /api/shoes/* }
+      - { method: PUT, path: /api/shoes/* }
+      - { method: DELETE, path: /api/shoes/* }
+      - { method: PATCH, path: /api/shoes/*/status }
+      - { method: GET, path: /api/shoes/admin/all }
+      - { method: GET, path: /api/shoes/admin/deleted }
+      - { method: GET, path: /api/shoes/admin/not-deleted }
       - { method: GET, path: /api/shoes/*/variants }
       - { method: GET, path: /api/files/** }
       - { method: POST, path: /api/payments/sepay/hook }
@@ -133,7 +144,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: none # Disable Hibernate's automatic schema generation
+      ddl-auto: update # Disable Hibernate's automatic schema generation
 
   liquibase:
     enabled: true

@@ -45,4 +45,9 @@ public class Shoe extends BaseAuditableEntity {
 
     @Column(name = "price", nullable = false)
     private Double price;
+
+    // true la xoa mem
+    @Builder.Default
+    @Column(name = "deleted", nullable = false)
+    private boolean deleted = false;
 }

@@ -6,7 +6,7 @@ import com.sba.ssos.entity.Shoe;
 import com.sba.ssos.entity.Wishlist;
 import com.sba.ssos.exception.base.NotFoundException;
 import com.sba.ssos.repository.CustomerRepository;
-import com.sba.ssos.repository.ShoeRepository;
+import com.sba.ssos.repository.product.shoe.ShoeRepository;
 import com.sba.ssos.repository.WishlistRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;

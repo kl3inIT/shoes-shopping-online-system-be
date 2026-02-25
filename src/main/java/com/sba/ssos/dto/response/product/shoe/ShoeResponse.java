@@ -26,5 +26,6 @@ public record ShoeResponse(
         List<String> imageUrls,
         List<ShoeVariantResponse> variants,
         Instant createdAt,
-        Instant updatedAt) {
+        Instant updatedAt,
+        boolean deleted) {
 }
