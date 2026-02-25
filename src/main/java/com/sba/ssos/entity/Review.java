@@ -1,6 +1,7 @@
 package com.sba.ssos.entity;
 
 import com.sba.ssos.entity.base.BaseAuditableEntity;
+import com.sba.ssos.enums.ReviewStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -26,4 +27,9 @@ public class Review extends BaseAuditableEntity {
 
     @Column(name = "description", nullable = false, columnDefinition = "TEXT")
     private String description;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    @Builder.Default
+    private ReviewStatus status = ReviewStatus.PENDING;
 }
