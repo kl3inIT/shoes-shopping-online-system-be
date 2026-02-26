@@ -165,6 +165,12 @@ public class ShoeController {
         return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.deleted"), null);
     }
 
+    @DeleteMapping("/{id}/force")
+    public ResponseGeneral<Void> forceDelete(@PathVariable UUID id) {
+        shoeService.forceDelete(id);
+        return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.deleted"), null);
+    }
+
     @PatchMapping("/{id}/status")
     public ResponseGeneral<ShoeResponse> updateStatus(
             @PathVariable UUID id,

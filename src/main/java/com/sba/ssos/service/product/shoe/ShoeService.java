@@ -10,8 +10,14 @@ import com.sba.ssos.entity.Brand;
 import com.sba.ssos.entity.Category;
 import com.sba.ssos.entity.Shoe;
 import com.sba.ssos.entity.ShoeVariant;
+import com.sba.ssos.exception.base.ConflictException;
 import com.sba.ssos.exception.base.NotFoundException;
 import com.sba.ssos.mapper.ShoeMapper;
+import com.sba.ssos.repository.CartItemRepository;
+import com.sba.ssos.repository.ReviewRepository;
+import com.sba.ssos.repository.ShoeImageRepository;
+import com.sba.ssos.repository.WishlistRepository;
+import com.sba.ssos.repository.order.OrderDetailRepository;
 import com.sba.ssos.repository.product.shoe.ShoeRepository;
 import com.sba.ssos.repository.ShoeVariantRepository;
 import com.sba.ssos.service.product.shoeimage.ShoeImageService;
@@ -40,13 +46,18 @@ public class ShoeService {
 
     private final ShoeRepository shoeRepository;
     private final ShoeVariantRepository shoeVariantRepository;
+    private final OrderDetailRepository orderDetailRepository;
+    private final ReviewRepository reviewRepository;
+    private final CartItemRepository cartItemRepository;
+    private final WishlistRepository wishlistRepository;
+    private final ShoeImageRepository shoeImageRepository;
     private final CategoryService categoryService;
     private final BrandService brandService;
     private final ShoeMapper shoeMapper;
     private final ShoeImageService shoeImageService;
 
     @Transactional
-    public ShoeResponse create(ShoeCreateRequest request, List<MultipartFile> shoeImageFiles, List<List<MultipartFile>> variantImageFilesList){
+    public ShoeResponse create(ShoeCreateRequest request, List<MultipartFile> shoeImageFiles, List<List<MultipartFile>> variantImageFilesList) {
         if (request.variants() != null && request.variants().size() > 80) {
             throw new IllegalArgumentException("Shoe variants must not exceed 80");
         }
@@ -652,5 +663,37 @@ public class ShoeService {
         return getById(id);
     }
 
+    @Transactional
+    public void forceDelete(UUID id) {
+        Shoe shoe = shoeRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Shoe", id));
+
+        boolean hasAnyOrders = orderDetailRepository.existsByShoeVariant_Shoe_Id(id);
+
+        if (hasAnyOrders) {
+            throw new ConflictException(
+                    "error.shoe.cannot.delete.has.orders",
+                    "shoeId", id
+            );
+        }
+
+        boolean hasReviews = reviewRepository.existsByShoeVariant_Shoe_Id(id);
+        if (hasReviews) {
+            throw new ConflictException(
+                    "error.shoe.cannot.delete.has.reviews",
+                    "shoeId", id
+            );
+        }
+
+        // Hard delete nếu có Order hay review thì ko được
+        cartItemRepository.deleteAllByShoeVariant_Shoe_Id(id);
+        wishlistRepository.deleteAllByShoe_Id(id);
+        shoeImageRepository.deleteAllByShoe_Id(id);
+
+        List<ShoeVariant> variants = shoeVariantRepository.findByShoe_Id(id);
+        shoeVariantRepository.deleteAll(variants);
+
+        shoeRepository.delete(shoe);
+    }
 
 }

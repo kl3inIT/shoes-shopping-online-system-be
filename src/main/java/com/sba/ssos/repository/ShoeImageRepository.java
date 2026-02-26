@@ -27,4 +27,6 @@ public interface ShoeImageRepository extends JpaRepository<ShoeImage, UUID> {
     Optional<ShoeImage> findFirstByShoe_IdOrderByIdAsc(UUID shoeId);
 
     List<ShoeImage> findByShoe_IdIn(Collection<UUID> shoeIds);
+
+    void deleteAllByShoe_Id(UUID shoeId);
 }
