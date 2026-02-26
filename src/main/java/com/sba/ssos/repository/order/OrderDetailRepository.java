@@ -9,4 +9,6 @@ import org.springframework.stereotype.Repository;
 public interface OrderDetailRepository extends JpaRepository<OrderDetail, UUID> {
 
   boolean existsByShoeVariant_Shoe_Id(UUID shoeId);
+
+  boolean existsByShoeVariant_Id(UUID shoeVariantId);
 }

@@ -29,4 +29,6 @@ public interface ShoeImageRepository extends JpaRepository<ShoeImage, UUID> {
     List<ShoeImage> findByShoe_IdIn(Collection<UUID> shoeIds);
 
     void deleteAllByShoe_Id(UUID shoeId);
+
+    void deleteAllByShoeVariant_Id(UUID shoeVariantId);
 }

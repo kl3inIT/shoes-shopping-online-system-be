@@ -11,4 +11,6 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
     boolean existsByShoeVariant_Shoe_Id(UUID shoeId);
 
     void deleteAllByShoeVariant_Shoe_Id(UUID shoeId);
+
+    boolean existsByShoeVariant_Id(UUID shoeVariantId);
 }

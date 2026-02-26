@@ -20,5 +20,7 @@ public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
     void deleteAllByCustomer_Id(UUID customerId);
 
     void deleteAllByShoeVariant_Shoe_Id(UUID shoeId);
+
+    void deleteAllByShoeVariant_Id(UUID shoeVariantId);
 }
 
