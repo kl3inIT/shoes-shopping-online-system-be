@@ -1,15 +1,14 @@
 package com.sba.ssos.controller.product.shoe;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.product.shoe.ShoeCreateRequest;
-import com.sba.ssos.dto.request.product.shoe.ShoeStatusUpdateRequest;
 import com.sba.ssos.dto.request.product.shoe.ShoeUpdateRequest;
 import com.sba.ssos.dto.response.product.shoe.ShoeResponse;
 import com.sba.ssos.dto.response.product.shoevariant.ShoeVariantResponse;
 import com.sba.ssos.service.product.shoe.ShoeService;
 import com.sba.ssos.service.product.shoevariant.ShoeVariantService;
 import com.sba.ssos.utils.LocaleUtils;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("api/shoes")
@@ -32,32 +30,23 @@ public class ShoeController {
     private final ShoeService shoeService;
     private final ShoeVariantService shoeVariantService;
     private final LocaleUtils localeUtils;
-    private final ObjectMapper objectMapper;
 
     @PostMapping(consumes = {"multipart/form-data"})
     public ResponseGeneral<ShoeResponse> create(
-            @RequestPart("request") String requestJson,
+            @Valid @RequestPart("request") ShoeCreateRequest request,
             @RequestPart(value = "shoeImages", required = false) List<MultipartFile> shoeImages,
             MultipartHttpServletRequest multiRequest
     ) {
-        try {
-            ShoeCreateRequest request = objectMapper.readValue(requestJson, ShoeCreateRequest.class);
+        List<List<MultipartFile>> variantImagesList = new ArrayList<>();
+        int variantCount = request.variants().size();
 
-            List<List<MultipartFile>> variantImagesList = new ArrayList<>();
-            int variantCount = request.variants().size();
-
-            for (int i = 0; i < variantCount; i++) {
-                List<MultipartFile> files = multiRequest.getFiles("variantImages" + i);
-                variantImagesList.add(files != null ? files : new ArrayList<>());
-            }
-
-            ShoeResponse data = shoeService.create(request, shoeImages, variantImagesList);
-            return ResponseGeneral.ofCreated(localeUtils.get("success.shoe.created"), data);
-        } catch (com.fasterxml.jackson.databind.exc.InvalidDefinitionException e) {
-            throw new RuntimeException("Invalid request format", e);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to process request: " + e.getMessage(), e);
+        for (int i = 0; i < variantCount; i++) {
+            List<MultipartFile> files = multiRequest.getFiles("variantImages" + i);
+            variantImagesList.add(files != null ? files : new ArrayList<>());
         }
+
+        ShoeResponse data = shoeService.create(request, shoeImages, variantImagesList);
+        return ResponseGeneral.ofCreated(localeUtils.get("success.shoe.created"), data);
     }
 
     @GetMapping
@@ -117,36 +106,19 @@ public class ShoeController {
     @PutMapping(value = "/{id}", consumes = {"multipart/form-data"})
     public ResponseGeneral<ShoeResponse> update(
             @PathVariable UUID id,
-            @RequestPart("request") String requestJson,
+            @Valid @RequestPart("request") ShoeUpdateRequest request,
             @RequestPart(value = "shoeImages", required = false) List<MultipartFile> shoeImages,
             MultipartHttpServletRequest multiRequest
     ) {
-        try {
-            ShoeUpdateRequest request = objectMapper.readValue(requestJson, ShoeUpdateRequest.class);
+        List<List<MultipartFile>> variantImagesList = new ArrayList<>();
+        int variantCount = request.variants().size();
 
-            List<List<MultipartFile>> variantImagesList = new ArrayList<>();
-            int variantCount = request.variants().size();
-
-            for (int i = 0; i < variantCount; i++) {
-                List<MultipartFile> files = multiRequest.getFiles("variantImages" + i);
-                variantImagesList.add(files != null ? files : new ArrayList<>());
-            }
-
-            ShoeResponse data = shoeService.update(id, request, shoeImages, variantImagesList);
-            return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.updated"), data);
-        } catch (com.fasterxml.jackson.databind.exc.InvalidDefinitionException e) {
-            throw new RuntimeException("Invalid request format", e);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to process request: " + e.getMessage(), e);
+        for (int i = 0; i < variantCount; i++) {
+            List<MultipartFile> files = multiRequest.getFiles("variantImages" + i);
+            variantImagesList.add(files != null ? files : new ArrayList<>());
         }
-    }
 
-    @PatchMapping("/{id}/status")
-    public ResponseGeneral<ShoeResponse> updateStatus(
-            @PathVariable UUID id,
-            @RequestBody ShoeStatusUpdateRequest request
-    ) {
-        ShoeResponse data = shoeService.updateStatus(id, request);
+        ShoeResponse data = shoeService.update(id, request, shoeImages, variantImagesList);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.updated"), data);
     }
 }

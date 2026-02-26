@@ -2,7 +2,6 @@ package com.sba.ssos.service.product.shoe;
 
 import com.sba.ssos.dto.request.product.shoe.ShoeCreateRequest;
 import com.sba.ssos.dto.request.product.shoe.ShoeUpdateRequest;
-import com.sba.ssos.dto.request.product.shoe.ShoeStatusUpdateRequest;
 import com.sba.ssos.dto.request.product.shoe.ShoeUpdateRequest;
 import com.sba.ssos.dto.request.product.shoevariant.ShoeVariantRequest;
 import com.sba.ssos.dto.response.product.shoe.ShoeResponse;
@@ -315,23 +314,17 @@ public class ShoeService {
             shoeVariantRepository.delete(existingVariant);
         }
 
-        if (shoeImageFiles != null && !shoeImageFiles.isEmpty()) {
-            shoeImageService.uploadShoeImages(shoe, variantsInRequestOrder, shoeImageFiles);
-        }
-        if (variantImageFilesList != null && !variantImageFilesList.isEmpty()) {
-            shoeImageService.uploadVariantImages(shoe, variantsInRequestOrder, variantImageFilesList);
-        }
-
-        return getById(id);
-    }
-
-    @Transactional
-    public ShoeResponse updateStatus(UUID id, ShoeStatusUpdateRequest request) {
-        Shoe shoe = shoeRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Shoe", id));
-
-        shoe.setStatus(request.status());
-        shoeRepository.save(shoe);
+        shoeImageService.syncShoeImagesForUpdate(
+                shoe,
+                request.keepShoeImageUrls(),
+                shoeImageFiles
+        );
+        shoeImageService.syncVariantImagesForUpdate(
+                shoe,
+                variantsInRequestOrder,
+                request.variantImageUpdates(),
+                variantImageFilesList
+        );
 
         return getById(id);
     }
