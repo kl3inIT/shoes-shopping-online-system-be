@@ -41,17 +41,8 @@ public interface ShoeRepository extends JpaRepository<Shoe, UUID>, ShoeRepositor
 
   Optional<Shoe> findBySlug(String slug);
 
-  List<Shoe> findByDeletedFalse();
-
-  Optional<Shoe> findByIdAndDeletedFalse(UUID id);
-
-  List<Shoe> findByDeletedTrue();
-
-  List<Shoe> findByDeletedFalseOrderByCreatedAtDesc(Pageable pageable);
-
   @Query("""
       SELECT od.shoeVariant.shoe FROM OrderDetail od
-      WHERE od.shoeVariant.shoe.deleted = false
       GROUP BY od.shoeVariant.shoe
       ORDER BY SUM(od.quantity) DESC
       """)

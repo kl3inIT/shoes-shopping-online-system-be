@@ -42,15 +42,15 @@ public class ShoeController {
     ) {
         try {
             ShoeCreateRequest request = objectMapper.readValue(requestJson, ShoeCreateRequest.class);
-            
+
             List<List<MultipartFile>> variantImagesList = new ArrayList<>();
             int variantCount = request.variants().size();
-            
+
             for (int i = 0; i < variantCount; i++) {
                 List<MultipartFile> files = multiRequest.getFiles("variantImages" + i);
                 variantImagesList.add(files != null ? files : new ArrayList<>());
             }
-            
+
             ShoeResponse data = shoeService.create(request, shoeImages, variantImagesList);
             return ResponseGeneral.ofCreated(localeUtils.get("success.shoe.created"), data);
         } catch (com.fasterxml.jackson.databind.exc.InvalidDefinitionException e) {
@@ -83,24 +83,6 @@ public class ShoeController {
                 genders,
                 pageable
         );
-        return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.fetched"), data);
-    }
-
-    @GetMapping("/admin/all")
-    public ResponseGeneral<List<ShoeResponse>> getAllShoeForAdmin() {
-        List<ShoeResponse> data = shoeService.getAllForAdmin();
-        return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.fetched"), data);
-    }
-
-    @GetMapping("/admin/deleted")
-    public ResponseGeneral<List<ShoeResponse>> getAllDeletedShoes() {
-        List<ShoeResponse> data = shoeService.getAllDeleted();
-        return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.fetched"), data);
-    }
-
-    @GetMapping("/admin/not-deleted")
-    public ResponseGeneral<List<ShoeResponse>> getAllShoeNotDeleted() {
-        List<ShoeResponse> data = shoeService.getAllNotDeleted();
         return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.fetched"), data);
     }
 
@@ -159,18 +141,6 @@ public class ShoeController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseGeneral<Void> delete(@PathVariable UUID id) {
-        shoeService.delete(id);
-        return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.deleted"), null);
-    }
-
-    @DeleteMapping("/{id}/force")
-    public ResponseGeneral<Void> forceDelete(@PathVariable UUID id) {
-        shoeService.forceDelete(id);
-        return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.deleted"), null);
-    }
-
     @PatchMapping("/{id}/status")
     public ResponseGeneral<ShoeResponse> updateStatus(
             @PathVariable UUID id,
@@ -179,12 +149,4 @@ public class ShoeController {
         ShoeResponse data = shoeService.updateStatus(id, request);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.updated"), data);
     }
-
-    @PatchMapping("/{id}/restore")
-    public ResponseGeneral<ShoeResponse> restore(@PathVariable UUID id) {
-        ShoeResponse data = shoeService.restore(id);
-        return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.updated"), data);
-    }
-
-
 }
