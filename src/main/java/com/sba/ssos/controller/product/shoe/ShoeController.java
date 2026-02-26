@@ -174,4 +174,11 @@ public class ShoeController {
         return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.updated"), data);
     }
 
+    @PatchMapping("/{id}/restore")
+    public ResponseGeneral<ShoeResponse> restore(@PathVariable UUID id) {
+        ShoeResponse data = shoeService.restore(id);
+        return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.updated"), data);
+    }
+
+
 }

@@ -66,6 +66,7 @@ application-properties:
       - { method: GET, path: /api/storage/presigned-url }
       - { method: DELETE, path: /api/storage }
       - { method: GET, path: /api/orders/admin }
+      - { method: PATCH, path: /api/shoes/*/restore}
     manager-endpoints:
       - { method: GET, path: /test/manager }
     customer-endpoints:
@@ -118,6 +119,8 @@ application-properties:
       - { method: GET, path: /api/categories/* }
       - { method: GET, path: /api/shoes/*/variants }
       - { method: POST, path: /api/v1/chat }
+      - { method: PATCH, path: /api/shoes/*/restore }
+
 
     public-urls:
       # OpenAPI Swagger URLs

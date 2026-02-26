@@ -637,4 +637,20 @@ public class ShoeService {
         return candidate;
     }
 
+    @Transactional
+    public ShoeResponse restore(UUID id) {
+        Shoe shoe = shoeRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Shoe", id));
+
+        if (!shoe.isDeleted()) {
+            return getById(id);
+        }
+
+        shoe.setDeleted(false);
+        shoeRepository.save(shoe);
+
+        return getById(id);
+    }
+
+
 }
