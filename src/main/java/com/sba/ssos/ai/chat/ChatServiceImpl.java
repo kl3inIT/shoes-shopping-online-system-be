@@ -41,32 +41,32 @@ public class ChatServiceImpl implements ChatService {
   private final ChatLogService chatLogService;
   private final ParametersService parametersService;
   private final UserService userService;
+
   @Value("${application-properties.chat-properties.max-request-length:2000}")
   private int maxRequestLength;
 
   public ChatServiceImpl(
-          ChatClient chatClient,
-          ChatMemory chatMemory,
-          ToolsManager toolsManager,
-          ChatLogService chatLogService,
-          ParametersService parametersService, UserService userService) {
+      ChatClient chatClient,
+      ChatMemory chatMemory,
+      ToolsManager toolsManager,
+      ChatLogService chatLogService,
+      ParametersService parametersService,
+      UserService userService) {
     this.chatClient = chatClient;
     this.chatMemory = chatMemory;
     this.toolsManager = toolsManager;
     this.chatLogService = chatLogService;
     this.parametersService = parametersService;
-      this.userService = userService;
+    this.userService = userService;
   }
 
   @Override
   public ChatResponse chat(
-      String message,
-      @Nullable String conversationId,
-      @Nullable Consumer<String> externalLogger) {
+      String message, @Nullable String conversationId, @Nullable Consumer<String> externalLogger) {
 
     validateMessage(message);
 
-    AuthorizedUserDetails user = userService.getCurrentUser();
+    AuthorizedUserDetails user = userService.getCurrentUserOrNull();
 
     String userId = null;
     String cid;
@@ -112,8 +112,7 @@ public class ChatServiceImpl implements ChatService {
           chatClient
               .prompt()
               .system(spec -> spec.text(systemTemplate).params(promptParams))
-              .advisors(
-                  MessageChatMemoryAdvisor.builder(chatMemory).conversationId(cid).build())
+              .advisors(MessageChatMemoryAdvisor.builder(chatMemory).conversationId(cid).build())
               .toolCallbacks(toolCallbacks)
               .user(message)
               .call()
