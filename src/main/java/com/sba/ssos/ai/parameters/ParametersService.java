@@ -53,62 +53,67 @@ public class ParametersService {
     return loadReader(type).getString("systemMessage");
   }
 
-  // ── CRUD ──────────────────────────────────────────────────────────────
-
-  public AiParameters findById(UUID id) {
+  private AiParameters getByIdEntity(UUID id) {
     return repository.findById(id).orElseThrow(() -> new NotFoundException("AiParameters", id));
   }
 
-  public List<AiParameters> listAll(@Nullable AiParametersTargetType type) {
-    return type != null
-        ? repository.findByTargetTypeOrderByCreatedAtDesc(type)
-        : repository.findAll();
+  public AiParameterDetailResponse findById(UUID id) {
+    return AiParameterDetailResponse.from(getByIdEntity(id));
+  }
+
+  public List<AiParameterSummaryResponse> listAll(@Nullable AiParametersTargetType type) {
+    List<AiParameters> entities =
+        type != null
+            ? repository.findByTargetTypeOrderByCreatedAtDesc(type)
+            : repository.findAll();
+    return entities.stream().map(AiParameterSummaryResponse::from).toList();
   }
 
   @Transactional
-  public AiParameters create(
+  public AiParameterDetailResponse create(
       AiParametersTargetType targetType, String description, String content) {
     AiParameters params = new AiParameters();
     params.setTargetType(targetType);
     params.setDescription(description);
     params.setContent(content);
     params.setActive(false);
-    return repository.save(params);
+    return AiParameterDetailResponse.from(repository.save(params));
   }
 
   @Transactional
-  public AiParameters updateContent(UUID id, String content, @Nullable String description) {
-    AiParameters params = findById(id);
+  public AiParameterDetailResponse updateContent(
+      UUID id, String content, @Nullable String description) {
+    AiParameters params = getByIdEntity(id);
     params.setContent(content);
     if (description != null) {
       params.setDescription(description);
     }
-    return repository.save(params);
+    return AiParameterDetailResponse.from(repository.save(params));
   }
 
   @Transactional
-  public AiParameters activate(UUID id) {
-    AiParameters params = findById(id);
+  public AiParameterSummaryResponse activate(UUID id) {
+    AiParameters params = getByIdEntity(id);
     repository.deactivateAllExcept(params.getTargetType(), params.getId());
     params.setActive(true);
-    return repository.save(params);
+    return AiParameterSummaryResponse.from(repository.save(params));
   }
 
   @Transactional
-  public AiParameters copy(UUID sourceId) {
-    AiParameters source = findById(sourceId);
+  public AiParameterDetailResponse copy(UUID sourceId) {
+    AiParameters source = getByIdEntity(sourceId);
     AiParameters copy = new AiParameters();
     copy.setTargetType(source.getTargetType());
     copy.setContent(source.getContent());
     copy.setDescription(
         source.getDescription() != null ? source.getDescription() + " (copy)" : "copy");
     copy.setActive(false);
-    return repository.save(copy);
+    return AiParameterDetailResponse.from(repository.save(copy));
   }
 
   @Transactional
   public void delete(UUID id) {
-    AiParameters params = findById(id);
+    AiParameters params = getByIdEntity(id);
     if (params.isActive()) {
       throw new BadRequestException("error.ai_parameters.delete_active");
     }
@@ -116,14 +121,14 @@ public class ParametersService {
   }
 
   @Transactional
-  public AiParameters createFromDefault(AiParametersTargetType type) {
+  public AiParameterDetailResponse createFromDefault(AiParametersTargetType type) {
     AiParameters params = new AiParameters();
     params.setTargetType(type);
     params.setContent(loadDefaultContent());
     params.setDescription("Loaded from default YAML");
     params.setActive(true);
     repository.deactivateAllExcept(type, UUID.randomUUID());
-    return repository.save(params);
+    return AiParameterDetailResponse.from(repository.save(params));
   }
 
   public String loadDefaultContent() {
