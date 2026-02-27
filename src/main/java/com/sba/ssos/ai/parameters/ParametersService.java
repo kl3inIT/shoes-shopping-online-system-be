@@ -26,13 +26,14 @@ public class ParametersService {
 
   public ParametersService(
       AiParametersRepository repository,
-      @Value("${ai.parameters.path:classpath:/ai/default-chat-params.yml}") Resource defaultResource) {
+      @Value("${ai.parameters.path:classpath:/ai/default-chat-params.yml}")
+          Resource defaultResource) {
     this.repository = repository;
     this.defaultResource = defaultResource;
     this.yamlMapper = new ObjectMapper(new YAMLFactory());
   }
 
-  public ParametersReader loadReader(AiParameters.TargetType type) {
+  public ParametersReader loadReader(AiParametersTargetType type) {
     Optional<AiParameters> active = repository.findFirstByActiveTrueAndTargetType(type);
     if (active.isPresent() && active.get().getContent() != null) {
       return parseYaml(active.get().getContent());
@@ -41,25 +42,24 @@ public class ParametersService {
   }
 
   public ParametersReader loadReader() {
-    return loadReader(AiParameters.TargetType.CHAT);
+    return loadReader(AiParametersTargetType.CHAT);
   }
 
   public String getSystemMessage() {
     return loadReader().getString("systemMessage");
   }
 
-  public String getSystemMessage(AiParameters.TargetType type) {
+  public String getSystemMessage(AiParametersTargetType type) {
     return loadReader(type).getString("systemMessage");
   }
 
   // ── CRUD ──────────────────────────────────────────────────────────────
 
   public AiParameters findById(UUID id) {
-    return repository.findById(id)
-        .orElseThrow(() -> new NotFoundException("AiParameters", id));
+    return repository.findById(id).orElseThrow(() -> new NotFoundException("AiParameters", id));
   }
 
-  public List<AiParameters> listAll(@Nullable AiParameters.TargetType type) {
+  public List<AiParameters> listAll(@Nullable AiParametersTargetType type) {
     return type != null
         ? repository.findByTargetTypeOrderByCreatedAtDesc(type)
         : repository.findAll();
@@ -67,7 +67,7 @@ public class ParametersService {
 
   @Transactional
   public AiParameters create(
-      AiParameters.TargetType targetType, String description, String content) {
+      AiParametersTargetType targetType, String description, String content) {
     AiParameters params = new AiParameters();
     params.setTargetType(targetType);
     params.setDescription(description);
@@ -100,9 +100,8 @@ public class ParametersService {
     AiParameters copy = new AiParameters();
     copy.setTargetType(source.getTargetType());
     copy.setContent(source.getContent());
-    copy.setDescription(source.getDescription() != null
-        ? source.getDescription() + " (copy)"
-        : "copy");
+    copy.setDescription(
+        source.getDescription() != null ? source.getDescription() + " (copy)" : "copy");
     copy.setActive(false);
     return repository.save(copy);
   }
@@ -111,14 +110,13 @@ public class ParametersService {
   public void delete(UUID id) {
     AiParameters params = findById(id);
     if (params.isActive()) {
-      throw new BadRequestException(
-          "error.ai_parameters.delete_active");
+      throw new BadRequestException("error.ai_parameters.delete_active");
     }
     repository.delete(params);
   }
 
   @Transactional
-  public AiParameters createFromDefault(AiParameters.TargetType type) {
+  public AiParameters createFromDefault(AiParametersTargetType type) {
     AiParameters params = new AiParameters();
     params.setTargetType(type);
     params.setContent(loadDefaultContent());

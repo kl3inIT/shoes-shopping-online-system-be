@@ -3,7 +3,7 @@ package com.sba.ssos.ai.parameters;
 import java.util.UUID;
 
 public record AiParameterSummaryResponse(
-    UUID id, String description, AiParameters.TargetType targetType, boolean active) {
+    UUID id, String description, AiParametersTargetType targetType, boolean active) {
 
   public static AiParameterSummaryResponse from(AiParameters p) {
     return new AiParameterSummaryResponse(

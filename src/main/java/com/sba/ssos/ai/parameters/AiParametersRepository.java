@@ -11,11 +11,11 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface AiParametersRepository extends JpaRepository<AiParameters, UUID> {
 
-  Optional<AiParameters> findFirstByActiveTrueAndTargetType(AiParameters.TargetType targetType);
+  Optional<AiParameters> findFirstByActiveTrueAndTargetType(AiParametersTargetType targetType);
 
-  List<AiParameters> findByTargetTypeOrderByCreatedAtDesc(AiParameters.TargetType targetType);
+  List<AiParameters> findByTargetTypeOrderByCreatedAtDesc(AiParametersTargetType targetType);
 
   @Modifying
   @Query("UPDATE AiParameters p SET p.active = false WHERE p.targetType = :type AND p.id <> :id")
-  void deactivateAllExcept(AiParameters.TargetType type, UUID id);
+  void deactivateAllExcept(AiParametersTargetType type, UUID id);
 }

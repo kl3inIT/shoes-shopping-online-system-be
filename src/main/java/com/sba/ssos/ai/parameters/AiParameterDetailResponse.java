@@ -5,7 +5,7 @@ import java.util.UUID;
 public record AiParameterDetailResponse(
     UUID id,
     String description,
-    AiParameters.TargetType targetType,
+    AiParametersTargetType targetType,
     boolean active,
     String content) {
 
