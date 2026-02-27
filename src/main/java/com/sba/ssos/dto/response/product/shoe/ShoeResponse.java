@@ -3,11 +3,13 @@ package com.sba.ssos.dto.response.product.shoe;
 import com.sba.ssos.dto.response.product.shoevariant.ShoeVariantResponse;
 import com.sba.ssos.enums.Gender;
 import com.sba.ssos.enums.ShoeStatus;
+import lombok.Builder;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+@Builder
 public record ShoeResponse(
         UUID id,
         String name,
