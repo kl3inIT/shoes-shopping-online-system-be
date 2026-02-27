@@ -8,6 +8,7 @@ import io.minio.GetObjectArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -71,6 +72,20 @@ public class MinioFileStorageService {
             );
             String contentType = guessContentType(objectKey);
             return new FileResource(stream, contentType);
+        } catch (Exception e) {
+            throw new InternalServerErrorException("error.storage.minio", e);
+        }
+    }
+
+    public void delete(String objectKey) {
+        String bucketName = applicationProperties.minioProperties().bucket();
+        try {
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(objectKey)
+                            .build()
+            );
         } catch (Exception e) {
             throw new InternalServerErrorException("error.storage.minio", e);
         }

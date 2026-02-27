@@ -1,36 +1,29 @@
 package com.sba.ssos.service.product.shoe;
 
-import com.sba.ssos.dto.request.product.shoe.ShoeCreateRequest;
-import com.sba.ssos.dto.request.product.shoe.ShoeUpdateRequest;
-import com.sba.ssos.dto.request.product.shoe.ShoeStatusUpdateRequest;
+import com.sba.ssos.dto.request.product.shoe.*;
 import com.sba.ssos.dto.request.product.shoevariant.ShoeVariantRequest;
 import com.sba.ssos.dto.response.product.shoe.ShoeResponse;
 import com.sba.ssos.dto.response.product.shoevariant.ShoeVariantResponse;
-import com.sba.ssos.entity.Brand;
-import com.sba.ssos.entity.Category;
-import com.sba.ssos.entity.Shoe;
-import com.sba.ssos.entity.ShoeVariant;
-import com.sba.ssos.exception.base.NotFoundException;
-import com.sba.ssos.mapper.ShoeMapper;
+import com.sba.ssos.entity.*;
+import com.sba.ssos.enums.*;
+import com.sba.ssos.exception.base.*;
+import com.sba.ssos.repository.*;
+import com.sba.ssos.repository.order.OrderDetailRepository;
 import com.sba.ssos.repository.product.shoe.ShoeRepository;
-import com.sba.ssos.repository.ShoeVariantRepository;
-import com.sba.ssos.service.product.shoeimage.ShoeImageService;
-import com.sba.ssos.utils.SkuUtils;
 import com.sba.ssos.service.brand.BrandService;
 import com.sba.ssos.service.category.CategoryService;
+import com.sba.ssos.service.product.shoeimage.ShoeImageService;
+import com.sba.ssos.utils.SkuUtils;
 import lombok.RequiredArgsConstructor;
-
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.math.BigDecimal;
+import java.util.*;
 
 import static com.sba.ssos.utils.SlugUtils.slugify;
 
@@ -40,13 +33,16 @@ public class ShoeService {
 
     private final ShoeRepository shoeRepository;
     private final ShoeVariantRepository shoeVariantRepository;
+    private final OrderDetailRepository orderDetailRepository;
+    private final ReviewRepository reviewRepository;
+    private final CartItemRepository cartItemRepository;
+    private final ShoeImageRepository shoeImageRepository;
     private final CategoryService categoryService;
     private final BrandService brandService;
-    private final ShoeMapper shoeMapper;
     private final ShoeImageService shoeImageService;
 
     @Transactional
-    public ShoeResponse create(ShoeCreateRequest request, List<MultipartFile> shoeImageFiles, List<List<MultipartFile>> variantImageFilesList){
+    public ShoeResponse create(ShoeCreateRequest request, List<MultipartFile> shoeImageFiles, List<List<MultipartFile>> variantImageFilesList) {
         if (request.variants() != null && request.variants().size() > 80) {
             throw new IllegalArgumentException("Shoe variants must not exceed 80");
         }
@@ -54,300 +50,23 @@ public class ShoeService {
         Category category = categoryService.findById(request.categoryId());
         Brand brand = brandService.findById(request.brandId());
 
-        String name = request.name().trim();
-        String description = request.description().trim();
-        String material = request.material().trim();
-        String slug = generateUniqueSlug(slugify(name), null);
-
         Shoe shoe = new Shoe();
-        shoe.setName(name);
-        shoe.setSlug(slug);
-        shoe.setGender(request.gender());
-        shoe.setStatus(request.status());
-        shoe.setDescription(description);
-        shoe.setMaterial(material);
-        shoe.setPrice(request.price());
-        shoe.setCategory(category);
-        shoe.setBrand(brand);
-
+        updateShoeBaseInfo(shoe, request, category, brand, null);
         shoeRepository.save(shoe);
 
-        List<ShoeVariant> savedVariants = new ArrayList<>();
-        for (int i = 0; i < request.variants().size(); i++) {
-            ShoeVariantRequest variantRequest = request.variants().get(i);
-            String size = variantRequest.size().trim();
-            String color = variantRequest.color().trim();
-            String baseSku = SkuUtils.buildBaseSku(shoe.getSlug(), size, color);
-            String uniqueSku = generateUniqueSku(baseSku);
-
-            ShoeVariant variant = ShoeVariant.builder()
-                    .shoe(shoe)
-                    .size(size)
-                    .color(color)
-                    .quantity(variantRequest.quantity())
-                    .sku(uniqueSku)
-                    .build();
-
-            savedVariants.add(shoeVariantRepository.save(variant));
-        }
+        List<ShoeVariant> savedVariants = createVariants(shoe, request.variants());
 
         List<String> shoeImageUrls = shoeImageService.uploadShoeImages(shoe, savedVariants, shoeImageFiles);
         shoeImageService.uploadVariantImages(shoe, savedVariants, variantImageFilesList);
 
-        List<ShoeVariantResponse> variantResponses = new ArrayList<>();
-        for (ShoeVariant variant : savedVariants) {
-            List<String> variantImageUrls = shoeImageService.getVariantImageUrls(variant);
-
-            variantResponses.add(new ShoeVariantResponse(
-                    variant.getId(),
-                    variant.getShoe().getId(),
-                    variant.getSize(),
-                    variant.getColor(),
-                    variant.getQuantity(),
-                    variant.getSku(),
-                    variantImageUrls,
-                    variant.getCreatedAt(),
-                    variant.getLastUpdatedAt()
-            ));
-        }
-
-        return new ShoeResponse(
-                shoe.getId(),
-                shoe.getName(),
-                shoe.getDescription(),
-                shoe.getSlug(),
-                shoe.getMaterial(),
-                shoe.getGender(),
-                shoe.getStatus(),
-                shoe.getCategory().getId(),
-                shoe.getCategory().getName(),
-                shoe.getCategory().getSlug(),
-                shoe.getBrand().getId(),
-                shoe.getBrand().getName(),
-                shoe.getBrand().getSlug(),
-                shoe.getPrice(),
-                shoeImageUrls,
-                variantResponses,
-                shoe.getCreatedAt(),
-                shoe.getLastUpdatedAt(),
-                shoe.isDeleted()
-        );
-    }
-
-    public List<ShoeResponse> getAllNotDeleted() {
-        List<Shoe> shoes = shoeRepository.findByDeletedFalse();
-        List<ShoeResponse> shoeResponses = new ArrayList<>();
-
-        for (Shoe shoe : shoes) {
-            List<ShoeVariant> variants = shoeVariantRepository.findByShoe_Id(shoe.getId());
-            List<ShoeVariantResponse> variantResponses = new ArrayList<>();
-
-            // Lấy ảnh của shoe - chỉ lấy từ variant đầu tiên thông qua service
-            List<String> shoeImageUrls = shoeImageService.getShoeImageUrls(shoe, variants);
-
-            for (ShoeVariant variant : variants) {
-                // Lấy ảnh của variant đầu tiên
-                List<String> variantImageUrls = shoeImageService.getVariantImageUrls(variant);
-
-                ShoeVariantResponse variantResponse = new ShoeVariantResponse(
-                        variant.getId(),
-                        variant.getShoe().getId(),
-                        variant.getSize(),
-                        variant.getColor(),
-                        variant.getQuantity(),
-                        variant.getSku(),
-                        variantImageUrls,
-                        variant.getCreatedAt(),
-                        variant.getLastUpdatedAt()
-                );
-                variantResponses.add(variantResponse);
-            }
-
-            ShoeResponse shoeResponse = new ShoeResponse(
-                    shoe.getId(),
-                    shoe.getName(),
-                    shoe.getDescription(),
-                    shoe.getSlug(),
-                    shoe.getMaterial(),
-                    shoe.getGender(),
-                    shoe.getStatus(),
-                    shoe.getCategory().getId(),
-                    shoe.getCategory().getName(),
-                    shoe.getCategory().getSlug(),
-                    shoe.getBrand().getId(),
-                    shoe.getBrand().getName(),
-                    shoe.getBrand().getSlug(),
-                    shoe.getPrice(),
-                    shoeImageUrls,
-                    variantResponses,
-                    shoe.getCreatedAt(),
-                    shoe.getLastUpdatedAt(),
-                    shoe.isDeleted()
-            );
-
-            shoeResponses.add(shoeResponse);
-        }
-
-        return shoeResponses;
-    }
-
-    public List<ShoeResponse> getAllForAdmin() {
-        List<Shoe> shoes = shoeRepository.findAll();
-        List<ShoeResponse> shoeResponses = new ArrayList<>();
-
-        for (Shoe shoe : shoes) {
-            List<ShoeVariant> variants = shoeVariantRepository.findByShoe_Id(shoe.getId());
-            List<ShoeVariantResponse> variantResponses = new ArrayList<>();
-
-            List<String> shoeImageUrls = shoeImageService.getShoeImageUrls(shoe, variants);
-
-            for (ShoeVariant variant : variants) {
-                List<String> variantImageUrls = shoeImageService.getVariantImageUrls(variant);
-
-                ShoeVariantResponse variantResponse = new ShoeVariantResponse(
-                        variant.getId(),
-                        variant.getShoe().getId(),
-                        variant.getSize(),
-                        variant.getColor(),
-                        variant.getQuantity(),
-                        variant.getSku(),
-                        variantImageUrls,
-                        variant.getCreatedAt(),
-                        variant.getLastUpdatedAt()
-                );
-                variantResponses.add(variantResponse);
-            }
-
-            ShoeResponse shoeResponse = new ShoeResponse(
-                    shoe.getId(),
-                    shoe.getName(),
-                    shoe.getDescription(),
-                    shoe.getSlug(),
-                    shoe.getMaterial(),
-                    shoe.getGender(),
-                    shoe.getStatus(),
-                    shoe.getCategory().getId(),
-                    shoe.getCategory().getName(),
-                    shoe.getCategory().getSlug(),
-                    shoe.getBrand().getId(),
-                    shoe.getBrand().getName(),
-                    shoe.getBrand().getSlug(),
-                    shoe.getPrice(),
-                    shoeImageUrls,
-                    variantResponses,
-                    shoe.getCreatedAt(),
-                    shoe.getLastUpdatedAt(),
-                    shoe.isDeleted()
-            );
-
-            shoeResponses.add(shoeResponse);
-        }
-
-        return shoeResponses;
-    }
-
-    public List<ShoeResponse> getAllDeleted() {
-        List<Shoe> shoes = shoeRepository.findByDeletedTrue();
-        List<ShoeResponse> shoeResponses = new ArrayList<>();
-
-        for (Shoe shoe : shoes) {
-            List<ShoeVariant> variants = shoeVariantRepository.findByShoe_Id(shoe.getId());
-            List<ShoeVariantResponse> variantResponses = new ArrayList<>();
-
-            List<String> shoeImageUrls = shoeImageService.getShoeImageUrls(shoe, variants);
-
-            for (ShoeVariant variant : variants) {
-                List<String> variantImageUrls = shoeImageService.getVariantImageUrls(variant);
-
-                ShoeVariantResponse variantResponse = new ShoeVariantResponse(
-                        variant.getId(),
-                        variant.getShoe().getId(),
-                        variant.getSize(),
-                        variant.getColor(),
-                        variant.getQuantity(),
-                        variant.getSku(),
-                        variantImageUrls,
-                        variant.getCreatedAt(),
-                        variant.getLastUpdatedAt()
-                );
-                variantResponses.add(variantResponse);
-            }
-
-            ShoeResponse shoeResponse = new ShoeResponse(
-                    shoe.getId(),
-                    shoe.getName(),
-                    shoe.getDescription(),
-                    shoe.getSlug(),
-                    shoe.getMaterial(),
-                    shoe.getGender(),
-                    shoe.getStatus(),
-                    shoe.getCategory().getId(),
-                    shoe.getCategory().getName(),
-                    shoe.getCategory().getSlug(),
-                    shoe.getBrand().getId(),
-                    shoe.getBrand().getName(),
-                    shoe.getBrand().getSlug(),
-                    shoe.getPrice(),
-                    shoeImageUrls,
-                    variantResponses,
-                    shoe.getCreatedAt(),
-                    shoe.getLastUpdatedAt(),
-                    shoe.isDeleted()
-            );
-
-            shoeResponses.add(shoeResponse);
-        }
-
-        return shoeResponses;
+        return buildShoeResponse(shoe, savedVariants, shoeImageUrls);
     }
 
     public ShoeResponse getById(UUID id) {
-        Shoe shoe = shoeRepository.findByIdAndDeletedFalse(id)
+        Shoe shoe = shoeRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Shoe", id));
 
-        List<ShoeVariant> variants = shoeVariantRepository.findByShoe_Id(id);
-
-        List<String> shoeImageUrls = shoeImageService.getShoeImageUrls(shoe, variants);
-
-        List<ShoeVariantResponse> variantResponses = variants.stream()
-                .map(variant -> {
-                    List<String> variantImageUrls = shoeImageService.getVariantImageUrls(variant);
-
-                    return new ShoeVariantResponse(
-                            variant.getId(),
-                            variant.getShoe().getId(),
-                            variant.getSize(),
-                            variant.getColor(),
-                            variant.getQuantity(),
-                            variant.getSku(),
-                            variantImageUrls,
-                            variant.getCreatedAt(),
-                            variant.getLastUpdatedAt()
-                    );
-                })
-                .toList();
-
-        return new ShoeResponse(
-                shoe.getId(),
-                shoe.getName(),
-                shoe.getDescription(),
-                shoe.getSlug(),
-                shoe.getMaterial(),
-                shoe.getGender(),
-                shoe.getStatus(),
-                shoe.getCategory().getId(),
-                shoe.getCategory().getName(),
-                shoe.getCategory().getSlug(),
-                shoe.getBrand().getId(),
-                shoe.getBrand().getName(),
-                shoe.getBrand().getSlug(),
-                shoe.getPrice(),
-                shoeImageUrls,
-                variantResponses,
-                shoe.getCreatedAt(),
-                shoe.getLastUpdatedAt(),
-                shoe.isDeleted()
-        );
+        return toShoeResponse(shoe);
     }
 
     @Transactional
@@ -363,109 +82,32 @@ public class ShoeService {
         Category category = categoryService.findById(request.categoryId());
         Brand brand = brandService.findById(request.brandId());
 
-        String name = request.name().trim();
-        String description = request.description().trim();
-        String material = request.material().trim();
-        String slug = generateUniqueSlug(slugify(name), shoe.getId());
-
-        shoe.setName(name);
-        shoe.setSlug(slug);
-        shoe.setGender(request.gender());
-        shoe.setStatus(request.status());
-        shoe.setDescription(description);
-        shoe.setMaterial(material);
-        shoe.setPrice(request.price());
-        shoe.setCategory(category);
-        shoe.setBrand(brand);
-
+        updateShoeBaseInfo(shoe, request, category, brand, shoe.getId());
         shoeRepository.save(shoe);
 
         List<ShoeVariant> existingVariants = shoeVariantRepository.findByShoe_Id(shoe.getId());
-        shoeVariantRepository.deleteAll(existingVariants);
+        Map<UUID, ShoeVariant> existingVariantById = new HashMap<>();
+        Map<String, ShoeVariant> existingVariantByKey = new HashMap<>();
+        indexExistingVariants(existingVariants, existingVariantById, existingVariantByKey);
 
-        List<ShoeVariant> savedVariants = new ArrayList<>();
-        for (int i = 0; i < request.variants().size(); i++) {
-            ShoeVariantRequest variantRequest = request.variants().get(i);
-            String size = variantRequest.size().trim();
-            String color = variantRequest.color().trim();
-            String baseSku = SkuUtils.buildBaseSku(shoe.getSlug(), size, color);
-            String uniqueSku = generateUniqueSku(baseSku);
+        validateNoDuplicateVariants(request.variants(), id);
 
-            ShoeVariant variant = ShoeVariant.builder()
-                    .shoe(shoe)
-                    .size(size)
-                    .color(color)
-                    .quantity(variantRequest.quantity())
-                    .sku(uniqueSku)
-                    .build();
+        Set<UUID> touchedVariantIds = new HashSet<>();
+        List<ShoeVariant> variantsInRequestOrder = new ArrayList<>();
 
-            savedVariants.add(shoeVariantRepository.save(variant));
-        }
-
-        if (shoeImageFiles != null && !shoeImageFiles.isEmpty()) {
-            shoeImageService.uploadShoeImages(shoe, savedVariants, shoeImageFiles);
-        }
-        if (variantImageFilesList != null && !variantImageFilesList.isEmpty()) {
-            shoeImageService.uploadVariantImages(shoe, savedVariants, variantImageFilesList);
-        }
-
-        List<ShoeVariantResponse> variantResponses = new ArrayList<>();
-        for (ShoeVariant variant : savedVariants) {
-            List<String> variantImageUrls = shoeImageService.getVariantImageUrls(variant);
-
-            variantResponses.add(new ShoeVariantResponse(
-                    variant.getId(),
-                    variant.getShoe().getId(),
-                    variant.getSize(),
-                    variant.getColor(),
-                    variant.getQuantity(),
-                    variant.getSku(),
-                    variantImageUrls,
-                    variant.getCreatedAt(),
-                    variant.getLastUpdatedAt()
-            ));
-        }
-
-        List<String> shoeImageUrls = shoeImageService.getShoeImageUrls(shoe, savedVariants);
-
-        return new ShoeResponse(
-                shoe.getId(),
-                shoe.getName(),
-                shoe.getDescription(),
-                shoe.getSlug(),
-                shoe.getMaterial(),
-                shoe.getGender(),
-                shoe.getStatus(),
-                shoe.getCategory().getId(),
-                shoe.getCategory().getName(),
-                shoe.getCategory().getSlug(),
-                shoe.getBrand().getId(),
-                shoe.getBrand().getName(),
-                shoe.getBrand().getSlug(),
-                shoe.getPrice(),
-                shoeImageUrls,
-                variantResponses,
-                shoe.getCreatedAt(),
-                shoe.getLastUpdatedAt(),
-                shoe.isDeleted()
+        upsertVariants(
+                id,
+                shoe,
+                request.variants(),
+                existingVariantById,
+                existingVariantByKey,
+                touchedVariantIds,
+                variantsInRequestOrder
         );
-    }
 
-    @Transactional
-    public void delete(UUID id) {
-        Shoe shoe = shoeRepository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> new NotFoundException("Shoe", id));
-        shoe.setDeleted(true);
-        shoeRepository.save(shoe);
-    }
+        handleUntouchedVariants(existingVariants, touchedVariantIds);
 
-    @Transactional
-    public ShoeResponse updateStatus(UUID id, ShoeStatusUpdateRequest request) {
-        Shoe shoe = shoeRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Shoe", id));
-
-        shoe.setStatus(request.status());
-        shoeRepository.save(shoe);
+        syncImagesAfterUpdate(shoe, request, shoeImageFiles, variantImageFilesList, variantsInRequestOrder);
 
         return getById(id);
     }
@@ -481,6 +123,12 @@ public class ShoeService {
             List<String> genders,
             Pageable pageable
     ) {
+        validatePageable(pageable);
+        validatePriceRange(minPrice, maxPrice);
+
+        List<String> normalizedStatuses = normalizeStatuses(statuses);
+        List<String> normalizedGenders = normalizeGenders(genders);
+
         Page<Shoe> page = shoeRepository.searchShoes(
                 search,
                 brandIds,
@@ -488,59 +136,16 @@ public class ShoeService {
                 categoryIds,
                 minPrice,
                 maxPrice,
-                statuses,
-                genders,
+                normalizedStatuses,
+                normalizedGenders,
                 pageable
         );
 
-        return page.map(shoe -> {
-            List<ShoeVariant> variants = shoeVariantRepository.findByShoe_Id(shoe.getId());
-            List<String> shoeImageUrls = shoeImageService.getShoeImageUrls(shoe, variants);
-
-            List<ShoeVariantResponse> variantResponses = variants.stream()
-                    .map(variant -> {
-                        List<String> variantImageUrls = shoeImageService.getVariantImageUrls(variant);
-
-                        return new ShoeVariantResponse(
-                                variant.getId(),
-                                variant.getShoe().getId(),
-                                variant.getSize(),
-                                variant.getColor(),
-                                variant.getQuantity(),
-                                variant.getSku(),
-                                variantImageUrls,
-                                variant.getCreatedAt(),
-                                variant.getLastUpdatedAt()
-                        );
-                    })
-                    .toList();
-
-            return new ShoeResponse(
-                    shoe.getId(),
-                    shoe.getName(),
-                    shoe.getDescription(),
-                    shoe.getSlug(),
-                    shoe.getMaterial(),
-                    shoe.getGender(),
-                    shoe.getStatus(),
-                    shoe.getCategory().getId(),
-                    shoe.getCategory().getName(),
-                    shoe.getCategory().getSlug(),
-                    shoe.getBrand().getId(),
-                    shoe.getBrand().getName(),
-                    shoe.getBrand().getSlug(),
-                    shoe.getPrice(),
-                    shoeImageUrls,
-                    variantResponses,
-                    shoe.getCreatedAt(),
-                    shoe.getLastUpdatedAt(),
-                    shoe.isDeleted()
-            );
-        });
+        return page.map(this::toShoeResponse);
     }
 
     public List<ShoeResponse> getNewArrivals(int limit) {
-        List<Shoe> shoes = shoeRepository.findByDeletedFalseOrderByCreatedAtDesc(PageRequest.of(0, limit));
+        List<Shoe> shoes = shoeRepository.findAll(PageRequest.of(0, limit)).getContent();
         return shoes.stream().map(this::toShoeResponse).toList();
     }
 
@@ -548,7 +153,7 @@ public class ShoeService {
         List<Shoe> shoes = shoeRepository.findBestSellers(PageRequest.of(0, limit));
         if (shoes.size() < limit) {
             List<UUID> existingIds = shoes.stream().map(Shoe::getId).toList();
-            List<Shoe> fallback = shoeRepository.findByDeletedFalseOrderByCreatedAtDesc(PageRequest.of(0, limit));
+            List<Shoe> fallback = shoeRepository.findAll(PageRequest.of(0, limit)).getContent();
             for (Shoe s : fallback) {
                 if (shoes.size() >= limit) break;
                 if (!existingIds.contains(s.getId())) {
@@ -560,10 +165,36 @@ public class ShoeService {
     }
 
     private ShoeResponse toShoeResponse(Shoe shoe) {
-        List<ShoeVariant> variants = shoeVariantRepository.findByShoe_Id(shoe.getId());
+        List<ShoeVariant> variants = shoeVariantRepository.findByShoe_IdAndActiveTrueOrderBySizeAscColorAsc(shoe.getId());
         List<String> shoeImageUrls = shoeImageService.getShoeImageUrls(shoe, variants);
+        return buildShoeResponse(shoe, variants, shoeImageUrls);
+    }
 
-        List<ShoeVariantResponse> variantResponses = variants.stream()
+    private ShoeResponse buildShoeResponse(Shoe shoe, List<ShoeVariant> variants, List<String> shoeImageUrls) {
+        return ShoeResponse.builder()
+                .id(shoe.getId())
+                .name(shoe.getName())
+                .description(shoe.getDescription())
+                .slug(shoe.getSlug())
+                .material(shoe.getMaterial())
+                .gender(shoe.getGender())
+                .status(shoe.getStatus())
+                .categoryId(shoe.getCategory().getId())
+                .categoryName(shoe.getCategory().getName())
+                .categorySlug(shoe.getCategory().getSlug())
+                .brandId(shoe.getBrand().getId())
+                .brandName(shoe.getBrand().getName())
+                .brandSlug(shoe.getBrand().getSlug())
+                .price(shoe.getPrice())
+                .imageUrls(shoeImageUrls)
+                .variants(toVariantResponses(variants))
+                .createdAt(shoe.getCreatedAt())
+                .updatedAt(shoe.getLastUpdatedAt())
+                .build();
+    }
+
+    private List<ShoeVariantResponse> toVariantResponses(List<ShoeVariant> variants) {
+        return variants.stream()
                 .map(variant -> new ShoeVariantResponse(
                         variant.getId(),
                         variant.getShoe().getId(),
@@ -576,28 +207,328 @@ public class ShoeService {
                         variant.getLastUpdatedAt()
                 ))
                 .toList();
+    }
 
-        return new ShoeResponse(
-                shoe.getId(),
-                shoe.getName(),
-                shoe.getDescription(),
-                shoe.getSlug(),
-                shoe.getMaterial(),
-                shoe.getGender(),
-                shoe.getStatus(),
-                shoe.getCategory().getId(),
-                shoe.getCategory().getName(),
-                shoe.getCategory().getSlug(),
-                shoe.getBrand().getId(),
-                shoe.getBrand().getName(),
-                shoe.getBrand().getSlug(),
-                shoe.getPrice(),
-                shoeImageUrls,
-                variantResponses,
-                shoe.getCreatedAt(),
-                shoe.getLastUpdatedAt(),
-                shoe.isDeleted()
+    private List<ShoeVariant> createVariants(Shoe shoe, List<ShoeVariantRequest> requests) {
+        List<ShoeVariant> savedVariants = new ArrayList<>();
+        for (ShoeVariantRequest variantRequest : requests) {
+            String size = variantRequest.size().trim();
+            String color = variantRequest.color().trim();
+            String baseSku = SkuUtils.buildBaseSku(shoe.getSlug(), size, color);
+            String uniqueSku = generateUniqueSku(baseSku);
+
+            ShoeVariant variant = ShoeVariant.builder()
+                    .shoe(shoe)
+                    .size(size)
+                    .color(color)
+                    .quantity(variantRequest.quantity())
+                    .sku(uniqueSku)
+                    .build();
+
+            savedVariants.add(shoeVariantRepository.save(variant));
+        }
+        return savedVariants;
+    }
+
+    private void updateShoeBaseInfo(Shoe shoe, ShoeCreateRequest request, Category category, Brand brand, UUID excludeId) {
+        applyShoeBaseInfo(
+                shoe,
+                request.name(),
+                request.description(),
+                request.material(),
+                request.gender(),
+                request.status(),
+                request.price(),
+                category,
+                brand,
+                excludeId
         );
+    }
+
+    private void updateShoeBaseInfo(Shoe shoe, ShoeUpdateRequest request, Category category, Brand brand, UUID excludeId) {
+        applyShoeBaseInfo(
+                shoe,
+                request.name(),
+                request.description(),
+                request.material(),
+                request.gender(),
+                request.status(),
+                request.price(),
+                category,
+                brand,
+                excludeId
+        );
+    }
+
+    private void applyShoeBaseInfo(
+            Shoe shoe,
+            String nameValue,
+            String descriptionValue,
+            String materialValue,
+            Gender gender,
+            ShoeStatus status,
+            Double price,
+            Category category,
+            Brand brand,
+            UUID excludeId
+    ) {
+        String name = nameValue.trim();
+        String description = descriptionValue.trim();
+        String material = materialValue.trim();
+        String slug = generateUniqueSlug(slugify(name), excludeId);
+
+        shoe.setName(name);
+        shoe.setSlug(slug);
+        shoe.setGender(gender);
+        shoe.setStatus(status);
+        shoe.setDescription(description);
+        shoe.setMaterial(material);
+        shoe.setPrice(price);
+        shoe.setCategory(category);
+        shoe.setBrand(brand);
+    }
+
+    private void indexExistingVariants(
+            List<ShoeVariant> existingVariants,
+            Map<UUID, ShoeVariant> existingVariantById,
+            Map<String, ShoeVariant> existingVariantByKey
+    ) {
+        for (ShoeVariant variant : existingVariants) {
+            existingVariantById.put(variant.getId(), variant);
+            existingVariantByKey.put(toVariantKey(variant.getSize(), variant.getColor()), variant);
+        }
+    }
+
+    private void validateNoDuplicateVariants(List<ShoeVariantRequest> variants, UUID shoeId) {
+        Set<String> seenKeys = new HashSet<>();
+        for (ShoeVariantRequest variant : variants) {
+            String key = toVariantKey(variant.size(), variant.color());
+            if (!seenKeys.add(key)) {
+                throw new ConflictException(
+                        "error.shoe.variant.duplicate",
+                        "shoeId", shoeId,
+                        "size", variant.size(),
+                        "color", variant.color()
+                );
+            }
+        }
+    }
+
+    private void upsertVariants(
+            UUID shoeId,
+            Shoe shoe,
+            List<ShoeVariantRequest> requests,
+            Map<UUID, ShoeVariant> existingVariantById,
+            Map<String, ShoeVariant> existingVariantByKey,
+            Set<UUID> touchedVariantIds,
+            List<ShoeVariant> variantsInRequestOrder
+    ) {
+        for (ShoeVariantRequest request : requests) {
+            ShoeVariant variant = resolveVariant(request, existingVariantById, existingVariantByKey);
+            if (variant == null) {
+                variant = createVariantFromRequest(shoe, request);
+            } else {
+                updateExistingVariant(shoeId, shoe, variant, request, existingVariantByKey);
+            }
+
+            variant = shoeVariantRepository.save(variant);
+            touchedVariantIds.add(variant.getId());
+            variantsInRequestOrder.add(variant);
+        }
+    }
+
+    private ShoeVariant resolveVariant(
+            ShoeVariantRequest request,
+            Map<UUID, ShoeVariant> existingVariantById,
+            Map<String, ShoeVariant> existingVariantByKey
+    ) {
+        if (request.id() != null) {
+            ShoeVariant variant = existingVariantById.get(request.id());
+            if (variant == null) {
+                throw new NotFoundException("ShoeVariant", request.id());
+            }
+            return variant;
+        }
+
+        String key = toVariantKey(request.size(), request.color());
+        return existingVariantByKey.get(key);
+    }
+
+    private ShoeVariant createVariantFromRequest(Shoe shoe, ShoeVariantRequest request) {
+        String size = request.size().trim();
+        String color = request.color().trim();
+        boolean active = request.active() == null || request.active();
+
+        String baseSku = SkuUtils.buildBaseSku(shoe.getSlug(), size, color);
+        String uniqueSku = generateUniqueSku(baseSku);
+
+        return ShoeVariant.builder()
+                .shoe(shoe)
+                .size(size)
+                .color(color)
+                .quantity(request.quantity())
+                .sku(uniqueSku)
+                .active(active)
+                .build();
+    }
+
+    private void updateExistingVariant(
+            UUID shoeId,
+            Shoe shoe,
+            ShoeVariant variant,
+            ShoeVariantRequest request,
+            Map<String, ShoeVariant> existingVariantByKey
+    ) {
+        String requestedSize = request.size().trim();
+        String requestedColor = request.color().trim();
+        Long requestedQuantity = request.quantity();
+        boolean requestedActive = request.active() == null || request.active();
+        String requestedKey = toVariantKey(requestedSize, requestedColor);
+
+        boolean isUsed = isVariantUsed(variant.getId());
+        boolean sizeChanged = !variant.getSize().equalsIgnoreCase(requestedSize);
+        boolean colorChanged = !variant.getColor().equalsIgnoreCase(requestedColor);
+
+        if (isUsed && (sizeChanged || colorChanged)) {
+            throw new ConflictException(
+                    "error.shoe.variant.cannot.modify.used",
+                    "shoeId", shoeId,
+                    "variantId", variant.getId()
+            );
+        }
+
+        if (!isUsed) {
+            ShoeVariant conflict = existingVariantByKey.get(requestedKey);
+            if (conflict != null && !conflict.getId().equals(variant.getId())) {
+                throw new ConflictException(
+                        "error.shoe.variant.duplicate",
+                        "shoeId", shoeId,
+                        "size", requestedSize,
+                        "color", requestedColor
+                );
+            }
+
+            if (sizeChanged || colorChanged) {
+                variant.setSize(requestedSize);
+                variant.setColor(requestedColor);
+
+                String baseSku = SkuUtils.buildBaseSku(shoe.getSlug(), requestedSize, requestedColor);
+                String uniqueSku = generateUniqueSkuForUpdate(baseSku, variant.getId());
+                variant.setSku(uniqueSku);
+            }
+        }
+
+        variant.setQuantity(requestedQuantity);
+        variant.setActive(requestedActive);
+    }
+
+    private void handleUntouchedVariants(List<ShoeVariant> existingVariants, Set<UUID> touchedVariantIds) {
+        for (ShoeVariant existingVariant : existingVariants) {
+            if (touchedVariantIds.contains(existingVariant.getId())) {
+                continue;
+            }
+
+            if (isVariantUsed(existingVariant.getId())) {
+                existingVariant.setActive(false);
+                existingVariant.setQuantity(0L);
+                shoeVariantRepository.save(existingVariant);
+                continue;
+            }
+
+            cartItemRepository.deleteAllByShoeVariant_Id(existingVariant.getId());
+            shoeImageRepository.deleteAllByShoeVariant_Id(existingVariant.getId());
+            shoeVariantRepository.delete(existingVariant);
+        }
+    }
+
+    private void syncImagesAfterUpdate(
+            Shoe shoe,
+            ShoeUpdateRequest request,
+            List<MultipartFile> shoeImageFiles,
+            List<List<MultipartFile>> variantImageFilesList,
+            List<ShoeVariant> variantsInRequestOrder
+    ) {
+        shoeImageService.syncShoeImagesForUpdate(
+                shoe,
+                request.keepShoeImageUrls(),
+                shoeImageFiles
+        );
+
+        shoeImageService.syncVariantImagesForUpdate(
+                shoe,
+                variantsInRequestOrder,
+                request.variantImageUpdates(),
+                variantImageFilesList
+        );
+    }
+
+    private boolean isVariantUsed(UUID variantId) {
+        return orderDetailRepository.existsByShoeVariant_Id(variantId)
+               || reviewRepository.existsByShoeVariant_Id(variantId);
+    }
+
+    private void validatePageable(Pageable pageable) {
+        if (pageable == null) {
+            throw new IllegalArgumentException("pageable must not be null");
+        }
+        if (pageable.getPageNumber() < 0) {
+            throw new IllegalArgumentException("page must be greater than or equal to 0");
+        }
+        if (pageable.getPageSize() <= 0 || pageable.getPageSize() > 100) {
+            throw new IllegalArgumentException("size must be between 1 and 100");
+        }
+    }
+
+    private void validatePriceRange(BigDecimal minPrice, BigDecimal maxPrice) {
+        if (minPrice != null && maxPrice != null && minPrice.compareTo(maxPrice) > 0) {
+            throw new IllegalArgumentException("minPrice must be less than or equal to maxPrice");
+        }
+    }
+
+    private List<String> normalizeStatuses(List<String> statuses) {
+        if (statuses == null || statuses.isEmpty()) {
+            return null;
+        }
+
+        List<String> normalized = statuses.stream()
+                .filter(s -> s != null && !s.isBlank())
+                .map(s -> s.trim().toUpperCase(Locale.ROOT))
+                .distinct()
+                .toList();
+
+        for (String status : normalized) {
+            if (ShoeStatus.fromId(status) == null) {
+                throw new IllegalArgumentException("Invalid shoe status: " + status);
+            }
+        }
+
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    private List<String> normalizeGenders(List<String> genders) {
+        if (genders == null || genders.isEmpty()) {
+            return null;
+        }
+
+        List<String> normalized = genders.stream()
+                .filter(g -> g != null && !g.isBlank())
+                .map(g -> g.trim().toUpperCase(Locale.ROOT))
+                .distinct()
+                .toList();
+
+        for (String gender : normalized) {
+            if (Gender.fromId(gender) == null) {
+                throw new IllegalArgumentException("Invalid gender: " + gender);
+            }
+        }
+
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    private static String toVariantKey(String size, String color) {
+        var normalizedSize = size == null ? "" : size.trim().toLowerCase(Locale.ROOT);
+        var normalizedColor = color == null ? "" : color.trim().toLowerCase(Locale.ROOT);
+        return normalizedSize + "|" + normalizedColor;
     }
 
     private String generateUniqueSlug(String baseSlug, UUID excludeId) {
@@ -637,4 +568,15 @@ public class ShoeService {
         return candidate;
     }
 
+    private String generateUniqueSkuForUpdate(String baseSku, UUID variantId) {
+        String candidate = baseSku;
+        int suffix = 0;
+
+        while (shoeVariantRepository.existsBySkuAndIdNot(candidate, variantId)) {
+            suffix++;
+            candidate = SkuUtils.appendNumericSuffix(baseSku, suffix);
+        }
+
+        return candidate;
+    }
 }

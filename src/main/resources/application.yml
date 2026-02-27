@@ -49,11 +49,7 @@ application-properties:
       - { method: GET, path: /api/shoes/* }
       - { method: POST, path: /api/shoes }
       - { method: PUT, path: /api/shoes/* }
-      - { method: DELETE, path: /api/shoes/* }
       - { method: PATCH, path: /api/shoes/*/status }
-      - { method: GET, path: /api/shoes/admin/all }
-      - { method: GET, path: /api/shoes/admin/deleted }
-      - { method: GET, path: /api/shoes/admin/not-deleted }
       - { method: GET, path: /api/brands }
       - { method: GET, path: /api/brands/* }
       - { method: POST, path: /api/brands }
@@ -96,11 +92,7 @@ application-properties:
       - { method: GET, path: /api/shoes }
       - { method: GET, path: /api/shoes/* }
       - { method: PUT, path: /api/shoes/* }
-      - { method: DELETE, path: /api/shoes/* }
       - { method: PATCH, path: /api/shoes/*/status }
-      - { method: GET, path: /api/shoes/admin/all }
-      - { method: GET, path: /api/shoes/admin/deleted }
-      - { method: GET, path: /api/shoes/admin/not-deleted }
       - { method: GET, path: /api/shoes/*/variants }
       - { method: GET, path: /api/files/** }
       - { method: POST, path: /api/payments/sepay/hook }
@@ -116,6 +108,7 @@ application-properties:
       - { method: GET, path: /api/categories/* }
       - { method: GET, path: /api/shoes/*/variants }
       - { method: POST, path: /api/v1/chat }
+
 
     public-urls:
       # OpenAPI Swagger URLs
