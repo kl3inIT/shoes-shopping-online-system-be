@@ -25,7 +25,6 @@ public class AiParameters extends BaseAuditableEntity {
   @Column(name = "active", nullable = false)
   private boolean active;
 
-  @Lob
   @Column(name = "content", columnDefinition = "TEXT")
   private String content;
 

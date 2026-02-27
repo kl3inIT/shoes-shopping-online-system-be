@@ -13,9 +13,9 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
- * Queries the current user's wishlist directly from the database.
- * Returns real-time wishlist contents so the LLM can answer questions
- * like "what's in my wishlist?" or "do I have this shoe saved?".
+ * Queries the current user's wishlist directly from the database. Returns real-time wishlist
+ * contents so the LLM can answer questions like "what's in my wishlist?" or "do I have this shoe
+ * saved?".
  */
 public class WishlistQueryTool extends AbstractDbTool {
 
@@ -69,10 +69,16 @@ public class WishlistQueryTool extends AbstractDbTool {
 
     for (Wishlist item : items) {
       Shoe shoe = item.getShoe();
-      sb.append("  - ").append(shoe.getName())
-          .append(" | Brand: ").append(shoe.getBrand().getName())
-          .append(" | Price: ").append(String.format("%.0f", shoe.getPrice())).append(" VND")
-          .append(" | Status: ").append(shoe.getStatus()).append("\n");
+      sb.append("  - ")
+          .append(shoe.getName())
+          .append(" | Brand: ")
+          .append(shoe.getBrand().getName())
+          .append(" | Price: ")
+          .append(String.format("%.0f", shoe.getPrice()))
+          .append(" VND")
+          .append(" | Status: ")
+          .append(shoe.getStatus())
+          .append("\n");
     }
 
     return sb.toString();

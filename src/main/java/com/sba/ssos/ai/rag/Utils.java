@@ -5,7 +5,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.springframework.ai.document.Document;
 
