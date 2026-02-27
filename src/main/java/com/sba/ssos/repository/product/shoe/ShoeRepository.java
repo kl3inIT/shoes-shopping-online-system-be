@@ -1,10 +1,12 @@
-package com.sba.ssos.repository;
+package com.sba.ssos.repository.product.shoe;
 
 import com.sba.ssos.entity.Shoe;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Map;
@@ -13,7 +15,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Repository
-public interface ShoeRepository extends JpaRepository<Shoe, UUID> {
+public interface ShoeRepository extends JpaRepository<Shoe, UUID>, ShoeRepositoryCustom {
 
   long countByCategory_Id(UUID categoryId);
 
@@ -38,4 +40,20 @@ public interface ShoeRepository extends JpaRepository<Shoe, UUID> {
   }
 
   Optional<Shoe> findBySlug(String slug);
+
+  List<Shoe> findByDeletedFalse();
+
+  Optional<Shoe> findByIdAndDeletedFalse(UUID id);
+
+  List<Shoe> findByDeletedTrue();
+
+  List<Shoe> findByDeletedFalseOrderByCreatedAtDesc(Pageable pageable);
+
+  @Query("""
+      SELECT od.shoeVariant.shoe FROM OrderDetail od
+      WHERE od.shoeVariant.shoe.deleted = false
+      GROUP BY od.shoeVariant.shoe
+      ORDER BY SUM(od.quantity) DESC
+      """)
+  List<Shoe> findBestSellers(Pageable pageable);
 }

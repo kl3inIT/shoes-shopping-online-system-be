@@ -40,16 +40,20 @@ application-properties:
 
   security-properties:
     admin-endpoints:
-      - { method: GET, path: /test/admin }
       - { method: POST, path: /api/payments/sepay/hook }
       - { method: GET, path: /api/categories }
       - { method: POST, path: /api/categories }
       - { method: PUT, path: /api/categories/* }
       - { method: DELETE, path: /api/categories/* }
-      - { method: POST, path: /api/shoes }
       - { method: GET, path: /api/shoes }
       - { method: GET, path: /api/shoes/* }
       - { method: POST, path: /api/shoes }
+      - { method: PUT, path: /api/shoes/* }
+      - { method: DELETE, path: /api/shoes/* }
+      - { method: PATCH, path: /api/shoes/*/status }
+      - { method: GET, path: /api/shoes/admin/all }
+      - { method: GET, path: /api/shoes/admin/deleted }
+      - { method: GET, path: /api/shoes/admin/not-deleted }
       - { method: GET, path: /api/brands }
       - { method: GET, path: /api/brands/* }
       - { method: POST, path: /api/brands }
@@ -78,7 +82,6 @@ application-properties:
     webhook-endpoints:
       - { method: POST, path: /api/payments/sepay/hook }
     public-endpoints:
-      - { method: GET, path: /test/free }
       - { method: GET, path: /user }
       - { method: POST, path: /webhook/keycloak/register }
       - { method: POST, path: /sepay/auth/token }
@@ -92,6 +95,12 @@ application-properties:
       - { method: POST, path: /api/shoes }
       - { method: GET, path: /api/shoes }
       - { method: GET, path: /api/shoes/* }
+      - { method: PUT, path: /api/shoes/* }
+      - { method: DELETE, path: /api/shoes/* }
+      - { method: PATCH, path: /api/shoes/*/status }
+      - { method: GET, path: /api/shoes/admin/all }
+      - { method: GET, path: /api/shoes/admin/deleted }
+      - { method: GET, path: /api/shoes/admin/not-deleted }
       - { method: GET, path: /api/shoes/*/variants }
       - { method: GET, path: /api/files/** }
       - { method: POST, path: /api/payments/sepay/hook }

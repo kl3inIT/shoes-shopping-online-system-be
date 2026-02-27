@@ -3,6 +3,7 @@ package com.sba.ssos.dto.response.product.shoe;
 import com.sba.ssos.dto.response.product.shoevariant.ShoeVariantResponse;
 import com.sba.ssos.enums.Gender;
 import com.sba.ssos.enums.ShoeStatus;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -17,11 +18,14 @@ public record ShoeResponse(
         ShoeStatus status,
         UUID categoryId,
         String categoryName,
+        String categorySlug,
         UUID brandId,
         String brandName,
+        String brandSlug,
         Double price,
         List<String> imageUrls,
         List<ShoeVariantResponse> variants,
         Instant createdAt,
-        Instant updatedAt
-) {}
+        Instant updatedAt,
+        boolean deleted) {
+}

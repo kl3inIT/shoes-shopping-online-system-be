@@ -23,7 +23,7 @@ public class MinioFileStorageService {
     private static final Set<String> ALLOWED_FOLDERS = Set.of("shoes", "shoevariants");
 
     private final MinioClient minioClient;
-    private final ApplicationProperties ap;
+    private final ApplicationProperties applicationProperties;
 
     public String upload(MultipartFile file) {
         return upload(file, "");
@@ -40,7 +40,7 @@ public class MinioFileStorageService {
 
         String fileName = UUID.randomUUID() + fileExtension;
         String objectKey = safeFolder.isEmpty() ? fileName : safeFolder + "/" + fileName;
-        String bucketName = ap.minioProperties().bucket();
+        String bucketName = applicationProperties.minioProperties().bucket();
 
         ensureBucketExists(bucketName);
 
@@ -61,7 +61,7 @@ public class MinioFileStorageService {
     }
 
     public FileResource getFile(String objectKey) {
-        String bucketName = ap.minioProperties().bucket();
+        String bucketName = applicationProperties.minioProperties().bucket();
         try {
             InputStream stream = minioClient.getObject(
                     GetObjectArgs.builder()
