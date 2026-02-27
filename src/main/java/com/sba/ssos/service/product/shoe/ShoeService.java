@@ -92,17 +92,22 @@ public class ShoeService {
 
         validateNoDuplicateVariants(request.variants(), id);
 
-        VariantSyncResult syncResult = upsertVariants(
+        Set<UUID> touchedVariantIds = new HashSet<>();
+        List<ShoeVariant> variantsInRequestOrder = new ArrayList<>();
+
+        upsertVariants(
                 id,
                 shoe,
                 request.variants(),
                 existingVariantById,
-                existingVariantByKey
+                existingVariantByKey,
+                touchedVariantIds,
+                variantsInRequestOrder
         );
 
-        handleUntouchedVariants(existingVariants, syncResult.touchedVariantIds());
+        handleUntouchedVariants(existingVariants, touchedVariantIds);
 
-        syncImagesAfterUpdate(shoe, request, shoeImageFiles, variantImageFilesList, syncResult.variantsInRequestOrder());
+        syncImagesAfterUpdate(shoe, request, shoeImageFiles, variantImageFilesList, variantsInRequestOrder);
 
         return getById(id);
     }
@@ -309,16 +314,15 @@ public class ShoeService {
         }
     }
 
-    private VariantSyncResult upsertVariants(
+    private void upsertVariants(
             UUID shoeId,
             Shoe shoe,
             List<ShoeVariantRequest> requests,
             Map<UUID, ShoeVariant> existingVariantById,
-            Map<String, ShoeVariant> existingVariantByKey
+            Map<String, ShoeVariant> existingVariantByKey,
+            Set<UUID> touchedVariantIds,
+            List<ShoeVariant> variantsInRequestOrder
     ) {
-        Set<UUID> touchedVariantIds = new HashSet<>();
-        List<ShoeVariant> variantsInRequestOrder = new ArrayList<>();
-
         for (ShoeVariantRequest request : requests) {
             ShoeVariant variant = resolveVariant(request, existingVariantById, existingVariantByKey);
             if (variant == null) {
@@ -331,8 +335,6 @@ public class ShoeService {
             touchedVariantIds.add(variant.getId());
             variantsInRequestOrder.add(variant);
         }
-
-        return new VariantSyncResult(touchedVariantIds, variantsInRequestOrder);
     }
 
     private ShoeVariant resolveVariant(
@@ -576,8 +578,5 @@ public class ShoeService {
         }
 
         return candidate;
-    }
-
-    private record VariantSyncResult(Set<UUID> touchedVariantIds, List<ShoeVariant> variantsInRequestOrder) {
     }
 }
