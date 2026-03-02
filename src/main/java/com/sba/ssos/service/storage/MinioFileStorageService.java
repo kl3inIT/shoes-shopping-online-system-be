@@ -8,6 +8,7 @@ import io.minio.GetObjectArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,7 +24,7 @@ public class MinioFileStorageService {
     private static final Set<String> ALLOWED_FOLDERS = Set.of("shoes", "shoevariants");
 
     private final MinioClient minioClient;
-    private final ApplicationProperties ap;
+    private final ApplicationProperties applicationProperties;
 
     public String upload(MultipartFile file) {
         return upload(file, "");
@@ -40,7 +41,7 @@ public class MinioFileStorageService {
 
         String fileName = UUID.randomUUID() + fileExtension;
         String objectKey = safeFolder.isEmpty() ? fileName : safeFolder + "/" + fileName;
-        String bucketName = ap.minioProperties().bucket();
+        String bucketName = applicationProperties.minioProperties().bucket();
 
         ensureBucketExists(bucketName);
 
@@ -61,7 +62,7 @@ public class MinioFileStorageService {
     }
 
     public FileResource getFile(String objectKey) {
-        String bucketName = ap.minioProperties().bucket();
+        String bucketName = applicationProperties.minioProperties().bucket();
         try {
             InputStream stream = minioClient.getObject(
                     GetObjectArgs.builder()
@@ -71,6 +72,20 @@ public class MinioFileStorageService {
             );
             String contentType = guessContentType(objectKey);
             return new FileResource(stream, contentType);
+        } catch (Exception e) {
+            throw new InternalServerErrorException("error.storage.minio", e);
+        }
+    }
+
+    public void delete(String objectKey) {
+        String bucketName = applicationProperties.minioProperties().bucket();
+        try {
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(objectKey)
+                            .build()
+            );
         } catch (Exception e) {
             throw new InternalServerErrorException("error.storage.minio", e);
         }

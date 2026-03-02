@@ -7,7 +7,7 @@ import com.sba.ssos.exception.base.ConflictException;
 import com.sba.ssos.exception.base.NotFoundException;
 import com.sba.ssos.mapper.BrandMapper;
 import com.sba.ssos.repository.BrandRepository;
-import com.sba.ssos.repository.ShoeRepository;
+import com.sba.ssos.repository.product.shoe.ShoeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

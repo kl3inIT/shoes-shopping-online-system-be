@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.Nullable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -25,27 +26,36 @@ public class UserService {
   private final UserMapper userMapper;
 
   public AuthorizedUserDetails getCurrentUser() {
+    AuthorizedUserDetails user = getCurrentUserOrNull();
+    if (user == null) {
+      throw new IllegalStateException("No authenticated user");
+    }
+    return user;
+  }
+
+  @Nullable
+  public AuthorizedUserDetails getCurrentUserOrNull() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
     if (authentication == null
-            || !authentication.isAuthenticated()
-            || authentication.getPrincipal() == null) {
-      throw new IllegalStateException("No authenticated user");
+        || !authentication.isAuthenticated()) {
+      return null;
     }
 
-    if (!(authentication.getPrincipal() instanceof AuthorizedUserDetails user)) {
-      throw new IllegalStateException("Unexpected principal type");
+    Object principal = authentication.getPrincipal();
+    if (principal instanceof AuthorizedUserDetails user) {
+      return user;
     }
 
-    return user;
+    return null;
   }
 
   @Transactional(readOnly = true)
   public UserResponse getUserByKeycloakId(UUID keycloakId) {
     User user =
-            userRepository
-                    .findByKeycloakId(keycloakId)
-                    .orElseThrow(() -> new UserNotFoundException(keycloakId));
+        userRepository
+            .findByKeycloakId(keycloakId)
+            .orElseThrow(() -> new UserNotFoundException(keycloakId));
     return userMapper.toResponse(user);
   }
 
@@ -55,21 +65,21 @@ public class UserService {
     log.info("Processing Keycloak user registration webhook: {}", request.getUserName());
 
     userRepository
-            .findByKeycloakId(request.getId())
-            .orElseGet(
-                    () -> {
-                      User user =
-                              User.builder()
-                                      .keycloakId(request.getId())
-                                      .username(request.getUserName())
-                                      .email(request.getEmail())
-                                      .firstName(request.getFirstName())
-                                      .lastName(request.getLastName())
-                                      .lastSeenAt(Instant.now())
-                                      .build();
+        .findByKeycloakId(request.getId())
+        .orElseGet(
+            () -> {
+              User user =
+                  User.builder()
+                      .keycloakId(request.getId())
+                      .username(request.getUserName())
+                      .email(request.getEmail())
+                      .firstName(request.getFirstName())
+                      .lastName(request.getLastName())
+                      .lastSeenAt(Instant.now())
+                      .build();
 
-                      log.info("Created new user from Keycloak webhook: {}", request.getUserName());
-                      return userRepository.save(user);
-                    });
+              log.info("Created new user from Keycloak webhook: {}", request.getUserName());
+              return userRepository.save(user);
+            });
   }
 }
