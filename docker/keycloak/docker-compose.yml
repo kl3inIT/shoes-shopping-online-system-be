@@ -25,7 +25,7 @@ services:
         -XX:+ExitOnOutOfMemoryError
 
     mem_limit: 1500m
-    command: start-dev
+    command: start
     volumes:
       - ./themes:/opt/keycloak/themes
       # Mount directory for custom extensions (email domain validation)

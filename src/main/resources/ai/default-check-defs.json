@@ -1,0 +1,27 @@
+[
+  {
+    "category": "policy",
+    "question": "What is the return policy?",
+    "referenceAnswer": "Customers can return products within 30 days of purchase, provided the items are in original condition with tags attached."
+  },
+  {
+    "category": "policy",
+    "question": "Do you offer free shipping?",
+    "referenceAnswer": "Free shipping is available for orders over a certain amount. Standard shipping fees apply for smaller orders."
+  },
+  {
+    "category": "policy",
+    "question": "What payment methods do you accept?",
+    "referenceAnswer": "We accept credit/debit cards, bank transfers, and various online payment methods."
+  },
+  {
+    "category": "general",
+    "question": "What types of shoes do you sell?",
+    "referenceAnswer": "We sell a variety of shoes including sneakers, running shoes, casual shoes, and formal shoes from multiple brands."
+  },
+  {
+    "category": "general",
+    "question": "How can I track my order?",
+    "referenceAnswer": "You can track your order through your account dashboard or by using the tracking number provided in the shipping confirmation email."
+  }
+]

@@ -28,4 +28,8 @@ public class ShoeVariant extends BaseAuditableEntity {
 
     @Column(name = "sku", nullable = false, unique = true)
     private String sku;
+
+    @Builder.Default
+    @Column(name = "active", nullable = false)
+    private boolean active = true;
 }

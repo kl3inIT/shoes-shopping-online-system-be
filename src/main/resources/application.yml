@@ -35,18 +35,21 @@ application-properties:
     bucket: ${MINIO_BUCKET:ssos-images}
     presigned-expiry-seconds: ${MINIO_PRESIGNED_EXPIRY_SECONDS:3600}
 
+  chat-properties:
+    max-request-length: 2000
+
   security-properties:
     admin-endpoints:
-      - { method: GET, path: /test/admin }
       - { method: POST, path: /api/payments/sepay/hook }
       - { method: GET, path: /api/categories }
       - { method: POST, path: /api/categories }
       - { method: PUT, path: /api/categories/* }
       - { method: DELETE, path: /api/categories/* }
-      - { method: POST, path: /api/shoes}
       - { method: GET, path: /api/shoes }
       - { method: GET, path: /api/shoes/* }
       - { method: POST, path: /api/shoes }
+      - { method: PUT, path: /api/shoes/* }
+      - { method: PATCH, path: /api/shoes/*/status }
       - { method: GET, path: /api/brands }
       - { method: GET, path: /api/brands/* }
       - { method: POST, path: /api/brands }
@@ -71,10 +74,10 @@ application-properties:
       - { method: PUT, path: /api/cart/* }
       - { method: DELETE, path: /api/cart/* }
       - { method: DELETE, path: /api/cart }
+      - { method: POST, path: /api/v1/chat }
     webhook-endpoints:
       - { method: POST, path: /api/payments/sepay/hook }
     public-endpoints:
-      - { method: GET, path: /test/free }
       - { method: GET, path: /user }
       - { method: POST, path: /webhook/keycloak/register }
       - { method: POST, path: /sepay/auth/token }
@@ -88,6 +91,8 @@ application-properties:
       - { method: POST, path: /api/shoes }
       - { method: GET, path: /api/shoes }
       - { method: GET, path: /api/shoes/* }
+      - { method: PUT, path: /api/shoes/* }
+      - { method: PATCH, path: /api/shoes/*/status }
       - { method: GET, path: /api/shoes/*/variants }
       - { method: GET, path: /api/files/** }
       - { method: POST, path: /api/payments/sepay/hook }
@@ -104,6 +109,7 @@ application-properties:
       - { method: GET, path: /api/categories }
       - { method: GET, path: /api/categories/* }
       - { method: GET, path: /api/shoes/*/variants }
+      - { method: POST, path: /api/v1/chat }
     public-urls:
       # OpenAPI Swagger URLs
       - /swagger-ui.html
@@ -128,13 +134,13 @@ spring:
   sql:
     init:
       mode: always
-#      url: jdbc:postgresql://localhost:5432/ssos
-#      username: postgres
-#      password: 123456
+  #      url: jdbc:postgresql://localhost:5432/ssos
+  #      username: postgres
+  #      password: 123456
 
   jpa:
     hibernate:
-      ddl-auto: none # Disable Hibernate's automatic schema generation
+      ddl-auto: update # Disable Hibernate's automatic schema generation
 
   liquibase:
     enabled: true
@@ -149,6 +155,7 @@ spring:
     chat:
       client:
         enabled: false
+
     openai:
       api-key: ${OPENAI_API_KEY}
       chat:

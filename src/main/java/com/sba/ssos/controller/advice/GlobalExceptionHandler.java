@@ -87,6 +87,18 @@ public class GlobalExceptionHandler {
     return problem;
   }
 
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ProblemDetail handleIllegalArgument(
+      IllegalArgumentException ex, HttpServletRequest request) {
+    log.warn("Bad request argument: {}", ex.getMessage());
+
+    ProblemDetail problem =
+        ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+    problem.setTitle(HttpStatus.BAD_REQUEST.getReasonPhrase());
+    problem.setInstance(URI.create(request.getRequestURI()));
+    return problem;
+  }
+
   @ExceptionHandler(AccessDeniedException.class)
   public ProblemDetail handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
     log.warn("Access denied: {}", ex.getMessage());
