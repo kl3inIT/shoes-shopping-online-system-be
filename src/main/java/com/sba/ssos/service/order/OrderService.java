@@ -208,7 +208,7 @@ public class OrderService {
 
     public void verifyPayment(SePayWebhookRequest request) {
 
-        String regex = "SSOS-\\d{8}-[A-Z0-9]{6}";
+        String regex = "SSOS\\d{8}[A-Z0-9]{6}";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(request.content());
 
