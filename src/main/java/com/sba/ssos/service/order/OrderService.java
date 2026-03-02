@@ -237,6 +237,9 @@ public class OrderService {
             orderRepository.save(order);
             paymentRepository.saveAllAndFlush(order.getPayments());
 
+            // xóa khỏi cart của customer
+
+
             // socket to FE
             messagingTemplate.convertAndSendToUser(
                     order.getCustomer().getId().toString(),
