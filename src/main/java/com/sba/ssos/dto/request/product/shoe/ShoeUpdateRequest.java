@@ -43,7 +43,11 @@ public record ShoeUpdateRequest(
 
         @NotEmpty(message = "validation.shoe.variants.required")
         @Valid
-        List<ShoeVariantRequest> variants
+        List<ShoeVariantRequest> variants,
+
+        List<String> keepShoeImageUrls,
+
+        @Valid
+        List<ShoeVariantImageUpdateRequest> variantImageUpdates
 ) {
 }
-

@@ -40,7 +40,6 @@ public class ShoeRepositoryImpl implements ShoeRepositoryCustom {
         List<Shoe> content = queryFactory
                 .selectFrom(shoe)
                 .where(
-                        notDeleted(),
                         nameOrSlugContains(search),
                         hasBrands(brandIds),
                         hasCategories(categoryIds),
@@ -59,7 +58,6 @@ public class ShoeRepositoryImpl implements ShoeRepositoryCustom {
                 .select(shoe.count())
                 .from(shoe)
                 .where(
-                        notDeleted(),
                         nameOrSlugContains(search),
                         hasBrands(brandIds),
                         hasCategories(categoryIds),
@@ -75,10 +73,6 @@ public class ShoeRepositoryImpl implements ShoeRepositoryCustom {
     }
 
     /* ===================== PREDICATES ===================== */
-
-    private BooleanExpression notDeleted() {
-        return shoe.deleted.isFalse();
-    }
 
     private BooleanExpression nameOrSlugContains(String keyword) {
         if (keyword == null || keyword.isBlank()) {
