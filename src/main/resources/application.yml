@@ -121,6 +121,7 @@ application-properties:
       # Custom no-auth URLs:
       - /test/free
       - /chat
+      - /api/v1/*
 #    sepay-api-key: ${SEPAY_API_KEY}
 spring:
   application:
