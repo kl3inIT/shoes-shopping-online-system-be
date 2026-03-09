@@ -6,6 +6,7 @@ import com.sba.ssos.entity.ShoeImage;
 import com.sba.ssos.entity.ShoeVariant;
 import com.sba.ssos.repository.ShoeImageRepository;
 import com.sba.ssos.service.storage.MinioFileStorageService;
+import com.sba.ssos.service.storage.MinioStorageService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,7 +23,21 @@ import org.springframework.web.multipart.MultipartFile;
 public class ShoeImageService {
 
   private final MinioFileStorageService storageService;
+  private final MinioStorageService minioStorageService;
   private final ShoeImageRepository shoeImageRepository;
+
+  private String toPublicImageUrl(String urlOrObjectKey) {
+    if (urlOrObjectKey == null || urlOrObjectKey.isBlank()) {
+      return urlOrObjectKey;
+    }
+    String s = urlOrObjectKey.trim();
+    // If already absolute, keep as-is
+    if (s.startsWith("http://") || s.startsWith("https://")) {
+      return s;
+    }
+    // Otherwise treat as MinIO objectKey and generate presigned GET URL
+    return minioStorageService.getPresignedGetUrl(s);
+  }
 
   public List<String> uploadShoeImages(Shoe shoe, List<ShoeVariant> variants,
       List<MultipartFile> shoeImageFiles) {
@@ -89,6 +104,10 @@ public class ShoeImageService {
       List<String> keepShoeImageUrls,
       List<MultipartFile> newShoeImageFiles
   ) {
+    if ((keepShoeImageUrls == null || keepShoeImageUrls.isEmpty())
+        && (newShoeImageFiles == null || newShoeImageFiles.isEmpty())) {
+      return;
+    }
     List<ShoeImage> existingImages =
         shoeImageRepository.findByShoe_IdAndShoeVariantIsNullOrderByIsPrimaryDescSortOrderAscCreatedAtAsc(
             shoe.getId());
@@ -153,6 +172,16 @@ public class ShoeImageService {
       List<ShoeVariantImageUpdateRequest> variantImageUpdates,
       List<List<MultipartFile>> variantImageFilesList
   ) {
+    boolean noKeepInfo = variantImageUpdates == null || variantImageUpdates.isEmpty();
+    boolean hasAnyNewVariantFile = variantImageFilesList != null
+        && variantImageFilesList.stream()
+        .filter(files -> files != null && !files.isEmpty())
+        .flatMap(List::stream)
+        .anyMatch(file -> file != null && !file.isEmpty());
+
+    if (noKeepInfo && !hasAnyNewVariantFile) {
+      return;
+    }
     Map<UUID, List<String>> keepUrlsByVariantId = new HashMap<>();
     if (variantImageUpdates != null) {
       for (ShoeVariantImageUpdateRequest update : variantImageUpdates) {
@@ -233,7 +262,7 @@ public class ShoeImageService {
             shoe.getId());
 
     for (ShoeImage shoeImageEntity : shoeImageEntities) {
-      shoeImageUrls.add(shoeImageEntity.getUrl());
+      shoeImageUrls.add(toPublicImageUrl(shoeImageEntity.getUrl()));
     }
 
     return shoeImageUrls.stream().distinct().toList();
@@ -245,6 +274,7 @@ public class ShoeImageService {
             variant.getId());
     return variantImageEntities.stream()
         .map(ShoeImage::getUrl)
+        .map(this::toPublicImageUrl)
         .toList();
   }
 }
