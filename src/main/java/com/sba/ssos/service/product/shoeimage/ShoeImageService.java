@@ -104,6 +104,10 @@ public class ShoeImageService {
       List<String> keepShoeImageUrls,
       List<MultipartFile> newShoeImageFiles
   ) {
+    if ((keepShoeImageUrls == null || keepShoeImageUrls.isEmpty())
+        && (newShoeImageFiles == null || newShoeImageFiles.isEmpty())) {
+      return;
+    }
     List<ShoeImage> existingImages =
         shoeImageRepository.findByShoe_IdAndShoeVariantIsNullOrderByIsPrimaryDescSortOrderAscCreatedAtAsc(
             shoe.getId());
@@ -168,6 +172,16 @@ public class ShoeImageService {
       List<ShoeVariantImageUpdateRequest> variantImageUpdates,
       List<List<MultipartFile>> variantImageFilesList
   ) {
+    boolean noKeepInfo = variantImageUpdates == null || variantImageUpdates.isEmpty();
+    boolean hasAnyNewVariantFile = variantImageFilesList != null
+        && variantImageFilesList.stream()
+        .filter(files -> files != null && !files.isEmpty())
+        .flatMap(List::stream)
+        .anyMatch(file -> file != null && !file.isEmpty());
+
+    if (noKeepInfo && !hasAnyNewVariantFile) {
+      return;
+    }
     Map<UUID, List<String>> keepUrlsByVariantId = new HashMap<>();
     if (variantImageUpdates != null) {
       for (ShoeVariantImageUpdateRequest update : variantImageUpdates) {
