@@ -203,53 +203,45 @@ public class OrderService {
                 pageOrder.getTotalElements(),
                 orderItem.getTotalAmount()
         ));
-
     }
 
     public void verifyPayment(SePayWebhookRequest request) {
 
         String regex = "SSOS\\d{8}[A-Z0-9]{6}";
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(request.content());
+        Matcher matcher = Pattern.compile(regex).matcher(request.content());
 
-        String orderCode = null;
-        if (matcher.find()) {
-            orderCode = matcher.group();
-        } else {
-            throw new NotFoundException("Not Found order code");
+        if (!matcher.find()) {
+            throw new NotFoundException("Order code not found in transaction content");
         }
 
-        // get order và set vào
+        String orderCode = matcher.group();
+
         Order order = getOrderByCode(orderCode);
 
-        Double amountReceived = Double.parseDouble(request.transferAmount().toString());
+        double amountReceived = request.transferAmount().doubleValue();
+        double orderTotalAmount = order.getTotalAmount();
 
-        order.getPayments().getFirst().setAmountReceived(amountReceived);
+        Payment payment = order.getPayments().getFirst();
+        payment.setAmountReceived(amountReceived);
 
-        Double totalPaid = order.getPayments().stream()
-                .filter(p -> p.getPaymentStatus() == PaymentStatus.PAID)
-                .map(Payment::getAmountReceived)
-                .reduce(0.0, Double::sum);
-
-        Double orderTotalAmount = order.getTotalAmount();
-        if (totalPaid.compareTo(orderTotalAmount) >= 0) {
-            order.setOrderStatus(OrderStatus.PAID); // hoặc COMPLETED
-            orderRepository.save(order);
-            paymentRepository.saveAllAndFlush(order.getPayments());
-
-            // xóa khỏi cart của customer
-
-
-            // socket to FE
-            messagingTemplate.convertAndSendToUser(
-                    order.getCustomer().getId().toString(),
-                    "/queue/orders",
-                    new OrderPaid(order.getOrderCode(), order.getOrderStatus())
-            );
-
-        } else {
+        if (amountReceived < orderTotalAmount) {
             throw new BadRequestException("Not enough payment amount");
         }
+
+        // update trạng thái
+        payment.setPaymentStatus(PaymentStatus.PAID);
+        order.setOrderStatus(OrderStatus.PAID);
+
+
+        // save
+        orderRepository.saveAndFlush(order);
+        paymentRepository.saveAndFlush(payment);
+
+        // realtime notify
+        messagingTemplate.convertAndSend(
+                "/topic/orders",
+                new OrderPaid(order.getOrderCode(), order.getOrderStatus())
+        );
     }
 
     public Order findOrderById(UUID orderId){

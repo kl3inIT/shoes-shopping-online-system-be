@@ -15,7 +15,7 @@ public final class OrderCodeUtils {
     String datePart = LocalDate.now().format(DATE_FORMAT);
     String randomPart = randomAlphaNumeric(6); // 6 ký tự
 
-    return prefix + "-" + datePart + "-" + randomPart;
+    return prefix + datePart + randomPart;
   }
 
   private static String randomAlphaNumeric(int length) {

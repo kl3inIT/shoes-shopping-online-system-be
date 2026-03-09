@@ -110,6 +110,7 @@ application-properties:
       - { method: GET, path: /api/categories/* }
       - { method: GET, path: /api/shoes/*/variants }
       - { method: POST, path: /api/v1/chat }
+      - { method: GET, path: /ws/**}
     public-urls:
       # OpenAPI Swagger URLs
       - /swagger-ui.html
