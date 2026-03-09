@@ -36,6 +36,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -145,28 +146,33 @@ public class OrderService {
 
         Page<Order> orderPage = orderRepository.findByCustomer_Id(customer.getId(), pageable);
 
-        if(!orderPage.hasContent()){
-            throw  new BadRequestException("No order by you");
+        if (!orderPage.hasContent()) {
+            return List.of();
         }
 
-        return orderPage.getContent().stream().map(order -> {
-            return new OrderHistoryResponse(
-                    order.getId(),
-                    order.getOrderCode(),
-                    order.getCreatedAt(),
-                    order.getCustomer().getUser().getFirstName() + " " + order.getCustomer().getUser().getLastName(),
-                    order.getCustomer().getUser().getEmail(),
-                    order.getOrderStatus().toString(),
-                    order.getPayments().getFirst().getPaymentStatus(),
-                    PaymentMethod.ONLINE,
-                    orderPage.getTotalElements(),
-                    order.getTotalAmount()
-            );
-        }).toList();
+        return orderPage.getContent().stream()
+                .map(order -> new OrderHistoryResponse(
+                        order.getId(),
+                        order.getOrderCode(),
+                        order.getCreatedAt(),
+                        order.getCustomer().getUser().getFirstName() + " " + order.getCustomer().getUser().getLastName(),
+                        order.getCustomer().getUser().getEmail(),
+                        order.getOrderStatus().toString(),
+                        order.getPayments().isEmpty()
+                                ? PaymentStatus.PENDING
+                                : order.getPayments().getFirst().getPaymentStatus(),
+                        PaymentMethod.ONLINE,
+                        order.getOrderDetails() == null ? 0L : order.getOrderDetails().stream()
+                                .map(OrderDetail::getQuantity)
+                                .filter(Objects::nonNull)
+                                .reduce(0L, Long::sum),
+                        order.getTotalAmount()
+                ))
+                .toList();
 
     }
 
-    public List<OrderHistoryResponse> getOrderHistoryByAdmin(OrderHistoryRequest orderHistoryRequest) {
+    public Page<OrderHistoryResponse> getOrderHistoryByAdmin(OrderHistoryRequest orderHistoryRequest) {
 
         Pageable pageable = PageRequest.of(
                 orderHistoryRequest.page(),
@@ -176,22 +182,27 @@ public class OrderService {
         Page<Order> pageOrder = orderRepository.findOrderHistory(orderHistoryRequest, pageable);
 
 
-        if(!pageOrder.hasContent()){
-            throw  new BadRequestException("No order by you");
+        if (!pageOrder.hasContent()) {
+            return Page.empty(pageable);
         }
 
-        return pageOrder.getContent().stream().map(orderItem -> new OrderHistoryResponse(
+        return pageOrder.map(orderItem -> new OrderHistoryResponse(
                 orderItem.getId(),
                 orderItem.getOrderCode(),
                 orderItem.getCreatedAt(),
                 orderItem.getCustomer().getUser().getFirstName() + " " + orderItem.getCustomer().getUser().getLastName(),
                 orderItem.getCustomer().getUser().getEmail(),
                 orderItem.getOrderStatus().toString(),
-                orderItem.getPayments().getFirst().getPaymentStatus(),
+                orderItem.getPayments().isEmpty()
+                        ? PaymentStatus.PENDING
+                        : orderItem.getPayments().getFirst().getPaymentStatus(),
                 PaymentMethod.ONLINE,
-                pageOrder.getTotalElements(),
+                orderItem.getOrderDetails() == null ? 0L : orderItem.getOrderDetails().stream()
+                        .map(OrderDetail::getQuantity)
+                        .filter(Objects::nonNull)
+                        .reduce(0L, Long::sum),
                 orderItem.getTotalAmount()
-        )).toList();
+        ));
 
     }
 

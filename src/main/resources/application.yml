@@ -74,6 +74,10 @@ application-properties:
       - { method: PUT, path: /api/cart/* }
       - { method: DELETE, path: /api/cart/* }
       - { method: DELETE, path: /api/cart }
+      - { method: GET, path: /api/reviews/eligibility/shoe/* }
+      - { method: GET, path: /api/reviews/eligibility }
+      - { method: POST, path: /api/reviews }
+      - { method: PUT, path: /api/reviews/* }
       - { method: POST, path: /api/v1/chat }
     webhook-endpoints:
       - { method: POST, path: /api/payments/sepay/hook }
@@ -94,6 +98,7 @@ application-properties:
       - { method: PUT, path: /api/shoes/* }
       - { method: PATCH, path: /api/shoes/*/status }
       - { method: GET, path: /api/shoes/*/variants }
+      - { method: GET, path: /api/reviews/shoe/* }
       - { method: GET, path: /api/files/** }
       - { method: POST, path: /api/payments/sepay/hook }
       - { method: POST, path: /webhook/keycloak/register }

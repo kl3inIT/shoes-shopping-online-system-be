@@ -31,6 +31,26 @@ public class ShoeController {
     private final ShoeVariantService shoeVariantService;
     private final LocaleUtils localeUtils;
 
+    // ===== Admin =====
+
+    @GetMapping("/admin/all")
+    public ResponseGeneral<List<ShoeResponse>> getAdminAll() {
+        List<ShoeResponse> data = shoeService.getAdminAll();
+        return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.fetched"), data);
+    }
+
+    @GetMapping("/admin/deleted")
+    public ResponseGeneral<List<ShoeResponse>> getAdminDeleted() {
+        List<ShoeResponse> data = shoeService.getAdminDeleted();
+        return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.fetched"), data);
+    }
+
+    @GetMapping("/admin/not-deleted")
+    public ResponseGeneral<List<ShoeResponse>> getAdminNotDeleted() {
+        List<ShoeResponse> data = shoeService.getAdminNotDeleted();
+        return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.fetched"), data);
+    }
+
     @PostMapping(consumes = {"multipart/form-data"})
     public ResponseGeneral<ShoeResponse> create(
             @Valid @RequestPart("request") ShoeCreateRequest request,
@@ -101,6 +121,12 @@ public class ShoeController {
     public ResponseGeneral<List<ShoeVariantResponse>> getVariantsByShoeId(@PathVariable UUID id) {
         List<ShoeVariantResponse> data = shoeVariantService.getVariantsByShoeId(id);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.generic"), data);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseGeneral<Void> delete(@PathVariable UUID id) {
+        shoeService.softDelete(id);
+        return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.updated"));
     }
 
     @PutMapping(value = "/{id}", consumes = {"multipart/form-data"})
