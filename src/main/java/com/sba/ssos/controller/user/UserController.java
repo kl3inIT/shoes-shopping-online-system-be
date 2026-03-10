@@ -1,4 +1,4 @@
-package com.sba.ssos.controller;
+package com.sba.ssos.controller.user;
 
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.response.user.UserResponse;
