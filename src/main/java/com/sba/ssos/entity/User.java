@@ -4,12 +4,11 @@ import com.sba.ssos.entity.base.BaseAuditableEntity;
 import com.sba.ssos.enums.UserRole;
 import com.sba.ssos.enums.UserStatus;
 import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.NaturalId;
-
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
+import lombok.*;
+import org.hibernate.annotations.NaturalId;
 
 @Entity
 @Table(name = "users")
@@ -24,8 +23,7 @@ public class User extends BaseAuditableEntity {
     @NaturalId
     @Column(name = "keycloak_id", nullable = false, unique = true, updatable = false)
     private UUID keycloakId;
-
-
+    
     @Column(name = "role", nullable = false, length = 255)
     @Enumerated(EnumType.STRING)
     private UserRole role;
