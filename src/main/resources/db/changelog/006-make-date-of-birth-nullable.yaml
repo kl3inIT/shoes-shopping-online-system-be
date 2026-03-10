@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-make-date-of-birth-nullable
+      author: cursor
+      changes:
+        - dropNotNullConstraint:
+            tableName: users
+            columnName: date_of_birth
+            columnDataType: DATE
+

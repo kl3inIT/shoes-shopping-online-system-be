@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-make-avatar-nullable
+      author: cursor
+      changes:
+        - dropNotNullConstraint:
+            tableName: users
+            columnName: avatar_url
+            columnDataType: TEXT
+
