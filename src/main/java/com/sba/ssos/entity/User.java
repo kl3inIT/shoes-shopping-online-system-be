@@ -11,14 +11,17 @@ import lombok.*;
 import org.hibernate.annotations.NaturalId;
 
 @Entity
-@Table(name = "users")
+@Table(
+        name = "users",
+        indexes = {
+                @Index(name = "idx_users_role", columnList = "role")
+        })
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class User extends BaseAuditableEntity {
-
 
     @NaturalId
     @Column(name = "keycloak_id", nullable = false, unique = true, updatable = false)
@@ -37,14 +40,14 @@ public class User extends BaseAuditableEntity {
     @Column(name = "last_name", nullable = false, length = 255)
     private String lastName;
 
-    @Column(name = "phone_number", nullable = false, length = 255)
+    @Column(name = "phone_number", nullable = true, length = 255)
     private String phoneNumber;
 
     @NaturalId
     @Column(name = "email", nullable = false, unique = true, length = 255)
     private String email;
 
-    @Column(name = "date_of_birth", nullable = false)
+    @Column(name = "date_of_birth", nullable = true)
     private LocalDate dateOfBirth;
 
     @Column(name = "avatar_url", nullable = true, columnDefinition = "TEXT")
