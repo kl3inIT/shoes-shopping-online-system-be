@@ -9,3 +9,7 @@ databaseChangeLog:
       file: db/changelog/004-make-avatar-nullable.yaml
   - include:
       file: db/changelog/005-create-user-indexes.yaml
+  - include:
+      file: db/changelog/006-make-date-of-birth-nullable.yaml
+  - include:
+      file: db/changelog/007-make-phone-nullable.yaml
