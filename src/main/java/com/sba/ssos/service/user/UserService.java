@@ -1,4 +1,4 @@
-package com.sba.ssos.service;
+package com.sba.ssos.service.user;
 
 import com.sba.ssos.dto.request.keycloak.KeycloakUserCreatedWebhookRequest;
 import com.sba.ssos.dto.response.user.UserResponse;
@@ -37,8 +37,7 @@ public class UserService {
   public AuthorizedUserDetails getCurrentUserOrNull() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-    if (authentication == null
-        || !authentication.isAuthenticated()) {
+    if (authentication == null || !authentication.isAuthenticated()) {
       return null;
     }
 
@@ -75,6 +74,7 @@ public class UserService {
                       .email(request.getEmail())
                       .firstName(request.getFirstName())
                       .lastName(request.getLastName())
+                      .avatarUrl("") // default avatar to satisfy NOT NULL constraint
                       .lastSeenAt(Instant.now())
                       .build();
 

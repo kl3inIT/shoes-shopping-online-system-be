@@ -5,3 +5,5 @@ databaseChangeLog:
       file: db/changelog/002-create-vector-table.yaml
   - include:
       file: db/changelog/003-rename-chat-memory-table.yaml
+  - include:
+      file: db/changelog/004-make-avatar-nullable.yaml

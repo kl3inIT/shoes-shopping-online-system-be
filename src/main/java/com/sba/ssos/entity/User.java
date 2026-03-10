@@ -49,7 +49,7 @@ public class User extends BaseAuditableEntity {
     @Column(name = "date_of_birth", nullable = false)
     private LocalDate dateOfBirth;
 
-    @Column(name = "avatar_url", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "avatar_url", nullable = true, columnDefinition = "TEXT")
     private String avatarUrl;
 
     @Column(name = "status", nullable = false, length = 255)
