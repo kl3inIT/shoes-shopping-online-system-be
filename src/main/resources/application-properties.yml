@@ -82,6 +82,7 @@ application-properties:
       - { method: GET, path: /user }
       - { method: POST, path: /webhook/keycloak/register }
       - { method: POST, path: /sepay/auth/token }
+      - { method: POST, path: /keycloak/webhook/user-registration }
       - { method: GET, path: /api/categories }
       - { method: GET, path: /api/categories/* }
       - { method: GET, path: /api/brands }
