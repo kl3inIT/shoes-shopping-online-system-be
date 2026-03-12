@@ -9,6 +9,7 @@ import com.sba.ssos.repository.CustomerRepository;
 import com.sba.ssos.repository.WishlistRepository;
 import com.sba.ssos.repository.product.shoe.ShoeRepository;
 import com.sba.ssos.service.user.UserService;
+import com.sba.ssos.service.product.shoeimage.ShoeImageService;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -25,8 +26,8 @@ public class WishlistService {
   private final CustomerRepository customerRepository;
   private final ShoeRepository shoeRepository;
   private final UserService userService;
+  private final ShoeImageService shoeImageService;
 
-  /** sortBy: property path (createdAt, shoe.name, shoe.price). sortOrder: asc | desc. */
   @Transactional(readOnly = true)
   public List<WishlistItemResponse> getCurrentUserWishlist(String sortBy, String sortOrder) {
     Customer customer = getCurrentCustomer();
@@ -36,7 +37,8 @@ public class WishlistService {
         "asc".equalsIgnoreCase(sortOrder != null ? sortOrder : "desc")
             ? Sort.Direction.ASC
             : Sort.Direction.DESC;
-    Sort sort = Sort.by(direction, property);
+      assert property != null;
+      Sort sort = Sort.by(direction, property);
     return wishlistRepository.findAllByCustomer_Id(customer.getId(), sort).stream()
         .map(this::toResponse)
         .toList();
@@ -94,6 +96,10 @@ public class WishlistService {
     String brandName = shoe.getBrand().getName();
 
     String mainImageUrl = null;
+    var shoeUrls = shoeImageService.getShoeImageUrls(shoe, List.of());
+    if (!shoeUrls.isEmpty()) {
+      mainImageUrl = shoeUrls.get(0);
+    }
 
     return new WishlistItemResponse(
         wishlist.getId(),

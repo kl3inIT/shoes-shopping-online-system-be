@@ -44,4 +44,8 @@ public class Review extends BaseAuditableEntity {
     @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ReviewImage> images = new ArrayList<>();
+
+    @Column(name = "helpful_count", nullable = false)
+    @Builder.Default
+    private Long helpfulCount = 0L;
 }

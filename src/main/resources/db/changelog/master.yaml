@@ -15,3 +15,5 @@ databaseChangeLog:
       file: db/changelog/007-make-phone-nullable.yaml
   - include:
       file: db/changelog/008-add-user-address.yaml
+  - include:
+      file: db/changelog/009-create-review-helpful-votes.yaml

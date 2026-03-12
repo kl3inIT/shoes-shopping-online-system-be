@@ -14,6 +14,8 @@ public record ReviewPublicItemResponse(
         Long numberStars,
         String description,
         List<String> imageUrls,
-        Instant createdAt
+        Instant createdAt,
+        Long helpfulCount,
+        Boolean currentUserVoted
 ) {}
 
