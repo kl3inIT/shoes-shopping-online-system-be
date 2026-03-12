@@ -83,9 +83,9 @@ public class WishlistService {
   }
 
   private Customer getCurrentCustomer() {
-    UUID userId = userService.getCurrentUser().userId();
+    UUID userId = userService.getCurrentUser().userId(); // Keycloak ID
     return customerRepository
-        .findByUser_Id(userId)
+        .findByUser_KeycloakId(userId)
         .orElseThrow(() -> new NotFoundException("Customer not found for user " + userId));
   }
 

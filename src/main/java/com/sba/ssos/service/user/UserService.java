@@ -1,11 +1,13 @@
 package com.sba.ssos.service.user;
 
 import com.sba.ssos.dto.request.keycloak.KeycloakUserCreatedWebhookRequest;
+import com.sba.ssos.dto.request.user.UpdateUserProfileRequest;
 import com.sba.ssos.dto.response.user.UserResponse;
 import com.sba.ssos.entity.Customer;
 import com.sba.ssos.entity.User;
 import com.sba.ssos.enums.UserRole;
 import com.sba.ssos.enums.UserStatus;
+import com.sba.ssos.exception.base.ForbiddenException;
 import com.sba.ssos.exception.user.UserNotFoundException;
 import com.sba.ssos.mapper.UserMapper;
 import com.sba.ssos.repository.CustomerRepository;
@@ -18,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.Nullable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,6 +67,34 @@ public class UserService {
   }
 
   @Transactional
+  public UserResponse updateUserProfile(UUID keycloakId, UpdateUserProfileRequest request) {
+    assertCanEditProfile(keycloakId);
+
+    User user =
+        userRepository
+            .findByKeycloakId(keycloakId)
+            .orElseThrow(() -> new UserNotFoundException(keycloakId));
+
+    if (request.phoneNumber() != null) {
+      user.setPhoneNumber(request.phoneNumber().isBlank() ? null : request.phoneNumber().trim());
+    }
+
+    if (request.dateOfBirth() != null) {
+      user.setDateOfBirth(request.dateOfBirth());
+    }
+
+    if (request.avatarUrl() != null) {
+      user.setAvatarUrl(request.avatarUrl().isBlank() ? null : request.avatarUrl().trim());
+    }
+
+    if (request.address() != null) {
+      user.setAddress(request.address().isBlank() ? null : request.address().trim());
+    }
+
+    return userMapper.toResponse(userRepository.save(user));
+  }
+
+  @Transactional
   public void registerUserFromWebhook(KeycloakUserCreatedWebhookRequest request) {
 
     log.info("Processing Keycloak user registration webhook: {}", request.getUserName());
@@ -99,5 +130,27 @@ public class UserService {
 
               return savedUser;
             });
+  }
+
+  private void assertCanEditProfile(UUID targetKeycloakId) {
+    AuthorizedUserDetails currentUser = getCurrentUserOrNull();
+    if (currentUser == null) {
+      throw new ForbiddenException("error.forbidden");
+    }
+
+    boolean isSelf = targetKeycloakId.equals(currentUser.userId());
+    if (isSelf) {
+      return;
+    }
+
+    boolean isAdminOrManager =
+        currentUser.getAuthorities().contains(new SimpleGrantedAuthority(UserRole.ROLE_ADMIN.name()))
+            || currentUser
+                .getAuthorities()
+                .contains(new SimpleGrantedAuthority(UserRole.ROLE_MANAGER.name()));
+
+    if (!isAdminOrManager) {
+      throw new ForbiddenException("error.forbidden");
+    }
   }
 }

@@ -11,4 +11,5 @@ public record UserResponse(
     String phoneNumber,
     LocalDate dateOfBirth,
     String avatarUrl,
+    String address,
     Instant lastSeenAt) {}

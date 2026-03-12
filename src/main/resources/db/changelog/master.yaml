@@ -13,3 +13,5 @@ databaseChangeLog:
       file: db/changelog/006-make-date-of-birth-nullable.yaml
   - include:
       file: db/changelog/007-make-phone-nullable.yaml
+  - include:
+      file: db/changelog/008-add-user-address.yaml

@@ -16,7 +16,7 @@ public class CustomerService {
 
   public Customer getCurrentCustomer() {
     return customerRepository
-        .findByUser_Id(userService.getCurrentUser().userId())
+        .findByUser_KeycloakId(userService.getCurrentUser().userId())
         .orElseThrow(() -> new NotFoundException("Customer not found"));
   }
 }
