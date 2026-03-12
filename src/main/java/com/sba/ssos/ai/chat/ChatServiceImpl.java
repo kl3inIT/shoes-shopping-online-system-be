@@ -9,7 +9,7 @@ import com.sba.ssos.ai.parameters.ParametersService;
 import com.sba.ssos.ai.rag.ToolsManager;
 import com.sba.ssos.exception.base.BadRequestException;
 import com.sba.ssos.security.AuthorizedUserDetails;
-import com.sba.ssos.service.UserService;
+import com.sba.ssos.service.user.UserService;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;

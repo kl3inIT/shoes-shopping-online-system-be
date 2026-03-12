@@ -28,7 +28,7 @@ public class ParametersController {
   private final ParametersService parametersService;
   private final LocaleUtils localeUtils;
 
-  @GetMapping
+  @GetMapping({"", "/"})
   public ResponseGeneral<List<AiParameterSummaryResponse>> list(
       @RequestParam(required = false) AiParametersTargetType type) {
 
@@ -39,8 +39,7 @@ public class ParametersController {
   @GetMapping("/{id}")
   public ResponseGeneral<AiParameterDetailResponse> get(@PathVariable UUID id) {
     AiParameterDetailResponse dto = parametersService.findById(id);
-    return ResponseGeneral.ofSuccess(
-        localeUtils.get("success.ai_parameters.retrieved"), dto);
+    return ResponseGeneral.ofSuccess(localeUtils.get("success.ai_parameters.retrieved"), dto);
   }
 
   @PostMapping
@@ -50,8 +49,7 @@ public class ParametersController {
 
     AiParameterDetailResponse saved =
         parametersService.create(req.targetType(), req.description(), req.content());
-    return ResponseGeneral.ofCreated(
-        localeUtils.get("success.ai_parameters.created"), saved);
+    return ResponseGeneral.ofCreated(localeUtils.get("success.ai_parameters.created"), saved);
   }
 
   @PostMapping("/from-default")
@@ -61,8 +59,7 @@ public class ParametersController {
 
     AiParameterDetailResponse saved = parametersService.createFromDefault(type);
     return ResponseGeneral.ofCreated(
-        localeUtils.get("success.ai_parameters.created_from_default"),
-        saved);
+        localeUtils.get("success.ai_parameters.created_from_default"), saved);
   }
 
   @PutMapping("/{id}")
@@ -71,24 +68,20 @@ public class ParametersController {
 
     AiParameterDetailResponse saved =
         parametersService.updateContent(id, req.content(), req.description());
-    return ResponseGeneral.ofSuccess(
-        localeUtils.get("success.ai_parameters.updated"), saved);
+    return ResponseGeneral.ofSuccess(localeUtils.get("success.ai_parameters.updated"), saved);
   }
 
   @PostMapping("/{id}/activate")
   public ResponseGeneral<AiParameterSummaryResponse> activate(@PathVariable UUID id) {
     AiParameterSummaryResponse activated = parametersService.activate(id);
-    return ResponseGeneral.ofSuccess(
-        localeUtils.get("success.ai_parameters.activated"),
-        activated);
+    return ResponseGeneral.ofSuccess(localeUtils.get("success.ai_parameters.activated"), activated);
   }
 
   @PostMapping("/{id}/copy")
   @ResponseStatus(HttpStatus.CREATED)
   public ResponseGeneral<AiParameterDetailResponse> copy(@PathVariable UUID id) {
     AiParameterDetailResponse copied = parametersService.copy(id);
-    return ResponseGeneral.ofCreated(
-        localeUtils.get("success.ai_parameters.copied"), copied);
+    return ResponseGeneral.ofCreated(localeUtils.get("success.ai_parameters.copied"), copied);
   }
 
   @DeleteMapping("/{id}")

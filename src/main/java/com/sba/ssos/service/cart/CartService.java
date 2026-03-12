@@ -15,7 +15,7 @@ import com.sba.ssos.repository.CartItemRepository;
 import com.sba.ssos.repository.CustomerRepository;
 import com.sba.ssos.repository.ShoeImageRepository;
 import com.sba.ssos.repository.ShoeVariantRepository;
-import com.sba.ssos.service.UserService;
+import com.sba.ssos.service.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,157 +31,161 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CartService {
 
-    private final CartItemRepository cartItemRepository;
-    private final CustomerRepository customerRepository;
-    private final ShoeVariantRepository shoeVariantRepository;
-    private final ShoeImageRepository shoeImageRepository;
-    private final UserService userService;
+  private final CartItemRepository cartItemRepository;
+  private final CustomerRepository customerRepository;
+  private final ShoeVariantRepository shoeVariantRepository;
+  private final ShoeImageRepository shoeImageRepository;
+  private final UserService userService;
 
-    @Transactional(readOnly = true)
-    public CartResponse getMyCart() {
-        Customer customer = getCurrentCustomer();
-        List<CartItem> cartItems = cartItemRepository.findAllByCustomer_IdAndIsActiveTrue(customer.getId());
+  @Transactional(readOnly = true)
+  public CartResponse getMyCart() {
+    Customer customer = getCurrentCustomer();
+    List<CartItem> cartItems =
+        cartItemRepository.findAllByCustomer_IdAndIsActiveTrue(customer.getId());
 
-        List<UUID> shoeIds = cartItems.stream()
-                .map(item -> item.getShoeVariant().getShoe().getId())
-                .distinct()
-                .toList();
+    List<UUID> shoeIds =
+        cartItems.stream().map(item -> item.getShoeVariant().getShoe().getId()).distinct().toList();
 
-        Map<UUID, String> mainImageByShoeId = shoeImageRepository.findByShoe_IdIn(shoeIds)
-                .stream()
-                .sorted(Comparator.comparing(ShoeImage::getId))
-                .collect(Collectors.toMap(
-                        img -> img.getShoe().getId(),
-                        ShoeImage::getUrl,
-                        (existing, replacement) -> existing
-                ));
+    Map<UUID, String> mainImageByShoeId =
+        shoeImageRepository.findByShoe_IdIn(shoeIds).stream()
+            .sorted(Comparator.comparing(ShoeImage::getId))
+            .collect(
+                Collectors.toMap(
+                    img -> img.getShoe().getId(),
+                    ShoeImage::getUrl,
+                    (existing, replacement) -> existing));
 
-        List<CartItemResponse> items = cartItems.stream()
-                .map(item -> toCartItemResponse(item, mainImageByShoeId))
-                .toList();
+    List<CartItemResponse> items =
+        cartItems.stream().map(item -> toCartItemResponse(item, mainImageByShoeId)).toList();
 
-        BigDecimal totalPrice = items.stream()
-                .map(CartItemResponse::subtotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalPrice =
+        items.stream().map(CartItemResponse::subtotal).reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        int totalQuantity = items.stream()
-                .mapToInt(item -> item.quantity().intValue())
-                .sum();
+    int totalQuantity = items.stream().mapToInt(item -> item.quantity().intValue()).sum();
 
-        return new CartResponse(items, totalPrice, totalQuantity);
+    return new CartResponse(items, totalPrice, totalQuantity);
+  }
+
+  @Transactional
+  public CartResponse addToCart(AddToCartRequest request) {
+    Customer customer = getCurrentCustomer();
+
+    ShoeVariant shoeVariant = resolveShoeVariant(request);
+
+    CartItem existingItem =
+        cartItemRepository
+            .findByCustomer_IdAndShoeVariant_IdAndIsActiveTrue(
+                customer.getId(), shoeVariant.getId())
+            .orElse(null);
+
+    if (existingItem != null) {
+      long newQty = existingItem.getQuantity() + request.quantity();
+      existingItem.setQuantity(newQty);
+      cartItemRepository.save(existingItem);
+    } else {
+      long availableStock = shoeVariant.getQuantity();
+      if (request.quantity() > availableStock) {
+        throw new BadRequestException("Requested quantity exceeds available stock");
+      }
+      CartItem newItem =
+          CartItem.builder()
+              .customer(customer)
+              .shoeVariant(shoeVariant)
+              .quantity(request.quantity())
+              .isActive(true)
+              .build();
+      cartItemRepository.save(newItem);
     }
 
-    @Transactional
-    public CartResponse addToCart(AddToCartRequest request) {
-        Customer customer = getCurrentCustomer();
+    return getMyCart();
+  }
 
-        ShoeVariant shoeVariant = resolveShoeVariant(request);
+  @Transactional
+  public CartResponse updateCartItem(UUID cartItemId, UpdateCartItemRequest request) {
+    Customer customer = getCurrentCustomer();
 
-        CartItem existingItem = cartItemRepository
-                .findByCustomer_IdAndShoeVariant_IdAndIsActiveTrue(customer.getId(), shoeVariant.getId())
-                .orElse(null);
+    CartItem cartItem =
+        cartItemRepository
+            .findByIdAndCustomer_IdAndIsActiveTrue(cartItemId, customer.getId())
+            .orElseThrow(() -> new NotFoundException("Cart item not found: " + cartItemId));
 
-        if (existingItem != null) {
-            long newQty = existingItem.getQuantity() + request.quantity();
-            existingItem.setQuantity(newQty);
-            cartItemRepository.save(existingItem);
-        } else {
-            long availableStock = shoeVariant.getQuantity();
-            if (request.quantity() > availableStock) {
-                throw new BadRequestException("Requested quantity exceeds available stock");
-            }
-            CartItem newItem = CartItem.builder()
-                    .customer(customer)
-                    .shoeVariant(shoeVariant)
-                    .quantity(request.quantity())
-                    .isActive(true)
-                    .build();
-            cartItemRepository.save(newItem);
-        }
+    long reqQty = request.quantity();
 
-        return getMyCart();
+    if (reqQty > cartItem.getShoeVariant().getQuantity()) {
+      throw new BadRequestException("Requested quantity exceeds available stock");
     }
 
-    @Transactional
-    public CartResponse updateCartItem(UUID cartItemId, UpdateCartItemRequest request) {
-        Customer customer = getCurrentCustomer();
+    cartItem.setQuantity(reqQty);
+    cartItemRepository.save(cartItem);
 
-        CartItem cartItem = cartItemRepository
-                .findByIdAndCustomer_IdAndIsActiveTrue(cartItemId, customer.getId())
-                .orElseThrow(() -> new NotFoundException("Cart item not found: " + cartItemId));
+    return getMyCart();
+  }
 
-        long reqQty = request.quantity();
+  @Transactional
+  public void removeCartItem(UUID cartItemId) {
+    Customer customer = getCurrentCustomer();
 
-        if (reqQty > cartItem.getShoeVariant().getQuantity()) {
-            throw new BadRequestException("Requested quantity exceeds available stock");
-        }
+    CartItem cartItem =
+        cartItemRepository
+            .findByIdAndCustomer_IdAndIsActiveTrue(cartItemId, customer.getId())
+            .orElseThrow(() -> new NotFoundException("Cart item not found: " + cartItemId));
 
-        cartItem.setQuantity(reqQty);
-        cartItemRepository.save(cartItem);
+    cartItem.setActive(false);
+    cartItemRepository.save(cartItem);
+  }
 
-        return getMyCart();
+  @Transactional
+  public void clearCart() {
+    Customer customer = getCurrentCustomer();
+    List<CartItem> cartItems =
+        cartItemRepository.findAllByCustomer_IdAndIsActiveTrue(customer.getId());
+
+    for (CartItem item : cartItems) {
+      item.setActive(false);
+    }
+    cartItemRepository.saveAll(cartItems);
+  }
+
+  private ShoeVariant resolveShoeVariant(AddToCartRequest request) {
+    if (request.shoeVariantId() == null) {
+      throw new BadRequestException("Shoe variant id is required");
     }
 
-    @Transactional
-    public void removeCartItem(UUID cartItemId) {
-        Customer customer = getCurrentCustomer();
+    return shoeVariantRepository
+        .findById(request.shoeVariantId())
+        .orElseThrow(
+            () -> new NotFoundException("Shoe variant not found: " + request.shoeVariantId()));
+  }
 
-        CartItem cartItem = cartItemRepository
-                .findByIdAndCustomer_IdAndIsActiveTrue(cartItemId, customer.getId())
-                .orElseThrow(() -> new NotFoundException("Cart item not found: " + cartItemId));
+  private Customer getCurrentCustomer() {
+    UUID userId = userService.getCurrentUser().userId();
+    return customerRepository
+        .findByUser_Id(userId)
+        .orElseThrow(() -> new NotFoundException("Customer not found for user: " + userId));
+  }
 
-        cartItem.setActive(false);
-        cartItemRepository.save(cartItem);
-    }
+  private CartItemResponse toCartItemResponse(
+      CartItem cartItem, Map<UUID, String> mainImageByShoeId) {
+    ShoeVariant variant = cartItem.getShoeVariant();
+    Shoe shoe = variant.getShoe();
 
-    @Transactional
-    public void clearCart() {
-        Customer customer = getCurrentCustomer();
-        List<CartItem> cartItems = cartItemRepository.findAllByCustomer_IdAndIsActiveTrue(customer.getId());
+    String mainImageUrl = mainImageByShoeId.get(shoe.getId());
 
-        for (CartItem item : cartItems) {
-            item.setActive(false);
-        }
-        cartItemRepository.saveAll(cartItems);
-    }
+    BigDecimal price = BigDecimal.valueOf(shoe.getPrice());
+    BigDecimal subtotal = price.multiply(BigDecimal.valueOf(cartItem.getQuantity()));
 
-    private ShoeVariant resolveShoeVariant(AddToCartRequest request) {
-        if (request.shoeVariantId() == null) {
-            throw new BadRequestException("Shoe variant id is required");
-        }
-
-        return shoeVariantRepository.findById(request.shoeVariantId())
-                .orElseThrow(() -> new NotFoundException("Shoe variant not found: " + request.shoeVariantId()));
-    }
-
-    private Customer getCurrentCustomer() {
-        UUID userId = userService.getCurrentUser().userId();
-        return customerRepository.findByUser_Id(userId)
-                .orElseThrow(() -> new NotFoundException("Customer not found for user: " + userId));
-    }
-
-    private CartItemResponse toCartItemResponse(CartItem cartItem, Map<UUID, String> mainImageByShoeId) {
-        ShoeVariant variant = cartItem.getShoeVariant();
-        Shoe shoe = variant.getShoe();
-
-        String mainImageUrl = mainImageByShoeId.get(shoe.getId());
-
-        BigDecimal price = BigDecimal.valueOf(shoe.getPrice());
-        BigDecimal subtotal = price.multiply(BigDecimal.valueOf(cartItem.getQuantity()));
-
-        return new CartItemResponse(
-                cartItem.getId(),
-                shoe.getId(),
-                variant.getId(),
-                shoe.getName(),
-                shoe.getSlug(),
-                mainImageUrl,
-                variant.getSize(),
-                variant.getColor(),
-                cartItem.getQuantity(),
-                price,
-                subtotal,
-                variant.getQuantity()
-        );
-    }
+    return new CartItemResponse(
+        cartItem.getId(),
+        shoe.getId(),
+        variant.getId(),
+        shoe.getName(),
+        shoe.getSlug(),
+        mainImageUrl,
+        variant.getSize(),
+        variant.getColor(),
+        cartItem.getQuantity(),
+        price,
+        subtotal,
+        variant.getQuantity());
+  }
 }

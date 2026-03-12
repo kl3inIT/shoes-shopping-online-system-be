@@ -1,7 +1,6 @@
 package com.sba.ssos.service.order;
 
 
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.dto.request.order.OrderCreateRequest;
 import com.sba.ssos.dto.request.order.OrderExpiredRequest;
@@ -19,9 +18,9 @@ import com.sba.ssos.enums.PaymentStatus;
 import com.sba.ssos.exception.base.BadRequestException;
 import com.sba.ssos.exception.base.NotFoundException;
 import com.sba.ssos.repository.CartItemRepository;
-import com.sba.ssos.repository.order.OrderRepository;
 import com.sba.ssos.repository.PaymentRepository;
 import com.sba.ssos.repository.ShoeVariantRepository;
+import com.sba.ssos.repository.order.OrderRepository;
 import com.sba.ssos.service.customer.CustomerService;
 import com.sba.ssos.service.product.shoevariant.ShoeVariantService;
 import com.sba.ssos.utils.OrderCodeUtils;
@@ -34,10 +33,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -198,11 +194,17 @@ public class OrderService {
                 orderItem.getCustomer().getUser().getFirstName() + " " + orderItem.getCustomer().getUser().getLastName(),
                 orderItem.getCustomer().getUser().getEmail(),
                 orderItem.getOrderStatus().toString(),
-                orderItem.getPayments().getFirst().getPaymentStatus(),
+                orderItem.getPayments().isEmpty()
+                        ? PaymentStatus.PENDING
+                        : orderItem.getPayments().getFirst().getPaymentStatus(),
                 PaymentMethod.ONLINE,
-                pageOrder.getTotalElements(),
+                orderItem.getOrderDetails() == null ? 0L : orderItem.getOrderDetails().stream()
+                        .map(OrderDetail::getQuantity)
+                        .filter(Objects::nonNull)
+                        .reduce(0L, Long::sum),
                 orderItem.getTotalAmount()
         ));
+
     }
 
     public void verifyPayment(SePayWebhookRequest request) {

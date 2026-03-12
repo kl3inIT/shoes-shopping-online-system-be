@@ -4,8 +4,11 @@ import com.sba.ssos.dto.request.product.shoe.ShoeVariantImageUpdateRequest;
 import com.sba.ssos.entity.Shoe;
 import com.sba.ssos.entity.ShoeImage;
 import com.sba.ssos.entity.ShoeVariant;
+import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.repository.ShoeImageRepository;
 import com.sba.ssos.service.storage.MinioFileStorageService;
+import com.sba.ssos.service.storage.MinioStorageService;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,7 +25,54 @@ import org.springframework.web.multipart.MultipartFile;
 public class ShoeImageService {
 
   private final MinioFileStorageService storageService;
+  private final MinioStorageService minioStorageService;
   private final ShoeImageRepository shoeImageRepository;
+  private final ApplicationProperties applicationProperties;
+
+  private String toPublicImageUrl(String urlOrObjectKey) {
+    if (urlOrObjectKey == null || urlOrObjectKey.isBlank()) {
+      return urlOrObjectKey;
+    }
+    String s = urlOrObjectKey.trim();
+    // If already absolute, keep as-is
+    if (s.startsWith("http://") || s.startsWith("https://")) {
+      return s;
+    }
+    // Otherwise treat as MinIO objectKey and generate presigned GET URL
+    return minioStorageService.getPresignedGetUrl(s);
+  }
+
+  private String toObjectKey(String urlOrObjectKey) {
+    if (urlOrObjectKey == null || urlOrObjectKey.isBlank()) {
+      return null;
+    }
+    String trimmed = urlOrObjectKey.trim();
+    if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+      return trimmed;
+    }
+
+    try {
+      URI uri = URI.create(trimmed);
+      String path = uri.getPath();
+      if (path == null || path.isBlank()) {
+        return trimmed;
+      }
+
+      String normalizedPath = path.startsWith("/") ? path.substring(1) : path;
+      String bucket = applicationProperties.minioProperties().bucket();
+
+      if (bucket != null && !bucket.isBlank()) {
+        String bucketPrefix = bucket + "/";
+        if (normalizedPath.startsWith(bucketPrefix)) {
+          normalizedPath = normalizedPath.substring(bucketPrefix.length());
+        }
+      }
+
+      return normalizedPath;
+    } catch (IllegalArgumentException ex) {
+      return trimmed;
+    }
+  }
 
   public List<String> uploadShoeImages(Shoe shoe, List<ShoeVariant> variants,
       List<MultipartFile> shoeImageFiles) {
@@ -89,12 +139,20 @@ public class ShoeImageService {
       List<String> keepShoeImageUrls,
       List<MultipartFile> newShoeImageFiles
   ) {
+    if ((keepShoeImageUrls == null || keepShoeImageUrls.isEmpty())
+        && (newShoeImageFiles == null || newShoeImageFiles.isEmpty())) {
+      return;
+    }
     List<ShoeImage> existingImages =
         shoeImageRepository.findByShoe_IdAndShoeVariantIsNullOrderByIsPrimaryDescSortOrderAscCreatedAtAsc(
             shoe.getId());
 
     List<String> keepList = keepShoeImageUrls == null ? List.of() : keepShoeImageUrls;
-    Set<String> keepSet = new HashSet<>(keepList);
+    List<String> keepObjectKeys = keepList.stream()
+        .map(this::toObjectKey)
+        .filter(key -> key != null && !key.isBlank())
+        .toList();
+    Set<String> keepSet = new HashSet<>(keepObjectKeys);
 
     List<ShoeImage> keptImages = new ArrayList<>();
     for (ShoeImage image : existingImages) {
@@ -114,7 +172,8 @@ public class ShoeImageService {
     int nextSortOrder = 0;
     List<ShoeImage> reordered = new ArrayList<>();
     for (String keepUrl : keepList) {
-      ShoeImage image = keptByUrl.remove(keepUrl);
+      String keepKey = toObjectKey(keepUrl);
+      ShoeImage image = keepKey == null ? null : keptByUrl.remove(keepKey);
       if (image != null) {
         image.setSortOrder(nextSortOrder++);
         reordered.add(image);
@@ -153,6 +212,16 @@ public class ShoeImageService {
       List<ShoeVariantImageUpdateRequest> variantImageUpdates,
       List<List<MultipartFile>> variantImageFilesList
   ) {
+    boolean noKeepInfo = variantImageUpdates == null || variantImageUpdates.isEmpty();
+    boolean hasAnyNewVariantFile = variantImageFilesList != null
+        && variantImageFilesList.stream()
+        .filter(files -> files != null && !files.isEmpty())
+        .flatMap(List::stream)
+        .anyMatch(file -> file != null && !file.isEmpty());
+
+    if (noKeepInfo && !hasAnyNewVariantFile) {
+      return;
+    }
     Map<UUID, List<String>> keepUrlsByVariantId = new HashMap<>();
     if (variantImageUpdates != null) {
       for (ShoeVariantImageUpdateRequest update : variantImageUpdates) {
@@ -168,7 +237,11 @@ public class ShoeImageService {
               variant.getId());
 
       List<String> keepList = keepUrlsByVariantId.getOrDefault(variant.getId(), List.of());
-      Set<String> keepSet = new HashSet<>(keepList);
+      List<String> keepObjectKeys = keepList.stream()
+          .map(this::toObjectKey)
+          .filter(key -> key != null && !key.isBlank())
+          .toList();
+      Set<String> keepSet = new HashSet<>(keepObjectKeys);
 
       List<ShoeImage> keptImages = new ArrayList<>();
       for (ShoeImage image : existingVariantImages) {
@@ -188,7 +261,8 @@ public class ShoeImageService {
       int nextSortOrder = 0;
       List<ShoeImage> reordered = new ArrayList<>();
       for (String keepUrl : keepList) {
-        ShoeImage image = keptByUrl.remove(keepUrl);
+        String keepKey = toObjectKey(keepUrl);
+        ShoeImage image = keepKey == null ? null : keptByUrl.remove(keepKey);
         if (image != null) {
           image.setSortOrder(nextSortOrder++);
           reordered.add(image);
@@ -233,7 +307,7 @@ public class ShoeImageService {
             shoe.getId());
 
     for (ShoeImage shoeImageEntity : shoeImageEntities) {
-      shoeImageUrls.add(shoeImageEntity.getUrl());
+      shoeImageUrls.add(toPublicImageUrl(shoeImageEntity.getUrl()));
     }
 
     return shoeImageUrls.stream().distinct().toList();
@@ -245,6 +319,7 @@ public class ShoeImageService {
             variant.getId());
     return variantImageEntities.stream()
         .map(ShoeImage::getUrl)
+        .map(this::toPublicImageUrl)
         .toList();
   }
 }

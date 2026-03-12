@@ -2,10 +2,24 @@ package com.sba.ssos.entity;
 
 import com.sba.ssos.entity.base.BaseAuditableEntity;
 import jakarta.persistence.*;
-import lombok.*;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
-@Table(name = "reviews")
+@Table(
+        name = "reviews",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_review_customer_variant",
+                        columnNames = {"shoe_variant_id", "customer_id"}
+                )
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -26,4 +40,8 @@ public class Review extends BaseAuditableEntity {
 
     @Column(name = "description", nullable = false, columnDefinition = "TEXT")
     private String description;
+
+    @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ReviewImage> images = new ArrayList<>();
 }
