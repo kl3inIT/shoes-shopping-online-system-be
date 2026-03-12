@@ -7,7 +7,6 @@ import com.sba.ssos.entity.Customer;
 import com.sba.ssos.entity.User;
 import com.sba.ssos.enums.UserRole;
 import com.sba.ssos.enums.UserStatus;
-import com.sba.ssos.exception.base.ForbiddenException;
 import com.sba.ssos.exception.user.UserNotFoundException;
 import com.sba.ssos.mapper.UserMapper;
 import com.sba.ssos.repository.CustomerRepository;
@@ -20,7 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.Nullable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,7 +56,8 @@ public class UserService {
   }
 
   @Transactional(readOnly = true)
-  public UserResponse getUserByKeycloakId(UUID keycloakId) {
+  public UserResponse getCurrentUserProfile() {
+    UUID keycloakId = getCurrentUser().userId();
     User user =
         userRepository
             .findByKeycloakId(keycloakId)
@@ -67,29 +66,15 @@ public class UserService {
   }
 
   @Transactional
-  public UserResponse updateUserProfile(UUID keycloakId, UpdateUserProfileRequest request) {
-    assertCanEditProfile(keycloakId);
+  public UserResponse updateCurrentUserProfile(UpdateUserProfileRequest request) {
+    UUID keycloakId = getCurrentUser().userId();
 
     User user =
         userRepository
             .findByKeycloakId(keycloakId)
             .orElseThrow(() -> new UserNotFoundException(keycloakId));
 
-    if (request.phoneNumber() != null) {
-      user.setPhoneNumber(request.phoneNumber().isBlank() ? null : request.phoneNumber().trim());
-    }
-
-    if (request.dateOfBirth() != null) {
-      user.setDateOfBirth(request.dateOfBirth());
-    }
-
-    if (request.avatarUrl() != null) {
-      user.setAvatarUrl(request.avatarUrl().isBlank() ? null : request.avatarUrl().trim());
-    }
-
-    if (request.address() != null) {
-      user.setAddress(request.address().isBlank() ? null : request.address().trim());
-    }
+    userMapper.updateFromRequest(request, user);
 
     return userMapper.toResponse(userRepository.save(user));
   }
@@ -119,8 +104,7 @@ public class UserService {
               User savedUser = userRepository.save(user);
 
               // Tạo luôn record Customer tương ứng với loyaltyPoints = 0
-              Customer customer =
-                  Customer.builder().user(savedUser).loyaltyPoints(0L).build();
+              Customer customer = Customer.builder().user(savedUser).loyaltyPoints(0L).build();
               customerRepository.save(customer);
 
               log.info(
@@ -130,27 +114,5 @@ public class UserService {
 
               return savedUser;
             });
-  }
-
-  private void assertCanEditProfile(UUID targetKeycloakId) {
-    AuthorizedUserDetails currentUser = getCurrentUserOrNull();
-    if (currentUser == null) {
-      throw new ForbiddenException("error.forbidden");
-    }
-
-    boolean isSelf = targetKeycloakId.equals(currentUser.userId());
-    if (isSelf) {
-      return;
-    }
-
-    boolean isAdminOrManager =
-        currentUser.getAuthorities().contains(new SimpleGrantedAuthority(UserRole.ROLE_ADMIN.name()))
-            || currentUser
-                .getAuthorities()
-                .contains(new SimpleGrantedAuthority(UserRole.ROLE_MANAGER.name()));
-
-    if (!isAdminOrManager) {
-      throw new ForbiddenException("error.forbidden");
-    }
   }
 }
