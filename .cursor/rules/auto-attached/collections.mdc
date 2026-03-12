@@ -1,0 +1,103 @@
+---
+description: Collections and immutability - List.of/Set.of/Map.of, records for DTOs, defensive copy, stream toList()
+globs: **/*.java
+---
+
+# Collections and Immutability Guidelines
+
+## Immutable Collections
+
+**Prefer factory methods** for creating immutable collections:
+
+```java
+// Preferred
+var names = List.of("Alice", "Bob", "Charlie");
+var ids = Set.of(1, 2, 3, 4, 5);
+var settings = Map.of(
+  "theme", "dark",
+  "language", "en",
+  "timeout", "30"
+);
+
+// For larger maps, use Map.ofEntries
+var config = Map.ofEntries(
+  Map.entry("key1", "value1"),
+  Map.entry("key2", "value2")
+);
+
+// Avoid
+var names = Arrays.asList("Alice", "Bob", "Charlie");
+var settings = new HashMap<>();
+settings.put("theme", "dark");
+```
+
+## Records for Data Carriers
+
+**Prefer Java records** for all data carrier classes (DTOs, value objects, etc.) unless stated otherwise.
+
+```java
+// Preferred - using record
+public record User(String id, String name, String email, LocalDate birthDate) {}
+
+public record OrderRequest(
+    String customerId,
+    List<String> productIds,
+    String shippingAddress,
+    PaymentMethod paymentMethod
+) {}
+
+public record ApiResponse<T>(boolean success, T data, String message, int statusCode) {}
+```
+
+```java
+// Avoid - traditional class for simple data carriers
+public class User {
+  private final String id;
+  private final String name;
+  // ... constructor, getters, equals, hashCode
+}
+```
+
+**When NOT to use records:** Classes requiring mutable state; complex business logic; inheritance (records are final); JPA entities (use `@Entity` classes instead).
+
+## Defensive Copying for Mutable Collections
+
+**Always create defensive copies** when dealing with mutable collections (constructor and getters). Use `List.copyOf()`, `Set.copyOf()`, `Map.copyOf()`, `Arrays.copyOf()`.
+
+```java
+// Preferred - record with compact constructor
+public record UserGroup(
+    String name,
+    List<String> memberIds,
+    Set<String> permissions,
+    Map<String, String> metadata
+) {
+  public UserGroup {
+    memberIds = List.copyOf(memberIds);
+    permissions = Set.copyOf(permissions);
+    metadata = Map.copyOf(metadata);
+  }
+}
+```
+
+## Stream Collection
+
+**Prefer `toList()`** over `Collectors.toList()` unless you explicitly need a mutable list.
+
+```java
+// Preferred - toList() returns an immutable list
+var activeUsers = users.stream()
+    .filter(User::isActive)
+    .toList();
+
+var userNames = users.stream()
+    .map(User::getName)
+    .toList();
+
+// Avoid - unless you specifically need a mutable list
+var activeUsers = users.stream()
+    .filter(User::isActive)
+    .collect(Collectors.toList());
+```
+
+Use `Collectors.toList()` only when you need a mutable list (e.g. to add elements later).

@@ -1,0 +1,130 @@
+---
+description: Spring Framework guidelines - constructor injection only, no field/setter injection in production
+globs: **/*.java
+---
+
+# Spring Framework Guidelines
+
+## Spring Dependency Injection
+
+**Always use constructor injection** for Spring beans in production code.
+
+```java
+// Preferred - constructor injection
+@Service
+public class UserService {
+
+  private final UserRepository userRepository;
+  private final EmailService emailService;
+  private final AuditLogger auditLogger;
+
+  public UserService(
+      UserRepository userRepository,
+      EmailService emailService,
+      AuditLogger auditLogger
+  ) {
+    this.userRepository = userRepository;
+    this.emailService = emailService;
+    this.auditLogger = auditLogger;
+  }
+
+  public User createUser(UserRequest request) {
+    var user = userRepository.save(request.toEntity());
+    emailService.sendWelcomeEmail(user);
+    auditLogger.logUserCreation(user);
+    return user;
+  }
+}
+
+// Avoid - field injection
+@Service
+public class UserService {
+
+  @Autowired
+  private UserRepository userRepository;
+
+  @Autowired
+  private EmailService emailService;
+
+  @Autowired
+  private AuditLogger auditLogger;
+}
+```
+
+### STRICTLY FORBIDDEN
+
+Never use field injections or setter injections in production code.
+
+### Constructor Parameter Limit Warning
+
+**Add a warning comment** if a constructor takes more than 7 parameters (violates Single Responsibility Principle).
+
+```java
+// Warning: constructor has too many dependencies
+@Service
+public class ComplexService {
+
+  private final RepoA repoA;
+  private final RepoB repoB;
+  private final ServiceC serviceC;
+  private final ServiceD serviceD;
+  private final ServiceE serviceE;
+  private final HelperF helperF;
+  private final UtilG utilG;
+  private final ValidatorH validatorH;
+
+  // WARNING: Constructor has 8 parameters - consider refactoring to reduce dependencies
+  public ComplexService(
+      RepoA repoA,
+      RepoB repoB,
+      ServiceC serviceC,
+      ServiceD serviceD,
+      ServiceE serviceE,
+      HelperF helperF,
+      UtilG utilG,
+      ValidatorH validatorH
+  ) {
+    this.repoA = repoA;
+    this.repoB = repoB;
+    this.serviceC = serviceC;
+    this.serviceD = serviceD;
+    this.serviceE = serviceE;
+    this.helperF = helperF;
+    this.utilG = utilG;
+    this.validatorH = validatorH;
+  }
+}
+```
+
+**Exception**: Spring controllers (`@Controller` or `@RestController`) are exempt from this warning.
+
+### Test Package Exception
+
+**Use `@Autowired`** in test classes, as constructor injection might not work properly with test frameworks.
+
+```java
+// Test class - use @Autowired
+@SpringBootTest
+class UserServiceTest {
+
+  @Autowired
+  private UserService userService;
+
+  @Autowired
+  private UserRepository userRepository;
+
+  @Autowired
+  private TestRestTemplate restTemplate;
+
+  @Test
+  void shouldCreateUser() {
+    var request = new UserRequest("John Doe", "john@example.com");
+    var user = userService.createUser(request);
+
+    assertThat(user).isNotNull();
+    assertThat(user.getName()).isEqualTo("John Doe");
+  }
+}
+```
+
+Benefits of constructor injection: dependencies are explicit and required; easier to test; immutable dependencies (final fields); prevents circular dependencies at compile time.
