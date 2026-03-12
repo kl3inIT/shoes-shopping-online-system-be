@@ -68,6 +68,12 @@ application-properties:
       - { method: POST, path: /api/v1/checks/run }
       - { method: GET, path: /api/v1/checks/runs/* }
       - { method: POST, path: /api/v1/search }
+      # User management APIs
+      - { method: GET, path: /api/admin/users }
+      - { method: POST, path: /api/admin/users }
+      - { method: PATCH, path: /api/admin/users/*/role }
+      - { method: PATCH, path: /api/admin/users/*/status }
+      - { method: DELETE, path: /api/admin/users/* }
     manager-endpoints:
       # Reserved for manager-only APIs (add when needed)
       - { method: GET, path: /test/manager }

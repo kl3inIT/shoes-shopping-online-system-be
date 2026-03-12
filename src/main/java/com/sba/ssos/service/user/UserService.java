@@ -7,12 +7,13 @@ import com.sba.ssos.entity.Customer;
 import com.sba.ssos.entity.User;
 import com.sba.ssos.enums.UserRole;
 import com.sba.ssos.enums.UserStatus;
-import com.sba.ssos.exception.base.ForbiddenException;
 import com.sba.ssos.exception.user.UserNotFoundException;
 import com.sba.ssos.mapper.UserMapper;
 import com.sba.ssos.repository.CustomerRepository;
 import com.sba.ssos.repository.UserRepository;
 import com.sba.ssos.security.AuthorizedUserDetails;
+import com.sba.ssos.service.storage.MinioFileStorageService;
+import com.sba.ssos.service.storage.MinioStorageService;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -20,9 +21,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.Nullable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +33,8 @@ public class UserService {
   private final UserRepository userRepository;
   private final CustomerRepository customerRepository;
   private final UserMapper userMapper;
+  private final MinioFileStorageService minioFileStorageService;
+  private final MinioStorageService minioStorageService;
 
   public AuthorizedUserDetails getCurrentUser() {
     AuthorizedUserDetails user = getCurrentUserOrNull();
@@ -58,7 +61,8 @@ public class UserService {
   }
 
   @Transactional(readOnly = true)
-  public UserResponse getUserByKeycloakId(UUID keycloakId) {
+  public UserResponse getCurrentUserProfile() {
+    UUID keycloakId = getCurrentUser().userId();
     User user =
         userRepository
             .findByKeycloakId(keycloakId)
@@ -67,30 +71,30 @@ public class UserService {
   }
 
   @Transactional
-  public UserResponse updateUserProfile(UUID keycloakId, UpdateUserProfileRequest request) {
-    assertCanEditProfile(keycloakId);
+  public UserResponse updateCurrentUserProfile(UpdateUserProfileRequest request) {
+    UUID keycloakId = getCurrentUser().userId();
 
     User user =
         userRepository
             .findByKeycloakId(keycloakId)
             .orElseThrow(() -> new UserNotFoundException(keycloakId));
 
-    if (request.phoneNumber() != null) {
-      user.setPhoneNumber(request.phoneNumber().isBlank() ? null : request.phoneNumber().trim());
-    }
+    userMapper.updateFromRequest(request, user);
 
-    if (request.dateOfBirth() != null) {
-      user.setDateOfBirth(request.dateOfBirth());
-    }
+    return userMapper.toResponse(userRepository.save(user));
+  }
 
-    if (request.avatarUrl() != null) {
-      user.setAvatarUrl(request.avatarUrl().isBlank() ? null : request.avatarUrl().trim());
-    }
+  @Transactional
+  public UserResponse uploadAvatar(MultipartFile file) {
+    UUID keycloakId = getCurrentUser().userId();
+    User user =
+        userRepository
+            .findByKeycloakId(keycloakId)
+            .orElseThrow(() -> new UserNotFoundException(keycloakId));
 
-    if (request.address() != null) {
-      user.setAddress(request.address().isBlank() ? null : request.address().trim());
-    }
-
+    String objectKey = minioFileStorageService.upload(file, "avatars");
+    String presignedUrl = minioStorageService.getPresignedGetUrl(objectKey);
+    user.setAvatarUrl(presignedUrl);
     return userMapper.toResponse(userRepository.save(user));
   }
 
@@ -119,8 +123,7 @@ public class UserService {
               User savedUser = userRepository.save(user);
 
               // Tạo luôn record Customer tương ứng với loyaltyPoints = 0
-              Customer customer =
-                  Customer.builder().user(savedUser).loyaltyPoints(0L).build();
+              Customer customer = Customer.builder().user(savedUser).loyaltyPoints(0L).build();
               customerRepository.save(customer);
 
               log.info(
@@ -130,27 +133,5 @@ public class UserService {
 
               return savedUser;
             });
-  }
-
-  private void assertCanEditProfile(UUID targetKeycloakId) {
-    AuthorizedUserDetails currentUser = getCurrentUserOrNull();
-    if (currentUser == null) {
-      throw new ForbiddenException("error.forbidden");
-    }
-
-    boolean isSelf = targetKeycloakId.equals(currentUser.userId());
-    if (isSelf) {
-      return;
-    }
-
-    boolean isAdminOrManager =
-        currentUser.getAuthorities().contains(new SimpleGrantedAuthority(UserRole.ROLE_ADMIN.name()))
-            || currentUser
-                .getAuthorities()
-                .contains(new SimpleGrantedAuthority(UserRole.ROLE_MANAGER.name()));
-
-    if (!isAdminOrManager) {
-      throw new ForbiddenException("error.forbidden");
-    }
   }
 }
