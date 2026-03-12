@@ -1,8 +1,8 @@
-package com.sba.ssos.controller;
+package com.sba.ssos.controller.user;
 
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.keycloak.KeycloakUserCreatedWebhookRequest;
-import com.sba.ssos.service.UserService;
+import com.sba.ssos.service.user.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/keycloak/webhook")
 @RequiredArgsConstructor
 @Slf4j
-public class KeycloakController {
+public class KeycloakUserController {
 
   private final UserService userService;
 

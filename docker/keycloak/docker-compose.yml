@@ -14,9 +14,9 @@ services:
       WEBHOOK_URL: https://ssos.it4beginer.io.vn/keycloak/webhook/user-registration
       KC_HEALTH_ENABLED: true
       KC_METRICS_ENABLED: true
+
+      KC_HOSTNAME: auth.it4beginer.io.vn
       KC_PROXY_HEADERS: xforwarded
-      KC_HOSTNAME: ${KEYCLOAK_DOMAIN}
-      KC_HOSTNAME_STRICT: true
       KC_HTTP_ENABLED: true
       JAVA_OPTS_KC_HEAP: >
         -XX:MaxRAMPercentage=60

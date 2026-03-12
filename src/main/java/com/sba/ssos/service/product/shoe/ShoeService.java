@@ -18,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -68,39 +67,6 @@ public class ShoeService {
                 .orElseThrow(() -> new NotFoundException("Shoe", id));
 
         return toShoeResponse(shoe);
-    }
-
-    public List<ShoeResponse> getAdminAll() {
-        return shoeRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
-                .stream()
-                .map(this::toShoeResponse)
-                .toList();
-    }
-
-    public List<ShoeResponse> getAdminDeleted() {
-        EnumSet<ShoeStatus> deletedStatuses = EnumSet.of(ShoeStatus.INACTIVE, ShoeStatus.DISCONTINUED);
-        return shoeRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
-                .stream()
-                .filter(s -> deletedStatuses.contains(s.getStatus()))
-                .map(this::toShoeResponse)
-                .toList();
-    }
-
-    public List<ShoeResponse> getAdminNotDeleted() {
-        EnumSet<ShoeStatus> deletedStatuses = EnumSet.of(ShoeStatus.INACTIVE, ShoeStatus.DISCONTINUED);
-        return shoeRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
-                .stream()
-                .filter(s -> !deletedStatuses.contains(s.getStatus()))
-                .map(this::toShoeResponse)
-                .toList();
-    }
-
-    @Transactional
-    public void softDelete(UUID id) {
-        Shoe shoe = shoeRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Shoe", id));
-        shoe.setStatus(ShoeStatus.INACTIVE);
-        shoeRepository.save(shoe);
     }
 
     @Transactional

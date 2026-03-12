@@ -1,8 +1,8 @@
-package com.sba.ssos.controller;
+package com.sba.ssos.controller.user;
 
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.response.user.UserResponse;
-import com.sba.ssos.service.UserService;
+import com.sba.ssos.service.user.UserService;
 import com.sba.ssos.utils.LocaleUtils;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
