@@ -171,6 +171,9 @@ public class ShoeService {
     }
 
     private ShoeResponse buildShoeResponse(Shoe shoe, List<ShoeVariant> variants, List<String> shoeImageUrls) {
+        Double avgRating = reviewRepository.getAverageStarsByShoeId(shoe.getId());
+        long reviewCount = reviewRepository.countByShoeVariant_Shoe_Id(shoe.getId());
+
         return ShoeResponse.builder()
                 .id(shoe.getId())
                 .name(shoe.getName())
@@ -186,6 +189,8 @@ public class ShoeService {
                 .brandName(shoe.getBrand().getName())
                 .brandSlug(shoe.getBrand().getSlug())
                 .price(shoe.getPrice())
+                .avgRating(avgRating)
+                .reviewCount(reviewCount)
                 .imageUrls(shoeImageUrls)
                 .variants(toVariantResponses(variants))
                 .createdAt(shoe.getCreatedAt())

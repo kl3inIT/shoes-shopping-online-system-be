@@ -25,6 +25,8 @@ public record ShoeResponse(
         String brandName,
         String brandSlug,
         Double price,
+        Double avgRating,
+        Long reviewCount,
         List<String> imageUrls,
         List<ShoeVariantResponse> variants,
         Instant createdAt,

@@ -53,6 +53,9 @@ public class User extends BaseAuditableEntity {
     @Column(name = "avatar_url", nullable = true, columnDefinition = "TEXT")
     private String avatarUrl;
 
+    @Column(name = "address", nullable = true, columnDefinition = "TEXT")
+    private String address;
+
     @Column(name = "status", nullable = false, length = 255)
     @Enumerated(EnumType.STRING)
     private UserStatus status;

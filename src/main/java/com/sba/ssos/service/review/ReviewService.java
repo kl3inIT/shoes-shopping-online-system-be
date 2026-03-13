@@ -11,10 +11,12 @@ import com.sba.ssos.entity.Customer;
 import com.sba.ssos.entity.Order;
 import com.sba.ssos.entity.OrderDetail;
 import com.sba.ssos.entity.Review;
+import com.sba.ssos.entity.ReviewHelpfulVote;
 import com.sba.ssos.entity.ReviewImage;
 import com.sba.ssos.enums.OrderStatus;
 import com.sba.ssos.exception.base.BadRequestException;
 import com.sba.ssos.exception.base.NotFoundException;
+import com.sba.ssos.repository.ReviewHelpfulVoteRepository;
 import com.sba.ssos.repository.ReviewImageRepository;
 import com.sba.ssos.repository.ReviewRepository;
 import com.sba.ssos.repository.order.OrderDetailRepository;
@@ -45,6 +47,7 @@ public class ReviewService {
     private final CustomerService customerService;
     private final OrderDetailRepository orderDetailRepository;
     private final MinioFileStorageService storageService;
+    private final ReviewHelpfulVoteRepository reviewHelpfulVoteRepository;
 
     @Transactional
     public ReviewResponse createReview(ReviewCreateRequest request, List<MultipartFile> images) {
@@ -277,9 +280,17 @@ public class ReviewService {
         Double avg = reviewRepository.getAverageStarsByShoeId(shoeId);
         long count = reviewRepository.countByShoeVariant_Shoe_Id(shoeId);
 
+        Customer currentCustomer = null;
+        try {
+            currentCustomer = customerService.getCurrentCustomer();
+        } catch (Exception ignored) {
+            // anonymous user - no current customer
+        }
+
+        Customer finalCurrentCustomer = currentCustomer;
         var items =
                 reviewsPage.getContent().stream()
-                        .map(this::toPublicItemResponse)
+                        .map(review -> toPublicItemResponse(review, finalCurrentCustomer))
                         .toList();
 
         return ReviewPublicListResponse.builder()
@@ -289,7 +300,10 @@ public class ReviewService {
                 .build();
     }
 
-    private ReviewPublicItemResponse toPublicItemResponse(Review review) {
+    private ReviewPublicItemResponse toPublicItemResponse(
+            Review review,
+            Customer currentCustomer
+    ) {
         List<ReviewImage> images = reviewImageRepository.findByReview_Id(review.getId());
         List<String> imageUrls = images.stream().map(ReviewImage::getUrl).toList();
 
@@ -302,6 +316,12 @@ public class ReviewService {
             avatarUrl = user.getAvatarUrl();
         }
 
+        boolean currentUserVoted = false;
+        if (currentCustomer != null) {
+            currentUserVoted = reviewHelpfulVoteRepository.existsByReview_IdAndCustomer_Id(
+                    review.getId(), currentCustomer.getId());
+        }
+
         return ReviewPublicItemResponse.builder()
                 .id(review.getId())
                 .shoeVariantId(review.getShoeVariant().getId())
@@ -311,7 +331,37 @@ public class ReviewService {
                 .description(review.getDescription())
                 .imageUrls(imageUrls)
                 .createdAt(review.getCreatedAt())
+                .helpfulCount(review.getHelpfulCount())
+                .currentUserVoted(currentUserVoted)
                 .build();
+    }
+
+    @Transactional
+    public void toggleHelpful(UUID reviewId) {
+        Customer customer = customerService.getCurrentCustomer();
+
+        Review review =
+                reviewRepository
+                        .findById(reviewId)
+                        .orElseThrow(() -> new NotFoundException("error.review.not_found"));
+
+        boolean alreadyVoted =
+                reviewHelpfulVoteRepository.existsByReview_IdAndCustomer_Id(
+                        reviewId, customer.getId());
+
+        Long current = review.getHelpfulCount() == null ? 0L : review.getHelpfulCount();
+
+        if (alreadyVoted) {
+            reviewHelpfulVoteRepository.deleteByReview_IdAndCustomer_Id(
+                    reviewId, customer.getId());
+            review.setHelpfulCount(Math.max(0L, current - 1));
+        } else {
+            ReviewHelpfulVote vote = new ReviewHelpfulVote(review, customer);
+            reviewHelpfulVoteRepository.save(vote);
+            review.setHelpfulCount(current + 1);
+        }
+
+        reviewRepository.save(review);
     }
 }
 

@@ -56,6 +56,12 @@ public class ReviewController {
         return ResponseGeneral.ofSuccess(localeUtils.get("success.review.fetched"), data);
     }
 
+    @PostMapping("/{id}/helpful")
+    public ResponseGeneral<Void> markReviewHelpful(@PathVariable UUID id) {
+        reviewService.toggleHelpful(id);
+        return ResponseGeneral.ofSuccess(localeUtils.get("success.review.helpful"), null);
+    }
+
     @PostMapping(consumes = {"multipart/form-data"})
     public ResponseGeneral<ReviewResponse> createReview(
             @Valid @RequestPart("request") ReviewCreateRequest request,

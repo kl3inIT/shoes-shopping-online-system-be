@@ -11,4 +11,6 @@ public interface CustomerRepository extends CrudRepository<Customer, UUID>
 {
     Optional<Customer> findByUser_Id(UUID userId);
 
+    Optional<Customer> findByUser_KeycloakId(UUID keycloakId);
+
 }

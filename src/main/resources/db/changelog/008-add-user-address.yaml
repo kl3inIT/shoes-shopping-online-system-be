@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-add-user-address
+      author: cursor
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: address
+                  type: TEXT
+                  constraints:
+                    nullable: true
+
