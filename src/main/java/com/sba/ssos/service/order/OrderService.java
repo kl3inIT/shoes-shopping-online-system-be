@@ -1,6 +1,5 @@
 package com.sba.ssos.service.order;
 
-
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.dto.request.order.OrderCreateRequest;
@@ -11,36 +10,43 @@ import com.sba.ssos.dto.response.order.OrderCreateResponse;
 import com.sba.ssos.dto.response.order.OrderHistoryResponse;
 import com.sba.ssos.dto.response.order.OrderPaid;
 import com.sba.ssos.dto.response.order.sepay.SePayWebhookRequest;
-import com.sba.ssos.entity.*;
+import com.sba.ssos.entity.CartItem;
+import com.sba.ssos.entity.Customer;
+import com.sba.ssos.entity.Order;
+import com.sba.ssos.entity.OrderDetail;
+import com.sba.ssos.entity.Payment;
+import com.sba.ssos.entity.ShoeVariant;
 import com.sba.ssos.enums.OrderStatus;
 import com.sba.ssos.enums.PaymentMethod;
 import com.sba.ssos.enums.PaymentStatus;
 import com.sba.ssos.exception.base.BadRequestException;
 import com.sba.ssos.exception.base.NotFoundException;
 import com.sba.ssos.repository.CartItemRepository;
-import com.sba.ssos.repository.order.OrderRepository;
 import com.sba.ssos.repository.PaymentRepository;
 import com.sba.ssos.repository.ShoeVariantRepository;
+import com.sba.ssos.repository.order.OrderRepository;
 import com.sba.ssos.service.customer.CustomerService;
 import com.sba.ssos.service.product.shoevariant.ShoeVariantService;
 import com.sba.ssos.utils.OrderCodeUtils;
 import jakarta.transaction.Transactional;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -55,11 +61,12 @@ public class OrderService {
     private final CartItemRepository cartItemRepository;
     private final CustomerService customerService;
     private final SimpMessagingTemplate messagingTemplate;
+
     private static final long PAYMENT_EXPIRE_MINUTES = 5;
     private static final String ORDER_CODE_PREFIX = "SSOS";
 
     @Transactional
-    public OrderCreateResponse createOrder(OrderCreateRequest orderCreateRequest){
+    public OrderCreateResponse createOrder(OrderCreateRequest orderCreateRequest) {
         List<OrderItemRequest> requestItems = orderCreateRequest.items();
 
         Customer customer = customerService.getCurrentCustomer();
@@ -70,7 +77,7 @@ public class OrderService {
         Double totalAmount = calculatePrice(requestItems);
 
         Order order = new Order();
-        order.setNotes(orderCreateRequest.notes());
+        order.setNotes(StringUtils.defaultString(orderCreateRequest.notes()));
         order.setShippingAddress(orderCreateRequest.shippingAddress());
         order.setShippingName(orderCreateRequest.shippingName());
         order.setShippingPhone(orderCreateRequest.shippingPhone());
@@ -78,6 +85,7 @@ public class OrderService {
         order.setCustomer(customer);
         order.setOrderStatus(OrderStatus.PENDING_PAYMENT);
         order.setTotalAmount(totalAmount);
+
         List<OrderDetail> orderDetails = new ArrayList<>();
         for (OrderItemRequest item : requestItems) {
             ShoeVariant variant = shoeVariantService.findById(item.shoeVariantId());
@@ -86,10 +94,11 @@ public class OrderService {
             detail.setShoeVariant(variant);
             detail.setQuantity(item.quantity());
             orderDetails.add(detail);
-            // trừ stock
+
             variant.setQuantity(variant.getQuantity() - item.quantity());
             shoeVariantRepository.saveAndFlush(variant);
         }
+
         order.setOrderDetails(orderDetails);
         orderRepository.save(order);
 
@@ -108,44 +117,54 @@ public class OrderService {
                 applicationProperties.bankProperties().accountHolder(),
                 order.getTotalAmount(),
                 order.getOrderStatus().toString(),
-                payment.getExpiredAt()
-
-        );
-
+                payment.getExpiredAt());
     }
 
     @Transactional
-    public void handlePaymentTimeout(OrderExpiredRequest  orderExpiredRequest) {
-
+    public void handlePaymentTimeout(OrderExpiredRequest orderExpiredRequest) {
         Order order = findOrderById(orderExpiredRequest.orderId());
+        if (order.getOrderStatus() != OrderStatus.PENDING_PAYMENT) {
+            throw new BadRequestException("Order is not waiting for payment");
+        }
+
         order.setOrderStatus(OrderStatus.PAYMENT_EXPIRED);
         orderRepository.saveAndFlush(order);
 
         List<Payment> payments = order.getPayments();
-        for(Payment payment : payments){
+        for (Payment payment : payments) {
             payment.setPaymentStatus(PaymentStatus.TIME_OUT);
         }
         paymentRepository.saveAllAndFlush(payments);
 
-        List<CartItem> cartItems = order.getCustomer().getCartItems();
-        for(CartItem cartItem : cartItems){
+        for (OrderDetail orderDetail : order.getOrderDetails()) {
+            ShoeVariant variant = orderDetail.getShoeVariant();
+            variant.setQuantity(variant.getQuantity() + orderDetail.getQuantity());
+        }
+        shoeVariantRepository.saveAllAndFlush(
+                order.getOrderDetails().stream().map(OrderDetail::getShoeVariant).toList());
+
+        Set<UUID> orderedVariantIds = order.getOrderDetails().stream()
+                .map(OrderDetail::getShoeVariant)
+                .map(ShoeVariant::getId)
+                .collect(Collectors.toSet());
+
+        List<CartItem> cartItems = order.getCustomer().getCartItems().stream()
+                .filter(cartItem -> orderedVariantIds.contains(cartItem.getShoeVariant().getId()))
+                .toList();
+        for (CartItem cartItem : cartItems) {
             cartItem.setActive(true);
         }
         cartItemRepository.saveAllAndFlush(cartItems);
-
     }
 
     public List<OrderHistoryResponse> getOrderHistoryByCustomer(OrderHistoryRequest orderHistoryRequest) {
-
         Customer customer = customerService.getCurrentCustomer();
 
         Pageable pageable = PageRequest.of(
                 orderHistoryRequest.page(),
-                orderHistoryRequest.size()
-        );
+                orderHistoryRequest.size());
 
         Page<Order> orderPage = orderRepository.findByCustomer_Id(customer.getId(), pageable);
-
         if (!orderPage.hasContent()) {
             return List.of();
         }
@@ -166,22 +185,16 @@ public class OrderService {
                                 .map(OrderDetail::getQuantity)
                                 .filter(Objects::nonNull)
                                 .reduce(0L, Long::sum),
-                        order.getTotalAmount()
-                ))
+                        order.getTotalAmount()))
                 .toList();
-
     }
 
     public Page<OrderHistoryResponse> getOrderHistoryByAdmin(OrderHistoryRequest orderHistoryRequest) {
-
         Pageable pageable = PageRequest.of(
                 orderHistoryRequest.page(),
-                orderHistoryRequest.size() != 0 ? orderHistoryRequest.size() : 5
-        );
+                orderHistoryRequest.size() != 0 ? orderHistoryRequest.size() : 5);
 
         Page<Order> pageOrder = orderRepository.findOrderHistory(orderHistoryRequest, pageable);
-
-
         if (!pageOrder.hasContent()) {
             return Page.empty(pageable);
         }
@@ -201,13 +214,10 @@ public class OrderService {
                         .map(OrderDetail::getQuantity)
                         .filter(Objects::nonNull)
                         .reduce(0L, Long::sum),
-                orderItem.getTotalAmount()
-        ));
-
+                orderItem.getTotalAmount()));
     }
 
     public void verifyPayment(SePayWebhookRequest request) {
-
         String regex = "SSOS-\\d{8}-[A-Z0-9]{6}";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(request.content());
@@ -219,73 +229,80 @@ public class OrderService {
             throw new NotFoundException("Not Found order code");
         }
 
-        // get order và set vào
         Order order = getOrderByCode(orderCode);
+        if (order.getOrderStatus() == OrderStatus.PAYMENT_EXPIRED) {
+            throw new BadRequestException("Order payment has expired");
+        }
+        if (order.getOrderStatus() == OrderStatus.PAID) {
+            return;
+        }
 
-        Double amountReceived = Double.parseDouble(request.transferAmount().toString());
+        Payment payment = order.getPayments().stream()
+                .findFirst()
+                .orElseThrow(() -> new BadRequestException("Order has no payment request"));
 
-        order.getPayments().getFirst().setAmountReceived(amountReceived);
+        double amountReceived = request.transferAmount().doubleValue();
+        double currentAmountReceived = payment.getAmountReceived() == null ? 0.0 : payment.getAmountReceived();
+        payment.setAmountReceived(currentAmountReceived + amountReceived);
 
         Double totalPaid = order.getPayments().stream()
-                .filter(p -> p.getPaymentStatus() == PaymentStatus.PAID)
                 .map(Payment::getAmountReceived)
+                .filter(Objects::nonNull)
                 .reduce(0.0, Double::sum);
 
         Double orderTotalAmount = order.getTotalAmount();
         if (totalPaid.compareTo(orderTotalAmount) >= 0) {
-            order.setOrderStatus(OrderStatus.PAID); // hoặc COMPLETED
+            payment.setPaymentStatus(PaymentStatus.PAID);
+            order.setOrderStatus(OrderStatus.PAID);
             orderRepository.save(order);
             paymentRepository.saveAllAndFlush(order.getPayments());
 
-            // socket to FE
             messagingTemplate.convertAndSendToUser(
                     order.getCustomer().getId().toString(),
                     "/queue/orders",
-                    new OrderPaid(order.getOrderCode(), order.getOrderStatus())
-            );
-
-//            client.subscribe('/user/queue/orders', (message) => {
-//              const data = JSON.parse(message.body);
-//
-//              console.log('Order event:', data);
-//
-//              if (data.status === 'PAID') {
-//                // check orderCode trong payload để map UI
-//                showSuccess(`Đơn ${data.orderCode} đã thanh toán thành công`);
-//            }
-//});
-
-        } else {
-            throw new BadRequestException("Not enough payment amount");
+                    new OrderPaid(order.getOrderCode(), order.getOrderStatus()));
         }
     }
 
-    public Order findOrderById(UUID orderId){
+    public Order findOrderById(UUID orderId) {
         return orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
     }
 
     private void validateItems(List<OrderItemRequest> items, List<CartItem> cartItems) {
-        // 1. Check size
+        if (items == null || items.isEmpty()) {
+            throw new BadRequestException("Order items are required");
+        }
+
         if (cartItems.size() != items.size()) {
             throw new BadRequestException("Items in your cart do not match");
         }
 
-        // 2. Build map from request: shoeVariantId -> quantity
+        Set<UUID> duplicatedVariantIds = new HashSet<>();
+        Set<UUID> seenVariantIds = new HashSet<>();
+        for (OrderItemRequest item : items) {
+            if (!seenVariantIds.add(item.shoeVariantId())) {
+                duplicatedVariantIds.add(item.shoeVariantId());
+            }
+        }
+        if (!duplicatedVariantIds.isEmpty()) {
+            throw new BadRequestException("Duplicate shoe variant in order items");
+        }
+
         Map<UUID, Long> requestItemMap = items.stream()
                 .collect(Collectors.toMap(
                         OrderItemRequest::shoeVariantId,
-                        OrderItemRequest::quantity
-                ));
+                        OrderItemRequest::quantity));
 
-        // 3. Validate cart items match request + active
         for (CartItem cartItem : cartItems) {
             if (!cartItem.isActive()) {
                 throw new BadRequestException("Inactive item in cart");
             }
 
             UUID variantId = cartItem.getShoeVariant().getId();
-
             if (!requestItemMap.containsKey(variantId)) {
+                throw new BadRequestException("Items in your cart do not match");
+            }
+            if (!Objects.equals(requestItemMap.get(variantId), cartItem.getQuantity())) {
                 throw new BadRequestException("Items in your cart do not match");
             }
 
@@ -294,14 +311,10 @@ public class OrderService {
 
         cartItemRepository.saveAllAndFlush(cartItems);
 
-        // 4. Validate stock
         for (OrderItemRequest item : items) {
             ShoeVariant shoeVariant = shoeVariantService.findById(item.shoeVariantId());
-
             if (shoeVariant.getQuantity() < item.quantity()) {
-                throw new BadRequestException(
-                        "Out of stock: " + item.shoeVariantId()
-                );
+                throw new BadRequestException("Out of stock: " + item.shoeVariantId());
             }
         }
     }
@@ -316,7 +329,6 @@ public class OrderService {
                         .collect(Collectors.toMap(ShoeVariant::getId, v -> v));
 
         double totalPrice = 0;
-
         for (OrderItemRequest item : items) {
             ShoeVariant variant = variantMap.get(item.shoeVariantId());
             if (variant == null) {
@@ -329,7 +341,7 @@ public class OrderService {
     }
 
     public Order getOrderByCode(String orderCode) {
-        return orderRepository.findByOrderCode(orderCode).orElseThrow(() -> new NotFoundException("Order not found"));
+        return orderRepository.findByOrderCode(orderCode)
+                .orElseThrow(() -> new NotFoundException("Order not found"));
     }
-
 }

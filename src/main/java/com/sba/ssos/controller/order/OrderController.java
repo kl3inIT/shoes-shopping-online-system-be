@@ -10,6 +10,7 @@ import com.sba.ssos.dto.response.order.OrderHistoryResponse;
 import com.sba.ssos.dto.response.order.sepay.SePayWebhookRequest;
 import com.sba.ssos.service.order.OrderService;
 import com.sba.ssos.utils.LocaleUtils;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,19 +27,19 @@ public class OrderController {
 
     // cmd: cloudflared tunnel run sepay-webhook
     @PostMapping("/sepay/hook")
-    public Void verifyOrder(@RequestBody SePayWebhookRequest request) {
+    public Void verifyOrder(@Valid @RequestBody SePayWebhookRequest request) {
         orderService.verifyPayment(request);
         return null;
     }
 
     @PostMapping("/init")
-    public ResponseGeneral<OrderCreateResponse> createOrder(@RequestBody OrderCreateRequest orderCreateRequest) {
+    public ResponseGeneral<OrderCreateResponse> createOrder(@Valid @RequestBody OrderCreateRequest orderCreateRequest) {
         OrderCreateResponse response = orderService.createOrder(orderCreateRequest);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.order.created"), response);
     }
 
     @PostMapping("/expired")
-    public ResponseGeneral<OrderCreateResponse> handlePaymentExpired(@RequestBody OrderExpiredRequest orderExpiredRequest) {
+    public ResponseGeneral<OrderCreateResponse> handlePaymentExpired(@Valid @RequestBody OrderExpiredRequest orderExpiredRequest) {
         orderService.handlePaymentTimeout(orderExpiredRequest);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.order.expired.updated"));
     }

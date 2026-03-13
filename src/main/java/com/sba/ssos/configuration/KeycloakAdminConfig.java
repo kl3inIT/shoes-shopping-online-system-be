@@ -23,7 +23,7 @@ public class KeycloakAdminConfig {
     var keycloak = applicationProperties.keycloakProperties();
 
     return KeycloakBuilder.builder()
-        .clientId(keycloak.clientId())
+        .clientId(keycloak.adminClientId())
         .serverUrl(keycloak.serverUrl())
         .realm(keycloak.realmName())
         .username(keycloak.adminUsername())

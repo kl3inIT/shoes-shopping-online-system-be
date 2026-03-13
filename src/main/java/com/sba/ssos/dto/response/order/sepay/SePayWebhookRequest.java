@@ -1,6 +1,8 @@
 package com.sba.ssos.dto.response.order.sepay;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -15,13 +17,13 @@ public record SePayWebhookRequest(
         String accountNumber,
         String subAccount,
         String code,
-        String content,
+        @NotBlank String content,
 
         String transferType,   // nên convert sang enum
 
         String description,
 
-        BigDecimal transferAmount,
+        @NotNull BigDecimal transferAmount,
 
         String referenceCode,
 

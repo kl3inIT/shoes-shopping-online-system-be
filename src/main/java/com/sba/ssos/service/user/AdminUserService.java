@@ -46,20 +46,25 @@ public class AdminUserService {
     var keycloakId = keycloakAdminService.createUser(
         request.username(), request.email(), request.firstName(), request.lastName());
 
-    keycloakAdminService.setTemporaryPassword(keycloakId, request.password());
-    keycloakAdminService.assignRealmRole(keycloakId, request.role());
+    try {
+      keycloakAdminService.setTemporaryPassword(keycloakId, request.password());
+      keycloakAdminService.assignRealmRole(keycloakId, request.role());
 
-    var user = User.builder()
-        .keycloakId(keycloakId)
-        .username(request.username())
-        .email(request.email())
-        .firstName(request.firstName())
-        .lastName(request.lastName())
-        .role(request.role())
-        .status(UserStatus.ACTIVE)
-        .build();
+      var user = User.builder()
+          .keycloakId(keycloakId)
+          .username(request.username())
+          .email(request.email())
+          .firstName(request.firstName())
+          .lastName(request.lastName())
+          .role(request.role())
+          .status(UserStatus.ACTIVE)
+          .build();
 
-    return toResponse(userRepository.save(user));
+      return toResponse(userRepository.save(user));
+    } catch (RuntimeException ex) {
+      keycloakAdminService.deleteUser(keycloakId);
+      throw ex;
+    }
   }
 
   @Transactional
