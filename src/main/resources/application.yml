@@ -111,6 +111,7 @@ application-properties:
       - { method: GET, path: /api/shoes/*/variants }
       - { method: POST, path: /api/v1/chat }
       - { method: GET, path: /ws/**}
+      - { method: GET, path: /ws/info}
     public-urls:
       # OpenAPI Swagger URLs
       - /swagger-ui.html
@@ -123,7 +124,6 @@ application-properties:
       - /test/free
       - /chat
       - /ws/**
-#    sepay-api-key: ${SEPAY_API_KEY}
 spring:
   config:
     import: "classpath:application-properties.yml"
