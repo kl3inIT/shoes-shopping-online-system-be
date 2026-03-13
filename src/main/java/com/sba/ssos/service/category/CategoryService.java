@@ -62,6 +62,10 @@ public class CategoryService {
     if (!categoryRepository.existsById(id)) {
       throw new NotFoundException("Category", id);
     }
+    if (shoeRepository.countByCategory_Id(id) > 0) {
+      throw new com.sba.ssos.exception.base.ConflictException(
+          "error.category.delete.has_products");
+    }
     categoryRepository.deleteById(id);
   }
 
