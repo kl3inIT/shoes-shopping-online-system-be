@@ -121,6 +121,10 @@ public class OrderService {
 
     public PaymentInfoResponse getPaymentInfo(UUID orderId) {
         Order order = getOrderById(orderId);
+        List<Payment> payments = order.getPayments();
+        if (payments == null || payments.isEmpty()) {
+            throw new NotFoundException("No payment found for order: " + orderId);
+        }
         return new PaymentInfoResponse(
                 order.getId(),
                 order.getOrderCode(),
@@ -129,7 +133,7 @@ public class OrderService {
                 applicationProperties.bankProperties().accountHolder(),
                 order.getTotalAmount(),
                 order.getOrderStatus().toString(),
-                order.getPayments().getFirst().getExpiredAt()
+                payments.getFirst().getExpiredAt()
         );
     }
 
@@ -242,9 +246,16 @@ public class OrderService {
         // get order và set vào
         Order order = getOrderByCode(orderCode);
 
+        if (request.transferAmount() == null) {
+            throw new BadRequestException("Transfer amount is required");
+        }
         Double amountReceived = Double.parseDouble(request.transferAmount().toString());
 
-        order.getPayments().getFirst().setAmountReceived(amountReceived);
+        List<Payment> payments = order.getPayments();
+        if (payments == null || payments.isEmpty()) {
+            throw new NotFoundException("No payment found for order: " + orderCode);
+        }
+        payments.getFirst().setAmountReceived(amountReceived);
 
         Double totalPaid = order.getPayments().stream()
                 .filter(p -> p.getPaymentStatus() == PaymentStatus.PAID)
