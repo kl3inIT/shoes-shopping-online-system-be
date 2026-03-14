@@ -16,7 +16,7 @@ public enum UserRole {
     ROLE_ADMIN(Integer.MAX_VALUE),
     ROLE_MANAGER(Integer.MAX_VALUE - 1),
     ROLE_CUSTOMER(0),
-    ROLE_SEPAY_WEBHOOK(Integer.MAX_VALUE - 2);
+    ROLE_SEPAY_WEBHOOK(-1);
     // The higher the value, the more "superior" a role is
     private final int superiority;
 
@@ -24,6 +24,9 @@ public enum UserRole {
             Arrays.stream(values())
                     .map(UserRole::name)
                     .collect(Collectors.toSet());
+
+    public static final Set<UserRole> ASSIGNABLE_ROLES =
+            Set.of(ROLE_ADMIN, ROLE_MANAGER, ROLE_CUSTOMER);
 
     public static Set<UserRole> fromRawRole(Collection<String> rawRoles) {
         return rawRoles.stream()
