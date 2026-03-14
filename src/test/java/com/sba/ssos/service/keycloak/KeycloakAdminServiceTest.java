@@ -122,6 +122,7 @@ class KeycloakAdminServiceTest {
             "ssos-realm",
             "ssos-app",
             "admin-cli",
+            "master",
             "admin",
             "admin123",
             "https://auth.it4beginer.io.vn/realms/ssos-realm/protocol/openid-connect/token",

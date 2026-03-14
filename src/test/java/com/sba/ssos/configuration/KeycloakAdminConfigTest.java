@@ -44,6 +44,13 @@ class KeycloakAdminConfigTest {
         .hasMessageContaining("Missing Keycloak server URL");
   }
 
+  @Test
+  void adminRealmDefaultsToMasterWhenConfigured() {
+    var keycloakProperties = keycloakProperties("https://auth.it4beginer.io.vn", null);
+
+    assertThat(keycloakProperties.adminRealmName()).isEqualTo("master");
+  }
+
   private ApplicationProperties.KeycloakProperties keycloakProperties(
       String serverUrl, String tokenUrl) {
     return new ApplicationProperties.KeycloakProperties(
@@ -51,6 +58,7 @@ class KeycloakAdminConfigTest {
         "ssos-realm",
         "ssos-app",
         "admin-cli",
+        "master",
         "admin",
         "admin",
         tokenUrl,

@@ -27,7 +27,7 @@ public class KeycloakAdminConfig {
     return KeycloakBuilder.builder()
         .clientId(StringUtils.defaultIfBlank(keycloak.adminClientId(), keycloak.clientId()))
         .serverUrl(resolveServerUrl(keycloak))
-        .realm(keycloak.realmName())
+        .realm(StringUtils.defaultIfBlank(keycloak.adminRealmName(), keycloak.realmName()))
         .username(keycloak.adminUsername())
         .password(keycloak.adminPassword())
         .resteasyClient(resteasyClient)

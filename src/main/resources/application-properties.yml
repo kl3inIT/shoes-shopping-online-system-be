@@ -1,19 +1,20 @@
 application-properties:
 
   sepay-properties:
-    sepay-username: ${SEPAY_USERNAME}
-    sepay-password: ${SEPAY_PASSWORD}
+    sepay-username: ${SEPAY_USERNAME:}
+    sepay-password: ${SEPAY_PASSWORD:}
 
   bank-properties:
-    bank-number: 22226376222
-    bank-code: TPBANK
-    account-holder: NHU DINH NHAT
+    bank-number: ${BANK_NUMBER:22226376222}
+    bank-code: ${BANK_CODE:TPBANK}
+    account-holder: ${BANK_ACCOUNT_HOLDER:NHU DINH NHAT}
 
   keycloak-properties:
     realm-name: ${KEYCLOAK_REALM:ssos-realm}
     client-id: ${KEYCLOAK_CLIENT_ID:ssos-app}
     server-url: ${KEYCLOAK_SERVER_URL:${KEYCLOAK_HOST:}}
     admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
+    admin-realm-name: ${KEYCLOAK_ADMIN_REALM:master}
     admin-username: ${KEYCLOAK_ADMIN_USERNAME:}
     admin-password: ${KEYCLOAK_ADMIN_PASSWORD:}
     token-url: ${KEYCLOAK_TOKEN_URL}
@@ -22,12 +23,12 @@ application-properties:
       - ssos-sepay
 
   rag-properties:
-    schema: public
-    table: ai_documents
-    dimensions: 1536
-    ingest-on-boot: true
-    chunk-size: 800
-    distance: COSINE
+    schema: ${RAG_SCHEMA:public}
+    table: ${RAG_TABLE:ai_documents}
+    dimensions: ${RAG_DIMENSIONS:1536}
+    ingest-on-boot: ${RAG_INGEST_ON_BOOT:false}
+    chunk-size: ${RAG_CHUNK_SIZE:800}
+    distance: ${RAG_DISTANCE:COSINE}
 
   minio-properties:
     endpoint: ${MINIO_ENDPOINT}
@@ -42,7 +43,7 @@ application-properties:
   security-properties:
     # TODO: Set to true once X-Keycloak-Secret header can be configured on the Keycloak side.
     # Also provide KEYCLOAK_WEBHOOK_SECRET env var with the matching secret value.
-    webhook-security-enabled: false
+    webhook-security-enabled: ${KEYCLOAK_WEBHOOK_SECURITY_ENABLED:false}
     keycloak-webhook-secret: ${KEYCLOAK_WEBHOOK_SECRET:disabled}
     admin-endpoints:
       # Admin management APIs

@@ -89,7 +89,20 @@ public record PageResponse<T>(
 
 ### 3. Cấu hình & biến môi trường quan trọng
 
-#### 3.1. Database & server (`src/main/resources/application.yml`)
+#### 3.1. Profiles & common config
+
+- `application.yml` chứa cấu hình dùng chung và đặt profile mặc định là `dev`
+- `application-dev.yml` chứa defaults thân thiện cho local development:
+  - PostgreSQL / Keycloak fallback về `localhost`
+  - Swagger bật sẵn
+  - logging chi tiết hơn cho debug
+- `application-prod.yml` chứa defaults an toàn hơn cho production:
+  - yêu cầu datasource / Keycloak lấy từ environment variables
+  - Swagger mặc định tắt
+  - logging giảm ồn hơn
+  - `ddl-auto=validate` để tránh âm thầm thay đổi schema trong production
+
+#### 3.2. Database & server
 
 - PostgreSQL:
   - `POSTGRESQL_HOST` (mặc định `localhost`)
@@ -100,17 +113,18 @@ public record PageResponse<T>(
   - Port: `8088`
   - Liquibase bật mặc định (`spring.liquibase.enabled: true`)
 
-#### 3.2. Keycloak (`application-properties.yml`)
+#### 3.3. Keycloak (`application-properties.yml`)
 
 - `KEYCLOAK_REALM` – tên realm (mặc định `ssos-realm`)
 - `KEYCLOAK_CLIENT_ID` – client Id (ví dụ `ssos-app`)
 - `KEYCLOAK_SERVER_URL` – full base URL của Keycloak (khuyên dùng, ví dụ `http://localhost:8080`)
 - `KEYCLOAK_HOST` – hostname cũ để tương thích ngược (ví dụ `localhost:8080` hoặc `auth.it4beginer.io.vn`)
 - `KEYCLOAK_ADMIN_CLIENT_ID` – admin client (mặc định `admin-cli`)
+- `KEYCLOAK_ADMIN_REALM` – realm dùng để login Keycloak Admin Client (thường là `master`)
 - `KEYCLOAK_ADMIN_USERNAME`, `KEYCLOAK_ADMIN_PASSWORD` – tài khoản admin dùng cho Keycloak Admin Client
 - `KEYCLOAK_TOKEN_URL` – endpoint lấy token nếu cần
 
-#### 3.3. MinIO
+#### 3.4. MinIO
 
 - `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET` (mặc định `ssos-images`)
 
@@ -136,12 +150,18 @@ $env:POSTGRESQL_PASSWORD="123456"
 $env:KEYCLOAK_SERVER_URL="http://localhost:8080"
 $env:KEYCLOAK_REALM="ssos-realm"
 $env:KEYCLOAK_CLIENT_ID="ssos-app"
+$env:KEYCLOAK_ADMIN_REALM="master"
 $env:KEYCLOAK_ADMIN_USERNAME="admin"
 $env:KEYCLOAK_ADMIN_PASSWORD="admin"
 
 # 3. Chạy ứng dụng
 ./gradlew bootRun
+
+# Hoặc chỉ rõ profile nếu muốn
+./gradlew bootRun --args='--spring.profiles.active=dev'
 ```
 
 Backend sẽ lắng nghe tại `http://localhost:8088` và expose Swagger UI tại `http://localhost:8088/swagger-ui`.
+
+Khi deploy production, dùng `SPRING_PROFILES_ACTIVE=prod`. File `docker-compose.yml` hiện đã set sẵn giá trị này cho service backend.
 

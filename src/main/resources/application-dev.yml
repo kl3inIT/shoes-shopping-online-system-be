@@ -1,0 +1,42 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:postgresql://${POSTGRESQL_HOST:localhost}:${POSTGRESQL_PORT:5432}/${POSTGRESQL_NAME:ssos}
+    username: ${POSTGRESQL_USERNAME:postgres}
+    password: ${POSTGRESQL_PASSWORD:123456}
+  sql:
+    init:
+      mode: never
+  jpa:
+    hibernate:
+      ddl-auto: update
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:${KEYCLOAK_SERVER_URL:http://localhost:8080}/realms/${application-properties.keycloak-properties.realm-name}}
+
+management:
+  endpoint:
+    health:
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: health,info,env,configprops
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+logging:
+  level:
+    root: INFO
+    com.sba.ssos: DEBUG
+    org.springframework.security.oauth2: DEBUG
+    org.springframework.ai: INFO
+    org.springframework.ai.chat.client.advisor: DEBUG

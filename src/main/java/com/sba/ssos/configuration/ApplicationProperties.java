@@ -19,6 +19,7 @@ public record ApplicationProperties(
           String realmName,
           String clientId,
           String adminClientId,
+          String adminRealmName,
           String adminUsername,
           String adminPassword,
           String tokenUrl,
