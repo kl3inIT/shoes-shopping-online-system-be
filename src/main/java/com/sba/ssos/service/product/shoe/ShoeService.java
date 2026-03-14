@@ -551,6 +551,8 @@ public class ShoeService {
         return normalizedSize + "|" + normalizedColor;
     }
 
+    private static final int MAX_UNIQUE_GENERATION_ATTEMPTS = 100;
+
     private String generateUniqueSlug(String baseSlug, UUID excludeId) {
         if (baseSlug == null || baseSlug.isBlank()) {
             return "";
@@ -559,7 +561,7 @@ public class ShoeService {
         String candidate = baseSlug;
         int suffix = 0;
 
-        while (true) {
+        while (suffix <= MAX_UNIQUE_GENERATION_ATTEMPTS) {
             boolean exists;
             if (excludeId != null) {
                 exists = shoeRepository.existsBySlugAndIdNot(candidate, excludeId);
@@ -574,29 +576,37 @@ public class ShoeService {
             suffix++;
             candidate = baseSlug + "-" + suffix;
         }
+
+        throw new IllegalStateException("Could not generate a unique slug for: " + baseSlug);
     }
 
     private String generateUniqueSku(String baseSku) {
         String candidate = baseSku;
         int suffix = 0;
 
-        while (shoeVariantRepository.existsBySku(candidate)) {
+        while (suffix <= MAX_UNIQUE_GENERATION_ATTEMPTS) {
+            if (!shoeVariantRepository.existsBySku(candidate)) {
+                return candidate;
+            }
             suffix++;
             candidate = SkuUtils.appendNumericSuffix(baseSku, suffix);
         }
 
-        return candidate;
+        throw new IllegalStateException("Could not generate a unique SKU for: " + baseSku);
     }
 
     private String generateUniqueSkuForUpdate(String baseSku, UUID variantId) {
         String candidate = baseSku;
         int suffix = 0;
 
-        while (shoeVariantRepository.existsBySkuAndIdNot(candidate, variantId)) {
+        while (suffix <= MAX_UNIQUE_GENERATION_ATTEMPTS) {
+            if (!shoeVariantRepository.existsBySkuAndIdNot(candidate, variantId)) {
+                return candidate;
+            }
             suffix++;
             candidate = SkuUtils.appendNumericSuffix(baseSku, suffix);
         }
 
-        return candidate;
+        throw new IllegalStateException("Could not generate a unique SKU for: " + baseSku);
     }
 }

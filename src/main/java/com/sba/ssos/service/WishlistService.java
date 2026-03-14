@@ -37,7 +37,6 @@ public class WishlistService {
         "asc".equalsIgnoreCase(sortOrder != null ? sortOrder : "desc")
             ? Sort.Direction.ASC
             : Sort.Direction.DESC;
-      assert property != null;
       Sort sort = Sort.by(direction, property);
     return wishlistRepository.findAllByCustomer_Id(customer.getId(), sort).stream()
         .map(this::toResponse)
