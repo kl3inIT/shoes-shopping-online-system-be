@@ -93,6 +93,22 @@ public class AdminUserService {
   }
 
   @Transactional
+  public AdminUserResponse toggleUserStatus(UUID keycloakId) {
+
+    var user = userRepository.findByKeycloakId(keycloakId)
+        .orElseThrow(() -> new UserNotFoundException(keycloakId));
+
+    UserStatus newStatus = switch (user.getStatus()) {
+      case ACTIVE -> UserStatus.SUSPENDED;
+      case INACTIVE, SUSPENDED -> UserStatus.ACTIVE;
+    };
+
+    keycloakAdminService.setUserEnabled(keycloakId, newStatus == UserStatus.ACTIVE);
+    user.setStatus(newStatus);
+    return toResponse(userRepository.save(user));
+  }
+
+  @Transactional
   public void deleteUser(UUID keycloakId) {
 
     var user = userRepository.findByKeycloakId(keycloakId)
