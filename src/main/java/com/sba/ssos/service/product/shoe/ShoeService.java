@@ -3,6 +3,7 @@ package com.sba.ssos.service.product.shoe;
 import com.sba.ssos.dto.request.product.shoe.*;
 import com.sba.ssos.dto.request.product.shoevariant.ShoeVariantRequest;
 import com.sba.ssos.dto.response.product.shoe.ShoeResponse;
+import com.sba.ssos.dto.response.product.shoe.ShoeStockSummaryResponse;
 import com.sba.ssos.dto.response.product.shoevariant.ShoeVariantResponse;
 import com.sba.ssos.entity.*;
 import com.sba.ssos.enums.*;
@@ -162,6 +163,20 @@ public class ShoeService {
             }
         }
         return shoes.stream().map(this::toShoeResponse).toList();
+    }
+
+    public ShoeStockSummaryResponse getStockSummary(long threshold) {
+        ShoeStockRequest summary = shoeRepository.getStockSummary(threshold);
+        if (summary == null) {
+            return new ShoeStockSummaryResponse(0L, 0L, 0L, 0L);
+        }
+
+        return new ShoeStockSummaryResponse(
+                Optional.of(summary.total()).orElse(0L),
+                Optional.of(summary.selling()).orElse(0L),
+                Optional.of(summary.outOfStock()).orElse(0L),
+                Optional.of(summary.lowStock()).orElse(0L)
+        );
     }
 
     private ShoeResponse toShoeResponse(Shoe shoe) {
