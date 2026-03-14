@@ -13,6 +13,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
@@ -46,7 +47,8 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(
             HttpSecurity httpSecurity,
             JwtConverter jwtConverter,
-            ApplicationProperties applicationProperties) {
+            ApplicationProperties applicationProperties,
+            KeycloakWebhookAuthFilter keycloakWebhookAuthFilter) {
         var security = applicationProperties.securityProperties();
         return httpSecurity
                 .headers(
@@ -73,6 +75,7 @@ public class SecurityConfig {
                                         // Return something to client rather than a blank 401 page
                                         .authenticationEntryPoint(this::delegateToHandlerExceptionResolver)
                                         .jwt(jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(jwtConverter)))
+                .addFilterBefore(keycloakWebhookAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
