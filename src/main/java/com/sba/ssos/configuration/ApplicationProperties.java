@@ -32,7 +32,8 @@ public record ApplicationProperties(
           List<HttpEndpoint> adminEndpoints,
           List<HttpEndpoint> managerEndpoints,
           List<HttpEndpoint> customerEndpoints,
-          List<HttpEndpoint> webhookEndpoints) {}
+          List<HttpEndpoint> webhookEndpoints,
+          String webhookSecret) {}
 
   public record BankProperties(String bankNumber, String bankCode, String accountHolder) {}
 
