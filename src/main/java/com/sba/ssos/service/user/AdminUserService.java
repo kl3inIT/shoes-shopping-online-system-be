@@ -165,13 +165,17 @@ public class AdminUserService {
         user.getEmail(),
         user.getPhoneNumber(),
         user.getDateOfBirth(),
-        user.getAvatarUrl() != null
-            ? minioStorageService.getPresignedGetUrl(user.getAvatarUrl())
-            : null,
+        toAvatarUrl(user.getAvatarUrl()),
         user.getAddress(),
         user.getRole(),
         user.getStatus(),
         user.getLastSeenAt(),
         user.getCreatedAt());
+  }
+
+  private String toAvatarUrl(String avatarKey) {
+    return avatarKey == null || avatarKey.isBlank()
+        ? null
+        : minioStorageService.getPresignedGetUrl(avatarKey);
   }
 }
