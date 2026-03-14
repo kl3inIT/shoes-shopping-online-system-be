@@ -74,6 +74,7 @@ application-properties:
       - { method: POST, path: /api/admin/users }
       - { method: PATCH, path: /api/admin/users/*/role }
       - { method: PATCH, path: /api/admin/users/*/status }
+      - { method: POST, path: /api/admin/users/*/status/toggle }
       - { method: DELETE, path: /api/admin/users/* }
       # Dashboard / notifications
       - { method: GET, path: /admin/dashboard/metrics }
