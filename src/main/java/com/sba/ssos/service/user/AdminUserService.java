@@ -67,6 +67,10 @@ public class AdminUserService {
   @Transactional
   public AdminUserResponse updateUserRole(UUID keycloakId, UpdateUserRoleRequest request) {
 
+    if (!UserRole.ASSIGNABLE_ROLES.contains(request.role())) {
+      throw new IllegalArgumentException("Role not assignable: " + request.role());
+    }
+
     var user = userRepository.findByKeycloakId(keycloakId)
         .orElseThrow(() -> new UserNotFoundException(keycloakId));
 
