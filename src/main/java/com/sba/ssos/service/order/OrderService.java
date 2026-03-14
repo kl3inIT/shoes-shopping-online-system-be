@@ -38,7 +38,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -57,12 +56,19 @@ public class OrderService {
     private final ShoeImageService shoeImageService;
     private static final long PAYMENT_EXPIRE_MINUTES = 5;
     private static final String ORDER_CODE_PREFIX = "SSOS";
+    private static final Pattern ORDER_CODE_PATTERN =
+            Pattern.compile(ORDER_CODE_PREFIX + "\\d{8}[A-Z0-9]{6}");
 
     @Transactional
     public OrderCreateResponse createOrder(OrderCreateRequest orderCreateRequest){
         Customer customer = customerService.getCurrentCustomer();
 
-        List<OrderItemRequest> requestItems = customer.getCartItems().stream().map(cartItem -> new OrderItemRequest(
+        List<CartItem> activeCartItems = cartItemRepository.findAllByCustomer_IdAndIsActiveTrue(customer.getId());
+        if (activeCartItems.isEmpty()) {
+            throw new BadRequestException("Cart is empty");
+        }
+
+        List<OrderItemRequest> requestItems = activeCartItems.stream().map(cartItem -> new OrderItemRequest(
                 cartItem.getShoeVariant().getId(),
                 cartItem.getQuantity()
         )).toList();
@@ -104,6 +110,9 @@ public class OrderService {
         payment.setPaymentMethod(PaymentMethod.ONLINE);
         paymentRepository.save(payment);
 
+        activeCartItems.forEach(cartItem -> cartItem.setActive(false));
+        cartItemRepository.saveAllAndFlush(activeCartItems);
+
         return new OrderCreateResponse(
                 order.getId(),
                 order.getOrderCode(),
@@ -121,6 +130,10 @@ public class OrderService {
 
     public PaymentInfoResponse getPaymentInfo(UUID orderId) {
         Order order = getOrderById(orderId);
+        List<Payment> payments = order.getPayments();
+        if (payments == null || payments.isEmpty()) {
+            throw new NotFoundException("No payment found for order: " + orderId);
+        }
         return new PaymentInfoResponse(
                 order.getId(),
                 order.getOrderCode(),
@@ -129,7 +142,7 @@ public class OrderService {
                 applicationProperties.bankProperties().accountHolder(),
                 order.getTotalAmount(),
                 order.getOrderStatus().toString(),
-                order.getPayments().getFirst().getExpiredAt()
+                payments.getFirst().getExpiredAt()
         );
     }
 
@@ -147,7 +160,7 @@ public class OrderService {
         }
         paymentRepository.saveAllAndFlush(payments);
 
-        List<CartItem> cartItems = order.getCustomer().getCartItems();
+        List<CartItem> cartItems = getInactiveCartItemsForOrder(order);
         for(CartItem cartItem : cartItems){
             cartItem.setActive(true);
         }
@@ -161,7 +174,7 @@ public class OrderService {
     public Page<CustomerOrderHistoryResponse> getOrderHistoryByCustomer(OrderHistoryRequest orderHistoryRequest) {
         Customer customer = customerService.getCurrentCustomer();
 
-        int page = orderHistoryRequest.page();
+        int page = Math.max(orderHistoryRequest.page(), 0);
         int size = orderHistoryRequest.size() > 0 ? orderHistoryRequest.size() : 10;
         Pageable pageable = PageRequest.of(page, size);
 
@@ -173,7 +186,7 @@ public class OrderService {
 
         List<Order> content = orderPage.getContent();
         if (content.isEmpty()) {
-            return new PageImpl<>(List.of(), pageable, 0);
+            return new PageImpl<>(List.of(), pageable, orderPage.getTotalElements());
         }
 
         List<UUID> orderIds = content.stream().map(Order::getId).toList();
@@ -194,7 +207,9 @@ public class OrderService {
      */
     public CustomerOrderHistoryResponse getOrderDetailByCustomer(UUID orderId) {
         Customer customer = customerService.getCurrentCustomer();
-        Order order = getOrderById(orderId);
+        Order order = orderRepository.findByIdInWithOrderDetails(List.of(orderId)).stream()
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("Order not found"));
 
         if (order.getCustomer() == null || !order.getCustomer().getId().equals(customer.getId())) {
             throw new NotFoundException("Order not found");
@@ -247,17 +262,18 @@ public class OrderService {
     }
 
     public Page<OrderHistoryResponse> getOrderHistoryByAdmin(OrderHistoryRequest orderHistoryRequest) {
-
+        int page = Math.max(orderHistoryRequest.page(), 0);
+        int size = orderHistoryRequest.size() > 0 ? orderHistoryRequest.size() : 5;
         Pageable pageable = PageRequest.of(
-                orderHistoryRequest.page(),
-                orderHistoryRequest.size() != 0 ? orderHistoryRequest.size() : 5
+                page,
+                size
         );
 
         Page<Order> orderPage = orderRepository.findOrderHistory(orderHistoryRequest, pageable);
         List<Order> content = orderPage.getContent();
 
         if (content.isEmpty()) {
-            return new PageImpl<>(List.of(), pageable, 0);
+            return new PageImpl<>(List.of(), pageable, orderPage.getTotalElements());
         }
 
         List<UUID> orderIds = content.stream().map(Order::getId).toList();
@@ -305,8 +321,14 @@ public class OrderService {
     @Transactional
     public void verifyPayment(SePayWebhookRequest request) {
 
-        String regex = "SSOS\\d{8}[A-Z0-9]{6}";
-        Matcher matcher = Pattern.compile(regex).matcher(request.content());
+        if (request.content() == null || request.content().isBlank()) {
+            throw new BadRequestException("Transaction content is required");
+        }
+        if (request.transferAmount() == null) {
+            throw new BadRequestException("Transfer amount is required");
+        }
+
+        var matcher = ORDER_CODE_PATTERN.matcher(request.content());
 
         if (!matcher.find()) {
             throw new NotFoundException("Order code not found in transaction content");
@@ -318,13 +340,27 @@ public class OrderService {
 
         double amountReceived = request.transferAmount().doubleValue();
         double orderTotalAmount = order.getTotalAmount();
-
-        Payment payment = order.getPayments().getFirst();
-        payment.setAmountReceived(amountReceived);
-
+        List<Payment> payments = order.getPayments();
+        if (payments == null || payments.isEmpty()) {
+            throw new NotFoundException("No payment found for order: " + orderCode);
+        }
         if (amountReceived < orderTotalAmount) {
             throw new BadRequestException("Not enough payment amount");
         }
+
+        Payment payment = payments.stream()
+                .filter(existingPayment -> existingPayment.getPaymentStatus() != PaymentStatus.PAID)
+                .findFirst()
+                .orElse(payments.getFirst());
+
+        if (payment.getPaymentStatus() == PaymentStatus.PAID
+                && order.getOrderStatus() == OrderStatus.CONFIRMED
+                && payment.getAmountReceived() != null
+                && payment.getAmountReceived() >= orderTotalAmount) {
+            return;
+        }
+
+        payment.setAmountReceived(amountReceived);
 
         // update trạng thái
         payment.setPaymentStatus(PaymentStatus.PAID);
@@ -332,9 +368,9 @@ public class OrderService {
 
 
         // remove all current cart items of this customer
-        Customer customer = order.getCustomer();
-        if (customer != null && customer.getId() != null) {
-            cartItemRepository.deleteAllByCustomer_Id(customer.getId());
+        List<CartItem> cartItemsToDelete = getInactiveCartItemsForOrder(order);
+        if (!cartItemsToDelete.isEmpty()) {
+            cartItemRepository.deleteAllInBatch(cartItemsToDelete);
         }
 
 
@@ -397,5 +433,23 @@ public class OrderService {
         return orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
     }
 
+    private List<CartItem> getInactiveCartItemsForOrder(Order order) {
+        Customer customer = order.getCustomer();
+        if (customer == null || customer.getId() == null || order.getOrderDetails() == null || order.getOrderDetails().isEmpty()) {
+            return List.of();
+        }
+
+        List<UUID> variantIds = order.getOrderDetails().stream()
+                .map(OrderDetail::getShoeVariant)
+                .filter(Objects::nonNull)
+                .map(ShoeVariant::getId)
+                .toList();
+
+        if (variantIds.isEmpty()) {
+            return List.of();
+        }
+
+        return cartItemRepository.findAllByCustomer_IdAndShoeVariant_IdInAndIsActiveFalse(customer.getId(), variantIds);
+    }
 
 }

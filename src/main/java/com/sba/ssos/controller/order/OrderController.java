@@ -11,6 +11,7 @@ import com.sba.ssos.dto.response.order.PaymentInfoResponse;
 import com.sba.ssos.dto.response.order.sepay.SePayWebhookRequest;
 import com.sba.ssos.service.order.OrderService;
 import com.sba.ssos.utils.LocaleUtils;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 
@@ -37,7 +38,7 @@ public class OrderController {
     }
 
     @PostMapping("/init")
-    public ResponseGeneral<OrderCreateResponse> createOrder(@RequestBody OrderCreateRequest orderCreateRequest) {
+    public ResponseGeneral<OrderCreateResponse> createOrder(@Valid @RequestBody OrderCreateRequest orderCreateRequest) {
         OrderCreateResponse response = orderService.createOrder(orderCreateRequest);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.order.created"), response);
     }
