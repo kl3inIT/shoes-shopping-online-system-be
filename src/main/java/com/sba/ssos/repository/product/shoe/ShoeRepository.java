@@ -37,12 +37,18 @@ public interface ShoeRepository extends JpaRepository<Shoe, UUID>, ShoeRepositor
 
   @Query(
       value = """
-          SELECT COUNT(DISTINCT s.id) AS total,
-                 COUNT(DISTINCT CASE WHEN sv.active = true AND sv.quantity > 0 THEN s.id END) AS selling,
-                 COUNT(DISTINCT CASE WHEN sv.active = true AND sv.quantity = 0 THEN s.id END) AS out_of_stock,
-                 COUNT(DISTINCT CASE WHEN sv.active = true AND sv.quantity BETWEEN 1 AND :threshold THEN s.id END) AS low_stock
-          FROM shoes s
-          LEFT JOIN shoe_variants sv ON sv.shoe_id = s.id
+          SELECT COUNT(*) AS total,
+                 COUNT(CASE WHEN summary.status = 'ACTIVE' THEN 1 END) AS selling,
+                 COUNT(CASE WHEN summary.status = 'ACTIVE' AND summary.total_qty = 0 THEN 1 END) AS out_of_stock,
+                 COUNT(CASE WHEN summary.status = 'ACTIVE' AND summary.total_qty BETWEEN 1 AND :threshold THEN 1 END) AS low_stock
+          FROM (
+              SELECT s.id,
+                     s.status,
+                     COALESCE(SUM(CASE WHEN sv.active = true THEN sv.quantity ELSE 0 END), 0) AS total_qty
+              FROM shoes s
+              LEFT JOIN shoe_variants sv ON sv.shoe_id = s.id
+              GROUP BY s.id, s.status
+          ) summary
           """,
       nativeQuery = true)
   ShoeStockRequest getStockSummary(@Param("threshold") long threshold);
