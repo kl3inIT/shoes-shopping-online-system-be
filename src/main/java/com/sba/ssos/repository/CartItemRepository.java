@@ -4,6 +4,7 @@ import com.sba.ssos.entity.CartItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,6 +17,8 @@ public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
     Optional<CartItem> findByCustomer_IdAndShoeVariant_IdAndIsActiveTrue(UUID customerId, UUID shoeVariantId);
 
     Optional<CartItem> findByIdAndCustomer_IdAndIsActiveTrue(UUID id, UUID customerId);
+
+    List<CartItem> findAllByCustomer_IdAndShoeVariant_IdInAndIsActiveFalse(UUID customerId, Collection<UUID> shoeVariantIds);
 
     void deleteAllByCustomer_Id(UUID customerId);
 

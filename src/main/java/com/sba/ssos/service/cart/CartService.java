@@ -116,9 +116,7 @@ public class CartService {
         cartItemRepository
             .findByIdAndCustomer_IdAndIsActiveTrue(cartItemId, customer.getId())
             .orElseThrow(() -> new NotFoundException("Cart item not found: " + cartItemId));
-
-    cartItem.setActive(false);
-    cartItemRepository.save(cartItem);
+    cartItemRepository.delete(cartItem);
   }
 
   @Transactional
