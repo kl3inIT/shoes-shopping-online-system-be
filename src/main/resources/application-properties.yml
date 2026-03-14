@@ -12,7 +12,7 @@ application-properties:
   keycloak-properties:
     realm-name: ${KEYCLOAK_REALM:ssos-realm}
     client-id: ${KEYCLOAK_CLIENT_ID:ssos-app}
-    server-url: ${KEYCLOAK_HOST:}
+    server-url: ${KEYCLOAK_SERVER_URL:${KEYCLOAK_HOST:}}
     admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
     admin-username: ${KEYCLOAK_ADMIN_USERNAME:}
     admin-password: ${KEYCLOAK_ADMIN_PASSWORD:}

@@ -104,7 +104,8 @@ public record PageResponse<T>(
 
 - `KEYCLOAK_REALM` – tên realm (mặc định `ssos-realm`)
 - `KEYCLOAK_CLIENT_ID` – client Id (ví dụ `ssos-app`)
-- `KEYCLOAK_HOST` – URL Keycloak (ví dụ `http://localhost:8080`)
+- `KEYCLOAK_SERVER_URL` – full base URL của Keycloak (khuyên dùng, ví dụ `http://localhost:8080`)
+- `KEYCLOAK_HOST` – hostname cũ để tương thích ngược (ví dụ `localhost:8080` hoặc `auth.it4beginer.io.vn`)
 - `KEYCLOAK_ADMIN_CLIENT_ID` – admin client (mặc định `admin-cli`)
 - `KEYCLOAK_ADMIN_USERNAME`, `KEYCLOAK_ADMIN_PASSWORD` – tài khoản admin dùng cho Keycloak Admin Client
 - `KEYCLOAK_TOKEN_URL` – endpoint lấy token nếu cần
@@ -132,7 +133,7 @@ Yêu cầu: Java 21, PostgreSQL đang chạy, Keycloak đã cấu hình realm + 
 $env:POSTGRESQL_HOST="localhost"
 $env:POSTGRESQL_USERNAME="postgres"
 $env:POSTGRESQL_PASSWORD="123456"
-$env:KEYCLOAK_HOST="http://localhost:8080"
+$env:KEYCLOAK_SERVER_URL="http://localhost:8080"
 $env:KEYCLOAK_REALM="ssos-realm"
 $env:KEYCLOAK_CLIENT_ID="ssos-app"
 $env:KEYCLOAK_ADMIN_USERNAME="admin"
