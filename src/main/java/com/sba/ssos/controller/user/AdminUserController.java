@@ -6,6 +6,7 @@ import com.sba.ssos.dto.request.user.UpdateUserRoleRequest;
 import com.sba.ssos.dto.request.user.UpdateUserStatusRequest;
 import com.sba.ssos.dto.response.PageResponse;
 import com.sba.ssos.dto.response.user.AdminUserResponse;
+import com.sba.ssos.dto.response.user.AdminUserStatsResponse;
 import com.sba.ssos.enums.UserRole;
 import com.sba.ssos.enums.UserStatus;
 import com.sba.ssos.service.user.AdminUserService;
@@ -43,6 +44,12 @@ public class AdminUserController {
 
     var data = adminUserService.getUsers(page, size, search, role, status);
     return ResponseGeneral.ofSuccess(localeUtils.get("success.admin.users.fetched"), data);
+  }
+
+  @GetMapping("/stats")
+  public ResponseGeneral<AdminUserStatsResponse> getUserStats() {
+    var data = adminUserService.getUserStats();
+    return ResponseGeneral.ofSuccess(localeUtils.get("success.admin.users.stats.fetched"), data);
   }
 
   @PostMapping

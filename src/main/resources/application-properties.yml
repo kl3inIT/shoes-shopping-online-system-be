@@ -73,6 +73,7 @@ application-properties:
       - { method: GET, path: /api/v1/checks/runs/* }
       - { method: POST, path: /api/v1/search }
       # User management APIs
+      - { method: GET, path: /api/admin/users/stats }
       - { method: GET, path: /api/admin/users }
       - { method: POST, path: /api/admin/users }
       - { method: PATCH, path: /api/admin/users/*/role }
