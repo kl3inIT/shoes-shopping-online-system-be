@@ -4,6 +4,7 @@ import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.product.shoe.ShoeCreateRequest;
 import com.sba.ssos.dto.request.product.shoe.ShoeUpdateRequest;
 import com.sba.ssos.dto.response.product.shoe.ShoeResponse;
+import com.sba.ssos.dto.response.product.shoe.ShoeStockSummaryResponse;
 import com.sba.ssos.dto.response.product.shoevariant.ShoeVariantResponse;
 import com.sba.ssos.service.product.shoe.ShoeService;
 import com.sba.ssos.service.product.shoevariant.ShoeVariantService;
@@ -80,6 +81,14 @@ public class ShoeController {
             @RequestParam(defaultValue = "5") int limit
     ) {
         List<ShoeResponse> data = shoeService.getBestSellers(limit);
+        return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.fetched"), data);
+    }
+
+    @GetMapping("/stock-summary")
+    public ResponseGeneral<ShoeStockSummaryResponse> getStockSummary(
+            @RequestParam(defaultValue = "10") long threshold
+    ) {
+        ShoeStockSummaryResponse data = shoeService.getStockSummary(threshold);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.fetched"), data);
     }
 

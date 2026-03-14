@@ -5,3 +5,15 @@ databaseChangeLog:
       file: db/changelog/002-create-vector-table.yaml
   - include:
       file: db/changelog/003-rename-chat-memory-table.yaml
+  - include:
+      file: db/changelog/004-make-avatar-nullable.yaml
+  - include:
+      file: db/changelog/005-create-user-indexes.yaml
+  - include:
+      file: db/changelog/006-make-date-of-birth-nullable.yaml
+  - include:
+      file: db/changelog/007-make-phone-nullable.yaml
+  - include:
+      file: db/changelog/008-add-user-address.yaml
+  - include:
+      file: db/changelog/009-create-review-helpful-votes.yaml

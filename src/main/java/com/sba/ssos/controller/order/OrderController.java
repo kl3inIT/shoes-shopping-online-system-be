@@ -1,18 +1,21 @@
 package com.sba.ssos.controller.order;
 
-import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.order.OrderCreateRequest;
 import com.sba.ssos.dto.request.order.OrderExpiredRequest;
 import com.sba.ssos.dto.request.order.OrderHistoryRequest;
 import com.sba.ssos.dto.response.order.OrderCreateResponse;
 import com.sba.ssos.dto.response.order.OrderHistoryResponse;
+import com.sba.ssos.dto.response.order.PaymentInfoResponse;
 import com.sba.ssos.dto.response.order.sepay.SePayWebhookRequest;
 import com.sba.ssos.service.order.OrderService;
 import com.sba.ssos.utils.LocaleUtils;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -20,7 +23,6 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController {
 
     private final OrderService orderService;
-    private final ApplicationProperties props;
     private final LocaleUtils localeUtils;
 
     // cmd: cloudflared tunnel run sepay-webhook
@@ -36,6 +38,17 @@ public class OrderController {
         return ResponseGeneral.ofSuccess(localeUtils.get("success.order.created"), response);
     }
 
+    @GetMapping("/payment-info/{orderId}")
+    public ResponseGeneral<PaymentInfoResponse> getPaymentInfo(
+            @PathVariable UUID orderId
+    ) {
+        return ResponseGeneral.ofSuccess(
+                localeUtils.get("success.order.payment.info"),
+                orderService.getPaymentInfo(orderId)
+        );
+    }
+
+
     @PostMapping("/expired")
     public ResponseGeneral<OrderCreateResponse> handlePaymentExpired(@RequestBody OrderExpiredRequest orderExpiredRequest) {
         orderService.handlePaymentTimeout(orderExpiredRequest);
@@ -49,10 +62,16 @@ public class OrderController {
     }
 
     @GetMapping("/admin")
-    public ResponseGeneral<List<OrderHistoryResponse>> getOrdersByAdmin(@ModelAttribute OrderHistoryRequest orderHistoryRequest) {
-        List<OrderHistoryResponse> orders = orderService.getOrderHistoryByAdmin(orderHistoryRequest);
+    public ResponseGeneral<Page<OrderHistoryResponse>> getOrdersByAdmin(@ModelAttribute OrderHistoryRequest orderHistoryRequest) {
+        Page<OrderHistoryResponse> orders = orderService.getOrderHistoryByAdmin(orderHistoryRequest);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.order.get"), orders);
     }
+
+
+
+
+
+
 
 
 

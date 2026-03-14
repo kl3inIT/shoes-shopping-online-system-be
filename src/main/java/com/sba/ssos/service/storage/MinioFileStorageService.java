@@ -21,7 +21,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class MinioFileStorageService {
 
-    private static final Set<String> ALLOWED_FOLDERS = Set.of("shoes", "shoevariants");
+    private static final Set<String> ALLOWED_FOLDERS = Set.of("shoes", "shoevariants", "reviews", "avatars");
 
     private final MinioClient minioClient;
     private final ApplicationProperties applicationProperties;

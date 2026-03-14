@@ -4,15 +4,18 @@ import com.sba.ssos.entity.base.BaseAuditableEntity;
 import com.sba.ssos.enums.UserRole;
 import com.sba.ssos.enums.UserStatus;
 import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.NaturalId;
-
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
+import lombok.*;
+import org.hibernate.annotations.NaturalId;
 
 @Entity
-@Table(name = "users")
+@Table(
+        name = "users",
+        indexes = {
+                @Index(name = "idx_users_role", columnList = "role")
+        })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,12 +23,10 @@ import java.util.UUID;
 @Builder
 public class User extends BaseAuditableEntity {
 
-
     @NaturalId
     @Column(name = "keycloak_id", nullable = false, unique = true, updatable = false)
     private UUID keycloakId;
-
-
+    
     @Column(name = "role", nullable = false, length = 255)
     @Enumerated(EnumType.STRING)
     private UserRole role;
@@ -39,18 +40,21 @@ public class User extends BaseAuditableEntity {
     @Column(name = "last_name", nullable = false, length = 255)
     private String lastName;
 
-    @Column(name = "phone_number", nullable = false, length = 255)
+    @Column(name = "phone_number", nullable = true, length = 255)
     private String phoneNumber;
 
     @NaturalId
     @Column(name = "email", nullable = false, unique = true, length = 255)
     private String email;
 
-    @Column(name = "date_of_birth", nullable = false)
+    @Column(name = "date_of_birth", nullable = true)
     private LocalDate dateOfBirth;
 
-    @Column(name = "avatar_url", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "avatar_url", nullable = true, columnDefinition = "TEXT")
     private String avatarUrl;
+
+    @Column(name = "address", nullable = true, columnDefinition = "TEXT")
+    private String address;
 
     @Column(name = "status", nullable = false, length = 255)
     @Enumerated(EnumType.STRING)

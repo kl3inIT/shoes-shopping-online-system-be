@@ -130,7 +130,10 @@ application-properties:
       - /chat
       - /api/v1/*
 #    sepay-api-key: ${SEPAY_API_KEY}
+
 spring:
+  config:
+    import: "classpath:application-properties.yml"
   application:
     name: shoes-shopping-online-system
 

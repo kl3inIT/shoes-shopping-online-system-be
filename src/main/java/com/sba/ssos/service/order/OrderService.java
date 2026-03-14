@@ -10,6 +10,7 @@ import com.sba.ssos.dto.request.order.OrderItemRequest;
 import com.sba.ssos.dto.response.order.OrderCreateResponse;
 import com.sba.ssos.dto.response.order.OrderHistoryResponse;
 import com.sba.ssos.dto.response.order.OrderPaid;
+import com.sba.ssos.dto.response.order.PaymentInfoResponse;
 import com.sba.ssos.dto.response.order.sepay.SePayWebhookRequest;
 import com.sba.ssos.entity.*;
 import com.sba.ssos.enums.OrderStatus;
@@ -36,6 +37,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -45,7 +47,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrderService {
 
-    private final JPAQueryFactory queryFactory;
     private final ShoeVariantService shoeVariantService;
     private final ShoeVariantRepository shoeVariantRepository;
     private final OrderRepository orderRepository;
@@ -59,12 +60,15 @@ public class OrderService {
 
     @Transactional
     public OrderCreateResponse createOrder(OrderCreateRequest orderCreateRequest){
-        List<OrderItemRequest> requestItems = orderCreateRequest.items();
-
         Customer customer = customerService.getCurrentCustomer();
-        List<CartItem> cartItems = customer.getCartItems();
 
-        validateItems(requestItems, cartItems);
+        List<OrderItemRequest> requestItems = customer.getCartItems().stream().map(cartItem -> new OrderItemRequest(
+                cartItem.getShoeVariant().getId(),
+                cartItem.getQuantity()
+        )).toList();
+
+
+        validateItems(requestItems);
 
         Double totalAmount = calculatePrice(requestItems);
 
@@ -97,6 +101,7 @@ public class OrderService {
         payment.setTotalAmount(totalAmount);
         payment.setPaymentStatus(PaymentStatus.PENDING);
         payment.setExpiredAt(LocalDateTime.now().plusMinutes(PAYMENT_EXPIRE_MINUTES));
+        payment.setPaymentMethod(PaymentMethod.ONLINE);
         paymentRepository.save(payment);
 
         return new OrderCreateResponse(
@@ -112,6 +117,26 @@ public class OrderService {
         );
 
     }
+
+
+    public PaymentInfoResponse getPaymentInfo(UUID orderId) {
+        Order order = getOrderById(orderId);
+        List<Payment> payments = order.getPayments();
+        if (payments == null || payments.isEmpty()) {
+            throw new NotFoundException("No payment found for order: " + orderId);
+        }
+        return new PaymentInfoResponse(
+                order.getId(),
+                order.getOrderCode(),
+                applicationProperties.bankProperties().bankNumber(),
+                applicationProperties.bankProperties().bankCode(),
+                applicationProperties.bankProperties().accountHolder(),
+                order.getTotalAmount(),
+                order.getOrderStatus().toString(),
+                payments.getFirst().getExpiredAt()
+        );
+    }
+
 
     @Transactional
     public void handlePaymentTimeout(OrderExpiredRequest  orderExpiredRequest) {
@@ -145,28 +170,33 @@ public class OrderService {
 
         Page<Order> orderPage = orderRepository.findByCustomer_Id(customer.getId(), pageable);
 
-        if(!orderPage.hasContent()){
-            throw  new BadRequestException("No order by you");
+        if (!orderPage.hasContent()) {
+            return List.of();
         }
 
-        return orderPage.getContent().stream().map(order -> {
-            return new OrderHistoryResponse(
-                    order.getId(),
-                    order.getOrderCode(),
-                    order.getCreatedAt(),
-                    order.getCustomer().getUser().getFirstName() + " " + order.getCustomer().getUser().getLastName(),
-                    order.getCustomer().getUser().getEmail(),
-                    order.getOrderStatus().toString(),
-                    order.getPayments().getFirst().getPaymentStatus(),
-                    PaymentMethod.ONLINE,
-                    orderPage.getTotalElements(),
-                    order.getTotalAmount()
-            );
-        }).toList();
+        return orderPage.getContent().stream()
+                .map(order -> new OrderHistoryResponse(
+                        order.getId(),
+                        order.getOrderCode(),
+                        order.getCreatedAt(),
+                        order.getCustomer().getUser().getFirstName() + " " + order.getCustomer().getUser().getLastName(),
+                        order.getCustomer().getUser().getEmail(),
+                        order.getOrderStatus().toString(),
+                        order.getPayments().isEmpty()
+                                ? PaymentStatus.PENDING
+                                : order.getPayments().getFirst().getPaymentStatus(),
+                        PaymentMethod.ONLINE,
+                        order.getOrderDetails() == null ? 0L : order.getOrderDetails().stream()
+                                .map(OrderDetail::getQuantity)
+                                .filter(Objects::nonNull)
+                                .reduce(0L, Long::sum),
+                        order.getTotalAmount()
+                ))
+                .toList();
 
     }
 
-    public List<OrderHistoryResponse> getOrderHistoryByAdmin(OrderHistoryRequest orderHistoryRequest) {
+    public Page<OrderHistoryResponse> getOrderHistoryByAdmin(OrderHistoryRequest orderHistoryRequest) {
 
         Pageable pageable = PageRequest.of(
                 orderHistoryRequest.page(),
@@ -176,22 +206,27 @@ public class OrderService {
         Page<Order> pageOrder = orderRepository.findOrderHistory(orderHistoryRequest, pageable);
 
 
-        if(!pageOrder.hasContent()){
-            throw  new BadRequestException("No order by you");
+        if (!pageOrder.hasContent()) {
+            return Page.empty(pageable);
         }
 
-        return pageOrder.getContent().stream().map(orderItem -> new OrderHistoryResponse(
+        return pageOrder.map(orderItem -> new OrderHistoryResponse(
                 orderItem.getId(),
                 orderItem.getOrderCode(),
                 orderItem.getCreatedAt(),
                 orderItem.getCustomer().getUser().getFirstName() + " " + orderItem.getCustomer().getUser().getLastName(),
                 orderItem.getCustomer().getUser().getEmail(),
                 orderItem.getOrderStatus().toString(),
-                orderItem.getPayments().getFirst().getPaymentStatus(),
+                orderItem.getPayments().isEmpty()
+                        ? PaymentStatus.PENDING
+                        : orderItem.getPayments().getFirst().getPaymentStatus(),
                 PaymentMethod.ONLINE,
-                pageOrder.getTotalElements(),
+                orderItem.getOrderDetails() == null ? 0L : orderItem.getOrderDetails().stream()
+                        .map(OrderDetail::getQuantity)
+                        .filter(Objects::nonNull)
+                        .reduce(0L, Long::sum),
                 orderItem.getTotalAmount()
-        )).toList();
+        ));
 
     }
 
@@ -211,9 +246,16 @@ public class OrderService {
         // get order và set vào
         Order order = getOrderByCode(orderCode);
 
+        if (request.transferAmount() == null) {
+            throw new BadRequestException("Transfer amount is required");
+        }
         Double amountReceived = Double.parseDouble(request.transferAmount().toString());
 
-        order.getPayments().getFirst().setAmountReceived(amountReceived);
+        List<Payment> payments = order.getPayments();
+        if (payments == null || payments.isEmpty()) {
+            throw new NotFoundException("No payment found for order: " + orderCode);
+        }
+        payments.getFirst().setAmountReceived(amountReceived);
 
         Double totalPaid = order.getPayments().stream()
                 .filter(p -> p.getPaymentStatus() == PaymentStatus.PAID)
@@ -233,17 +275,6 @@ public class OrderService {
                     new OrderPaid(order.getOrderCode(), order.getOrderStatus())
             );
 
-//            client.subscribe('/user/queue/orders', (message) => {
-//              const data = JSON.parse(message.body);
-//
-//              console.log('Order event:', data);
-//
-//              if (data.status === 'PAID') {
-//                // check orderCode trong payload để map UI
-//                showSuccess(`Đơn ${data.orderCode} đã thanh toán thành công`);
-//            }
-//});
-
         } else {
             throw new BadRequestException("Not enough payment amount");
         }
@@ -253,35 +284,7 @@ public class OrderService {
         return orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
     }
 
-    private void validateItems(List<OrderItemRequest> items, List<CartItem> cartItems) {
-        // 1. Check size
-        if (cartItems.size() != items.size()) {
-            throw new BadRequestException("Items in your cart do not match");
-        }
-
-        // 2. Build map from request: shoeVariantId -> quantity
-        Map<UUID, Long> requestItemMap = items.stream()
-                .collect(Collectors.toMap(
-                        OrderItemRequest::shoeVariantId,
-                        OrderItemRequest::quantity
-                ));
-
-        // 3. Validate cart items match request + active
-        for (CartItem cartItem : cartItems) {
-            if (!cartItem.isActive()) {
-                throw new BadRequestException("Inactive item in cart");
-            }
-
-            UUID variantId = cartItem.getShoeVariant().getId();
-
-            if (!requestItemMap.containsKey(variantId)) {
-                throw new BadRequestException("Items in your cart do not match");
-            }
-
-            cartItem.setActive(false);
-        }
-
-        cartItemRepository.saveAllAndFlush(cartItems);
+    private void validateItems(List<OrderItemRequest> items) {
 
         // 4. Validate stock
         for (OrderItemRequest item : items) {
@@ -320,5 +323,10 @@ public class OrderService {
     public Order getOrderByCode(String orderCode) {
         return orderRepository.findByOrderCode(orderCode).orElseThrow(() -> new NotFoundException("Order not found"));
     }
+
+    public Order getOrderById(UUID orderId) {
+        return orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Order not found"));
+    }
+
 
 }

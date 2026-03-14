@@ -5,7 +5,7 @@ import com.sba.ssos.entity.User;
 import com.sba.ssos.exception.base.NotFoundException;
 import com.sba.ssos.repository.CustomerRepository;
 import com.sba.ssos.repository.UserRepository;
-import com.sba.ssos.service.UserService;
+import com.sba.ssos.service.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

@@ -162,8 +162,6 @@ public class GlobalExceptionHandler {
         ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail);
     problem.setTitle(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
     problem.setInstance(URI.create(request.getRequestURI()));
-    // Ghi thêm nguyên nhân để debug (vd: MinIO connection, bucket not found)
-    problem.setProperty("cause", ex.getMessage());
     return problem;
   }
 }

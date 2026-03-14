@@ -6,109 +6,107 @@ import com.sba.ssos.entity.Shoe;
 import com.sba.ssos.entity.Wishlist;
 import com.sba.ssos.exception.base.NotFoundException;
 import com.sba.ssos.repository.CustomerRepository;
-import com.sba.ssos.repository.product.shoe.ShoeRepository;
 import com.sba.ssos.repository.WishlistRepository;
+import com.sba.ssos.repository.product.shoe.ShoeRepository;
+import com.sba.ssos.service.user.UserService;
+import com.sba.ssos.service.product.shoeimage.ShoeImageService;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 public class WishlistService {
 
-    private final WishlistRepository wishlistRepository;
-    private final CustomerRepository customerRepository;
-    private final ShoeRepository shoeRepository;
-    private final UserService userService;
+  private final WishlistRepository wishlistRepository;
+  private final CustomerRepository customerRepository;
+  private final ShoeRepository shoeRepository;
+  private final UserService userService;
+  private final ShoeImageService shoeImageService;
 
-    /** sortBy: property path (createdAt, shoe.name, shoe.price). sortOrder: asc | desc. */
-    @Transactional(readOnly = true)
-    public List<WishlistItemResponse> getCurrentUserWishlist(String sortBy, String sortOrder) {
-        Customer customer = getCurrentCustomer();
-        String property = ALLOWED_SORT_PROPERTIES.contains(sortBy != null ? sortBy : "")
-                ? sortBy
-                : "createdAt";
-        Sort.Direction direction = "asc".equalsIgnoreCase(sortOrder != null ? sortOrder : "desc")
-                ? Sort.Direction.ASC
-                : Sort.Direction.DESC;
-        Sort sort = Sort.by(direction, property);
-        return wishlistRepository.findAllByCustomer_Id(customer.getId(), sort)
-                .stream()
-                .map(this::toResponse)
-                .toList();
+  @Transactional(readOnly = true)
+  public List<WishlistItemResponse> getCurrentUserWishlist(String sortBy, String sortOrder) {
+    Customer customer = getCurrentCustomer();
+    String property =
+        ALLOWED_SORT_PROPERTIES.contains(sortBy != null ? sortBy : "") ? sortBy : "createdAt";
+    Sort.Direction direction =
+        "asc".equalsIgnoreCase(sortOrder != null ? sortOrder : "desc")
+            ? Sort.Direction.ASC
+            : Sort.Direction.DESC;
+      Sort sort = Sort.by(direction, property);
+    return wishlistRepository.findAllByCustomer_Id(customer.getId(), sort).stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
+  private static final Set<String> ALLOWED_SORT_PROPERTIES =
+      Set.of("createdAt", "shoe.name", "shoe.price");
+
+  @Transactional
+  public WishlistItemResponse addToWishlist(UUID shoeId) {
+    Customer customer = getCurrentCustomer();
+
+    Shoe shoe =
+        shoeRepository
+            .findById(shoeId)
+            .orElseThrow(() -> new NotFoundException("Shoe not found " + shoeId));
+
+    Wishlist existingWishlist =
+        wishlistRepository.findAllByCustomer_Id(customer.getId()).stream()
+            .filter(w -> w.getShoe().getId().equals(shoeId))
+            .findFirst()
+            .orElse(null);
+    if (existingWishlist != null) {
+      return toResponse(existingWishlist);
     }
 
-    private static final Set<String> ALLOWED_SORT_PROPERTIES =
-            Set.of("createdAt", "shoe.name", "shoe.price");
+    Wishlist wishlist = Wishlist.builder().customer(customer).shoe(shoe).build();
 
-    @Transactional
-    public WishlistItemResponse addToWishlist(UUID shoeId) {
-        Customer customer = getCurrentCustomer();
+    Wishlist saved = wishlistRepository.save(wishlist);
+    return toResponse(saved);
+  }
 
-        Shoe shoe = shoeRepository
-                .findById(shoeId)
-                .orElseThrow(() -> new NotFoundException("Shoe not found " + shoeId));
+  @Transactional
+  public void removeFromWishlistByShoe(UUID shoeId) {
+    Customer customer = getCurrentCustomer();
 
-        Wishlist existingWishlist = wishlistRepository
-                .findAllByCustomer_Id(customer.getId())
-                .stream()
-                .filter(w -> w.getShoe().getId().equals(shoeId))
-                .findFirst()
-                .orElse(null);
-        if (existingWishlist != null) {
-            return toResponse(existingWishlist);
-        }
+    boolean exists = wishlistRepository.existsByCustomer_IdAndShoe_Id(customer.getId(), shoeId);
 
-        Wishlist wishlist = Wishlist.builder()
-                .customer(customer)
-                .shoe(shoe)
-                .build();
-
-        Wishlist saved = wishlistRepository.save(wishlist);
-        return toResponse(saved);
+    if (!exists) {
+      return;
     }
 
-    @Transactional
-    public void removeFromWishlistByShoe(UUID shoeId) {
-        Customer customer = getCurrentCustomer();
+    wishlistRepository.deleteByCustomer_IdAndShoe_Id(customer.getId(), shoeId);
+  }
 
-        boolean exists =
-                wishlistRepository.existsByCustomer_IdAndShoe_Id(customer.getId(), shoeId);
+  private Customer getCurrentCustomer() {
+    UUID userId = userService.getCurrentUser().userId(); // Keycloak ID
+    return customerRepository
+        .findByUser_KeycloakId(userId)
+        .orElseThrow(() -> new NotFoundException("Customer not found for user " + userId));
+  }
 
-        if (!exists) {
-            return;
-        }
+  private WishlistItemResponse toResponse(Wishlist wishlist) {
+    Shoe shoe = wishlist.getShoe();
+    String brandName = shoe.getBrand().getName();
 
-        wishlistRepository.deleteByCustomer_IdAndShoe_Id(customer.getId(), shoeId);
+    String mainImageUrl = null;
+    var shoeUrls = shoeImageService.getShoeImageUrls(shoe, List.of());
+    if (!shoeUrls.isEmpty()) {
+      mainImageUrl = shoeUrls.get(0);
     }
 
-    private Customer getCurrentCustomer() {
-        UUID userId = userService.getCurrentUser().userId();
-        return customerRepository
-                .findByUser_Id(userId)
-                .orElseThrow(() -> new NotFoundException("Customer not found for user " + userId));
-    }
-
-    private WishlistItemResponse toResponse(Wishlist wishlist) {
-        Shoe shoe = wishlist.getShoe();
-        String brandName = shoe.getBrand().getName();
-
-        String mainImageUrl = null;
-
-        return new WishlistItemResponse(
-                wishlist.getId(),
-                shoe.getId(),
-                shoe.getName(),
-                brandName,
-                shoe.getPrice(),
-                mainImageUrl,
-                wishlist.getCreatedAt()
-        );
-    }
+    return new WishlistItemResponse(
+        wishlist.getId(),
+        shoe.getId(),
+        shoe.getName(),
+        brandName,
+        shoe.getPrice(),
+        mainImageUrl,
+        wishlist.getCreatedAt());
+  }
 }
-
