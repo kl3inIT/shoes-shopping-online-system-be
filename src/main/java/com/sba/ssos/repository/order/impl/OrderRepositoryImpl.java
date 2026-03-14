@@ -14,6 +14,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import static com.sba.ssos.entity.QCustomer.customer;
 import static com.sba.ssos.entity.QOrder.order;
@@ -51,6 +52,39 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom {
                 .join(customer.user, user)
                 .where(
                         nameSearch(request.nameSearch()),
+                        createdFrom(request.dateFrom()),
+                        createdTo(request.dateTo()),
+                        hasStatus(request.orderStatus())
+                )
+                .fetchOne();
+
+        return new PageImpl<>(content, pageable, total == null ? 0 : total);
+    }
+
+    @Override
+    public Page<Order> findOrderHistoryByCustomer(UUID customerId, OrderHistoryRequest request, Pageable pageable) {
+        List<Order> content = queryFactory
+                .selectFrom(order)
+                .join(order.customer, customer).fetchJoin()
+                .join(customer.user, user).fetchJoin()
+                .where(
+                        order.customer.id.eq(customerId),
+                        createdFrom(request.dateFrom()),
+                        createdTo(request.dateTo()),
+                        hasStatus(request.orderStatus())
+                )
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .orderBy(order.createdAt.desc())
+                .fetch();
+
+        Long total = queryFactory
+                .select(order.count())
+                .from(order)
+                .join(order.customer, customer)
+                .join(customer.user, user)
+                .where(
+                        order.customer.id.eq(customerId),
                         createdFrom(request.dateFrom()),
                         createdTo(request.dateTo()),
                         hasStatus(request.orderStatus())

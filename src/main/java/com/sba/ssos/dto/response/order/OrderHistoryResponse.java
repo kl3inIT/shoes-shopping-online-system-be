@@ -1,9 +1,11 @@
 package com.sba.ssos.dto.response.order;
 
+import com.sba.ssos.dto.response.order.CustomerOrderItemResponse;
 import com.sba.ssos.enums.PaymentMethod;
 import com.sba.ssos.enums.PaymentStatus;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public record OrderHistoryResponse(
@@ -16,7 +18,8 @@ public record OrderHistoryResponse(
         PaymentStatus paymentStatus,
         PaymentMethod paymentMethod,
         Long itemCount,
-        Double totalAmount
+        Double totalAmount,
+        List<CustomerOrderItemResponse> items
 ) {
 }
 

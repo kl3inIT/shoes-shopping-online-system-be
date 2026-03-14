@@ -6,6 +6,8 @@ import com.sba.ssos.dto.request.order.OrderCreateRequest;
 import com.sba.ssos.dto.request.order.OrderExpiredRequest;
 import com.sba.ssos.dto.request.order.OrderHistoryRequest;
 import com.sba.ssos.dto.request.order.OrderItemRequest;
+import com.sba.ssos.dto.response.order.CustomerOrderHistoryResponse;
+import com.sba.ssos.dto.response.order.CustomerOrderItemResponse;
 import com.sba.ssos.dto.response.order.OrderCreateResponse;
 import com.sba.ssos.dto.response.order.OrderHistoryResponse;
 import com.sba.ssos.dto.response.order.OrderPaid;
@@ -22,11 +24,13 @@ import com.sba.ssos.repository.PaymentRepository;
 import com.sba.ssos.repository.ShoeVariantRepository;
 import com.sba.ssos.repository.order.OrderRepository;
 import com.sba.ssos.service.customer.CustomerService;
+import com.sba.ssos.service.product.shoeimage.ShoeImageService;
 import com.sba.ssos.service.product.shoevariant.ShoeVariantService;
 import com.sba.ssos.utils.OrderCodeUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -50,6 +54,7 @@ public class OrderService {
     private final CartItemRepository cartItemRepository;
     private final CustomerService customerService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ShoeImageService shoeImageService;
     private static final long PAYMENT_EXPIRE_MINUTES = 5;
     private static final String ORDER_CODE_PREFIX = "SSOS";
 
@@ -150,32 +155,95 @@ public class OrderService {
 
     }
 
-    public List<OrderHistoryResponse> getOrderHistoryByCustomer(OrderHistoryRequest orderHistoryRequest) {
-
+    /**
+     * Lấy danh sách đơn hàng theo customer đang đăng nhập, có filter theo status/ngày và trả về kèm items (chi tiết sản phẩm).
+     */
+    public Page<CustomerOrderHistoryResponse> getOrderHistoryByCustomer(OrderHistoryRequest orderHistoryRequest) {
         Customer customer = customerService.getCurrentCustomer();
 
-        Pageable pageable = PageRequest.of(
-                orderHistoryRequest.page(),
-                orderHistoryRequest.size()
+        int page = orderHistoryRequest.page();
+        int size = orderHistoryRequest.size() > 0 ? orderHistoryRequest.size() : 10;
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<Order> orderPage = orderRepository.findOrderHistoryByCustomer(
+                customer.getId(),
+                orderHistoryRequest,
+                pageable
         );
 
-        Page<Order> orderPage = orderRepository.findByCustomer_Id(customer.getId(), pageable);
+        List<Order> content = orderPage.getContent();
+        if (content.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, 0);
+        }
 
-        return orderPage.getContent().stream().map(order -> {
-            return new OrderHistoryResponse(
-                    order.getId(),
-                    order.getOrderCode(),
-                    order.getCreatedAt(),
-                    order.getCustomer().getUser().getFirstName() + " " + order.getCustomer().getUser().getLastName(),
-                    order.getCustomer().getUser().getEmail(),
-                    order.getOrderStatus().toString(),
-                    order.getPayments().getFirst().getPaymentStatus(),
-                    PaymentMethod.ONLINE,
-                    orderPage.getTotalElements(),
-                    order.getTotalAmount()
-            );
-        }).toList();
+        List<UUID> orderIds = content.stream().map(Order::getId).toList();
+        List<Order> ordersWithDetails = orderRepository.findByIdInWithOrderDetails(orderIds);
+        Map<UUID, Order> orderById = ordersWithDetails.stream().collect(Collectors.toMap(Order::getId, o -> o));
 
+        List<CustomerOrderHistoryResponse> responses = content.stream()
+                .map(order -> orderById.get(order.getId()))
+                .filter(Objects::nonNull)
+                .map(this::mapToCustomerOrderHistoryResponse)
+                .toList();
+
+        return new PageImpl<>(responses, pageable, orderPage.getTotalElements());
+    }
+
+    /**
+     * Lấy chi tiết 1 đơn hàng cho customer hiện tại (bao gồm danh sách items).
+     */
+    public CustomerOrderHistoryResponse getOrderDetailByCustomer(UUID orderId) {
+        Customer customer = customerService.getCurrentCustomer();
+        Order order = getOrderById(orderId);
+
+        if (order.getCustomer() == null || !order.getCustomer().getId().equals(customer.getId())) {
+            throw new NotFoundException("Order not found");
+        }
+
+        return mapToCustomerOrderHistoryResponse(order);
+    }
+
+    private CustomerOrderHistoryResponse mapToCustomerOrderHistoryResponse(Order order) {
+        List<CustomerOrderItemResponse> items = (order.getOrderDetails() == null ? List.<OrderDetail>of() : order.getOrderDetails())
+                .stream()
+                .map(this::mapToCustomerOrderItemResponse)
+                .toList();
+
+        return new CustomerOrderHistoryResponse(
+                order.getId(),
+                order.getOrderCode(),
+                order.getOrderStatus().name(),
+                order.getCreatedAt(),
+                items,
+                order.getTotalAmount()
+        );
+    }
+
+    private CustomerOrderItemResponse mapToCustomerOrderItemResponse(OrderDetail detail) {
+        ShoeVariant variant = detail.getShoeVariant();
+        Shoe shoe = variant != null ? variant.getShoe() : null;
+        String name = shoe != null ? shoe.getName() : "";
+        Double price = shoe != null ? shoe.getPrice() : 0.0;
+        String size = variant != null ? variant.getSize() : "";
+        Long quantity = detail.getQuantity() != null ? detail.getQuantity() : 0L;
+
+        String image = "";
+        if (variant != null) {
+            List<String> urls = shoeImageService.getVariantImageUrls(variant);
+            image = urls.isEmpty() ? "" : urls.getFirst();
+        } else if (shoe != null) {
+            List<String> urls = shoeImageService.getShoeImageUrls(shoe, List.of());
+            image = urls.isEmpty() ? "" : urls.getFirst();
+        }
+
+        return new CustomerOrderItemResponse(
+                detail.getId(),
+                name,
+                image,
+                price,
+                size,
+                quantity
+        );
     }
 
     public Page<OrderHistoryResponse> getOrderHistoryByAdmin(OrderHistoryRequest orderHistoryRequest) {
@@ -185,28 +253,56 @@ public class OrderService {
                 orderHistoryRequest.size() != 0 ? orderHistoryRequest.size() : 5
         );
 
-        Page<Order> pageOrder = orderRepository.findOrderHistory(orderHistoryRequest, pageable);
+        Page<Order> orderPage = orderRepository.findOrderHistory(orderHistoryRequest, pageable);
+        List<Order> content = orderPage.getContent();
 
-        return pageOrder.map(orderItem -> new OrderHistoryResponse(
-                orderItem.getId(),
-                orderItem.getOrderCode(),
-                orderItem.getCreatedAt(),
-                orderItem.getCustomer().getUser().getFirstName() + " " + orderItem.getCustomer().getUser().getLastName(),
-                orderItem.getCustomer().getUser().getEmail(),
-                orderItem.getOrderStatus().toString(),
-                orderItem.getPayments().isEmpty()
-                        ? PaymentStatus.PENDING
-                        : orderItem.getPayments().getFirst().getPaymentStatus(),
-                PaymentMethod.ONLINE,
-                orderItem.getOrderDetails() == null ? 0L : orderItem.getOrderDetails().stream()
-                        .map(OrderDetail::getQuantity)
-                        .filter(Objects::nonNull)
-                        .reduce(0L, Long::sum),
-                orderItem.getTotalAmount()
-        ));
+        if (content.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, 0);
+        }
 
+        List<UUID> orderIds = content.stream().map(Order::getId).toList();
+        List<Order> ordersWithDetails = orderRepository.findByIdInWithOrderDetails(orderIds);
+        Map<UUID, Order> orderById = ordersWithDetails.stream().collect(Collectors.toMap(Order::getId, o -> o));
+
+        List<OrderHistoryResponse> responses = content.stream()
+                .map(order -> orderById.get(order.getId()))
+                .filter(Objects::nonNull)
+                .map(this::mapToAdminOrderHistoryResponse)
+                .toList();
+
+        return new PageImpl<>(responses, pageable, orderPage.getTotalElements());
     }
 
+    private OrderHistoryResponse mapToAdminOrderHistoryResponse(Order order) {
+        List<CustomerOrderItemResponse> items =
+                (order.getOrderDetails() == null ? List.<OrderDetail>of() : order.getOrderDetails())
+                        .stream()
+                        .map(this::mapToCustomerOrderItemResponse)
+                        .toList();
+
+        Long itemCount = items.stream()
+                .map(CustomerOrderItemResponse::quantity)
+                .filter(Objects::nonNull)
+                .reduce(0L, Long::sum);
+
+        return new OrderHistoryResponse(
+                order.getId(),
+                order.getOrderCode(),
+                order.getCreatedAt(),
+                order.getCustomer().getUser().getFirstName() + " " + order.getCustomer().getUser().getLastName(),
+                order.getCustomer().getUser().getEmail(),
+                order.getOrderStatus().toString(),
+                order.getPayments().isEmpty()
+                        ? PaymentStatus.PENDING
+                        : order.getPayments().getFirst().getPaymentStatus(),
+                PaymentMethod.ONLINE,
+                itemCount,
+                order.getTotalAmount(),
+                items
+        );
+    }
+
+    @Transactional
     public void verifyPayment(SePayWebhookRequest request) {
 
         String regex = "SSOS\\d{8}[A-Z0-9]{6}";
@@ -232,12 +328,19 @@ public class OrderService {
 
         // update trạng thái
         payment.setPaymentStatus(PaymentStatus.PAID);
-        order.setOrderStatus(OrderStatus.PAID);
+        order.setOrderStatus(OrderStatus.CONFIRMED);
 
 
-        // save
+        // remove all current cart items of this customer
+        Customer customer = order.getCustomer();
+        if (customer != null && customer.getId() != null) {
+            cartItemRepository.deleteAllByCustomer_Id(customer.getId());
+        }
+
+
         orderRepository.saveAndFlush(order);
         paymentRepository.saveAndFlush(payment);
+
 
         // realtime notify
         messagingTemplate.convertAndSend(
