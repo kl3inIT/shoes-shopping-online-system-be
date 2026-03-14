@@ -10,9 +10,9 @@ import com.sba.ssos.entity.Shoe;
 import com.sba.ssos.entity.ShoeVariant;
 import com.sba.ssos.enums.OrderStatus;
 import com.sba.ssos.enums.UserRole;
-import com.sba.ssos.repository.OrderDetailRepository;
 import com.sba.ssos.repository.ShoeVariantRepository;
 import com.sba.ssos.repository.UserRepository;
+import com.sba.ssos.repository.order.OrderDetailRepository;
 import com.sba.ssos.repository.order.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -99,9 +99,7 @@ public class DashboardService {
                 .map(row -> (UUID) row[0])
                 .toList();
 
-        List<ShoeVariant> variants = shoeVariantRepository.findAll().stream()
-                .filter(v -> shoeIds.contains(v.getShoe().getId()))
-                .toList();
+        List<ShoeVariant> variants = shoeVariantRepository.findByShoe_IdIn(shoeIds);
 
         Map<UUID, Long> stockByShoe = variants.stream()
                 .collect(Collectors.groupingBy(

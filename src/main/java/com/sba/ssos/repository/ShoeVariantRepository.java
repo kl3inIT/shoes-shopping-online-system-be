@@ -13,6 +13,7 @@ import java.util.UUID;
 public interface ShoeVariantRepository extends JpaRepository<ShoeVariant, UUID> {
 
     List<ShoeVariant> findByShoeIn(List<Shoe> shoes);
+    List<ShoeVariant> findByShoe_IdIn(List<UUID> shoeIds);
 
     List<ShoeVariant> findByQuantityLessThan(Long threshold);
 

@@ -8,8 +8,9 @@ import com.sba.ssos.dto.dashboard.DashboardRecentOrderResponse;
 import com.sba.ssos.dto.dashboard.DashboardTopSellingResponse;
 import com.sba.ssos.service.DashboardService;
 import com.sba.ssos.utils.LocaleUtils;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -20,6 +21,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/dashboard")
 @RequiredArgsConstructor
+@Validated
 public class AdminDashboardController {
 
     private final DashboardService dashboardService;
@@ -33,7 +35,7 @@ public class AdminDashboardController {
 
     @GetMapping("/chart")
     public ResponseGeneral<List<DashboardChartPointResponse>> getChart(
-            @RequestParam(name = "days", defaultValue = "90") int days
+            @RequestParam(name = "days", defaultValue = "90") @Min(1) int days
     ) {
         List<DashboardChartPointResponse> data = dashboardService.getChartData(days);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.dashboard.chart"), data);
@@ -41,7 +43,7 @@ public class AdminDashboardController {
 
     @GetMapping("/recent-orders")
     public ResponseGeneral<List<DashboardRecentOrderResponse>> getRecentOrders(
-            @RequestParam(name = "limit", defaultValue = "10") int limit
+            @RequestParam(name = "limit", defaultValue = "10") @Min(1) int limit
     ) {
         List<DashboardRecentOrderResponse> data = dashboardService.getRecentOrders(limit);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.dashboard.recentOrders"), data);
@@ -49,7 +51,7 @@ public class AdminDashboardController {
 
     @GetMapping("/top-selling")
     public ResponseGeneral<List<DashboardTopSellingResponse>> getTopSelling(
-            @RequestParam(name = "limit", defaultValue = "10") int limit
+            @RequestParam(name = "limit", defaultValue = "10") @Min(1) int limit
     ) {
         List<DashboardTopSellingResponse> data = dashboardService.getTopSelling(limit);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.dashboard.topSelling"), data);
@@ -57,7 +59,7 @@ public class AdminDashboardController {
 
     @GetMapping("/low-stock")
     public ResponseGeneral<List<DashboardLowStockResponse>> getLowStock(
-            @RequestParam(name = "threshold", defaultValue = "5") int threshold
+            @RequestParam(name = "threshold", defaultValue = "5") @Min(0) int threshold
     ) {
         List<DashboardLowStockResponse> data = dashboardService.getLowStock(threshold);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.dashboard.lowStock"), data);
