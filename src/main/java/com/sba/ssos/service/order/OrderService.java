@@ -1,7 +1,6 @@
 package com.sba.ssos.service.order;
 
 
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.dto.request.order.OrderCreateRequest;
 import com.sba.ssos.dto.request.order.OrderExpiredRequest;
@@ -19,9 +18,9 @@ import com.sba.ssos.enums.PaymentStatus;
 import com.sba.ssos.exception.base.BadRequestException;
 import com.sba.ssos.exception.base.NotFoundException;
 import com.sba.ssos.repository.CartItemRepository;
-import com.sba.ssos.repository.order.OrderRepository;
 import com.sba.ssos.repository.PaymentRepository;
 import com.sba.ssos.repository.ShoeVariantRepository;
+import com.sba.ssos.repository.order.OrderRepository;
 import com.sba.ssos.service.customer.CustomerService;
 import com.sba.ssos.service.product.shoevariant.ShoeVariantService;
 import com.sba.ssos.utils.OrderCodeUtils;
@@ -34,11 +33,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -166,29 +161,20 @@ public class OrderService {
 
         Page<Order> orderPage = orderRepository.findByCustomer_Id(customer.getId(), pageable);
 
-        if (!orderPage.hasContent()) {
-            return List.of();
-        }
-
-        return orderPage.getContent().stream()
-                .map(order -> new OrderHistoryResponse(
-                        order.getId(),
-                        order.getOrderCode(),
-                        order.getCreatedAt(),
-                        order.getCustomer().getUser().getFirstName() + " " + order.getCustomer().getUser().getLastName(),
-                        order.getCustomer().getUser().getEmail(),
-                        order.getOrderStatus().toString(),
-                        order.getPayments().isEmpty()
-                                ? PaymentStatus.PENDING
-                                : order.getPayments().getFirst().getPaymentStatus(),
-                        PaymentMethod.ONLINE,
-                        order.getOrderDetails() == null ? 0L : order.getOrderDetails().stream()
-                                .map(OrderDetail::getQuantity)
-                                .filter(Objects::nonNull)
-                                .reduce(0L, Long::sum),
-                        order.getTotalAmount()
-                ))
-                .toList();
+        return orderPage.getContent().stream().map(order -> {
+            return new OrderHistoryResponse(
+                    order.getId(),
+                    order.getOrderCode(),
+                    order.getCreatedAt(),
+                    order.getCustomer().getUser().getFirstName() + " " + order.getCustomer().getUser().getLastName(),
+                    order.getCustomer().getUser().getEmail(),
+                    order.getOrderStatus().toString(),
+                    order.getPayments().getFirst().getPaymentStatus(),
+                    PaymentMethod.ONLINE,
+                    orderPage.getTotalElements(),
+                    order.getTotalAmount()
+            );
+        }).toList();
 
     }
 
@@ -200,11 +186,6 @@ public class OrderService {
         );
 
         Page<Order> pageOrder = orderRepository.findOrderHistory(orderHistoryRequest, pageable);
-
-
-        if (!pageOrder.hasContent()) {
-            return Page.empty(pageable);
-        }
 
         return pageOrder.map(orderItem -> new OrderHistoryResponse(
                 orderItem.getId(),
@@ -228,45 +209,41 @@ public class OrderService {
 
     public void verifyPayment(SePayWebhookRequest request) {
 
-        String regex = "SSOS-\\d{8}-[A-Z0-9]{6}";
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(request.content());
+        String regex = "SSOS\\d{8}[A-Z0-9]{6}";
+        Matcher matcher = Pattern.compile(regex).matcher(request.content());
 
-        String orderCode = null;
-        if (matcher.find()) {
-            orderCode = matcher.group();
-        } else {
-            throw new NotFoundException("Not Found order code");
+        if (!matcher.find()) {
+            throw new NotFoundException("Order code not found in transaction content");
         }
 
-        // get order và set vào
+        String orderCode = matcher.group();
+
         Order order = getOrderByCode(orderCode);
 
-        Double amountReceived = Double.parseDouble(request.transferAmount().toString());
+        double amountReceived = request.transferAmount().doubleValue();
+        double orderTotalAmount = order.getTotalAmount();
 
-        order.getPayments().getFirst().setAmountReceived(amountReceived);
+        Payment payment = order.getPayments().getFirst();
+        payment.setAmountReceived(amountReceived);
 
-        Double totalPaid = order.getPayments().stream()
-                .filter(p -> p.getPaymentStatus() == PaymentStatus.PAID)
-                .map(Payment::getAmountReceived)
-                .reduce(0.0, Double::sum);
-
-        Double orderTotalAmount = order.getTotalAmount();
-        if (totalPaid.compareTo(orderTotalAmount) >= 0) {
-            order.setOrderStatus(OrderStatus.PAID); // hoặc COMPLETED
-            orderRepository.save(order);
-            paymentRepository.saveAllAndFlush(order.getPayments());
-
-            // socket to FE
-            messagingTemplate.convertAndSendToUser(
-                    order.getCustomer().getId().toString(),
-                    "/queue/orders",
-                    new OrderPaid(order.getOrderCode(), order.getOrderStatus())
-            );
-
-        } else {
+        if (amountReceived < orderTotalAmount) {
             throw new BadRequestException("Not enough payment amount");
         }
+
+        // update trạng thái
+        payment.setPaymentStatus(PaymentStatus.PAID);
+        order.setOrderStatus(OrderStatus.PAID);
+
+
+        // save
+        orderRepository.saveAndFlush(order);
+        paymentRepository.saveAndFlush(payment);
+
+        // realtime notify
+        messagingTemplate.convertAndSend(
+                "/topic/orders",
+                new OrderPaid(order.getOrderCode(), order.getOrderStatus())
+        );
     }
 
     public Order findOrderById(UUID orderId){

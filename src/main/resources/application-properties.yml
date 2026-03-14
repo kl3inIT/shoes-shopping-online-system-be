@@ -115,8 +115,20 @@ application-properties:
       - { method: GET, path: /api/reviews/shoe/* }
       # Public file access (GET only)
       - { method: GET, path: /api/files/** }
+      - { method: POST, path: /api/payments/sepay/hook }
+      - { method: POST, path: /webhook/keycloak/register }
+      - { method: POST, path: /sepay/auth/token }
+      - { method: POST, path: /api/files/upload }
+      - { method: POST, path: /api/files/upload-multiple }
+      - { method: GET, path: /api/files/* }
 
-
+      - { method: POST, path: /webhook/keycloak/register }
+      - { method: POST, path: /sepay/auth/token }
+      - { method: GET, path: /api/categories }
+      - { method: GET, path: /api/categories/* }
+      - { method: GET, path: /api/shoes/*/variants }
+      - { method: POST, path: /api/v1/chat }
+      - { method: GET, path: /ws/** }
     public-urls:
       # OpenAPI Swagger URLs
       - /swagger-ui.html
@@ -129,3 +141,4 @@ application-properties:
       - /test/free
       - /chat
       - /api/v1/*
+      - /ws/**
