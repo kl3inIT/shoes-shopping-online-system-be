@@ -8,7 +8,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.ClientResource;
+import org.keycloak.admin.client.resource.RoleScopeResource;
+import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.stereotype.Service;
 
@@ -61,10 +65,9 @@ public class KeycloakAdminService {
    */
   public void assignRealmRole(UUID keycloakId, UserRole role) {
 
-    var realm = realmResource();
-    var roleRep = realm.roles().get(role.name()).toRepresentation();
-    realm.users().get(keycloakId.toString()).roles().realmLevel().add(List.of(roleRep));
-    log.debug("Assigned realm role '{}' to Keycloak user {}", role.name(), keycloakId);
+    var clientLevelRoles = clientLevelRoles(keycloakId);
+    clientLevelRoles.add(List.of(appRole(role)));
+    log.debug("Assigned client role '{}' to Keycloak user {}", role.name(), keycloakId);
   }
 
   /**
@@ -73,24 +76,19 @@ public class KeycloakAdminService {
    */
   public void replaceRealmRole(UUID keycloakId, UserRole newRole) {
 
-    var realm = realmResource();
-    var userResource = realm.users().get(keycloakId.toString());
-
-    var appRoles = userResource
-        .roles()
-        .realmLevel()
+    var clientLevelRoles = clientLevelRoles(keycloakId);
+    var appRoles = clientLevelRoles
         .listAll()
         .stream()
         .filter(r -> isAppRole(r.getName()))
         .toList();
 
     if (!appRoles.isEmpty()) {
-      userResource.roles().realmLevel().remove(appRoles);
+      clientLevelRoles.remove(appRoles);
     }
 
-    var newRoleRep = realm.roles().get(newRole.name()).toRepresentation();
-    userResource.roles().realmLevel().add(List.of(newRoleRep));
-    log.debug("Replaced realm role with '{}' for Keycloak user {}", newRole.name(), keycloakId);
+    clientLevelRoles.add(List.of(appRole(newRole)));
+    log.debug("Replaced client role with '{}' for Keycloak user {}", newRole.name(), keycloakId);
   }
 
   /**
@@ -117,6 +115,33 @@ public class KeycloakAdminService {
 
   private org.keycloak.admin.client.resource.RealmResource realmResource() {
     return keycloak.realm(applicationProperties.keycloakProperties().realmName());
+  }
+
+  private RoleScopeResource clientLevelRoles(UUID keycloakId) {
+    return realmResource()
+        .users()
+        .get(keycloakId.toString())
+        .roles()
+        .clientLevel(appClientUuid());
+  }
+
+  private RoleRepresentation appRole(UserRole role) {
+    return appClientResource().roles().get(role.name()).toRepresentation();
+  }
+
+  private ClientResource appClientResource() {
+    return realmResource().clients().get(appClientUuid());
+  }
+
+  private String appClientUuid() {
+    var clientId = applicationProperties.keycloakProperties().clientId();
+    return realmResource()
+        .clients()
+        .findByClientId(clientId)
+        .stream()
+        .findFirst()
+        .map(ClientRepresentation::getId)
+        .orElseThrow(() -> new IllegalStateException("Keycloak client not found: " + clientId));
   }
 
   private boolean isAppRole(String roleName) {
