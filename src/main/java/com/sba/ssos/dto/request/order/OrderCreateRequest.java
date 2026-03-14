@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 
 public record OrderCreateRequest(
-        @NotEmpty List<OrderItemRequest> items,
+//        @NotEmpty List<OrderItemRequest> items,
 
         Long discountId,
 

@@ -4,7 +4,7 @@ import jakarta.annotation.Nullable;
 
 public enum PaymentMethod {
 
-    ONLINE("PENDING"),
+    ONLINE("ONLINE"),
     COD("COD");
 
 
