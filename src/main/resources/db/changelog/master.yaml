@@ -19,3 +19,5 @@ databaseChangeLog:
       file: db/changelog/009-create-review-helpful-votes.yaml
   - include:
       file: db/changelog/010-create-notifications.yaml
+  - include:
+      file: db/changelog/011-normalize-user-statuses.yaml

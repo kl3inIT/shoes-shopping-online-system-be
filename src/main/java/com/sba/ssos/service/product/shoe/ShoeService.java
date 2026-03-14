@@ -63,6 +63,7 @@ public class ShoeService {
         return buildShoeResponse(shoe, savedVariants, shoeImageUrls);
     }
 
+    @Transactional(readOnly = true)
     public ShoeResponse getById(UUID id) {
         Shoe shoe = shoeRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Shoe", id));
@@ -113,6 +114,7 @@ public class ShoeService {
         return getById(id);
     }
 
+    @Transactional(readOnly = true)
     public Page<ShoeResponse> search(
             String search,
             List<UUID> brandIds,
@@ -145,11 +147,13 @@ public class ShoeService {
         return page.map(this::toShoeResponse);
     }
 
+    @Transactional(readOnly = true)
     public List<ShoeResponse> getNewArrivals(int limit) {
         List<Shoe> shoes = shoeRepository.findAll(PageRequest.of(0, limit)).getContent();
         return shoes.stream().map(this::toShoeResponse).toList();
     }
 
+    @Transactional(readOnly = true)
     public List<ShoeResponse> getBestSellers(int limit) {
         List<Shoe> shoes = shoeRepository.findBestSellers(PageRequest.of(0, limit));
         if (shoes.size() < limit) {
@@ -165,6 +169,7 @@ public class ShoeService {
         return shoes.stream().map(this::toShoeResponse).toList();
     }
 
+    @Transactional(readOnly = true)
     public ShoeStockSummaryResponse getStockSummary(long threshold) {
         ShoeStockRequest summary = shoeRepository.getStockSummary(threshold);
         if (summary == null) {

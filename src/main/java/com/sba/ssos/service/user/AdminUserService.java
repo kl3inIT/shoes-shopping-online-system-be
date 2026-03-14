@@ -109,8 +109,8 @@ public class AdminUserService {
         .orElseThrow(() -> new UserNotFoundException(keycloakId));
 
     UserStatus newStatus = switch (user.getStatus()) {
-      case ACTIVE -> UserStatus.SUSPENDED;
-      case INACTIVE, SUSPENDED -> UserStatus.ACTIVE;
+      case ACTIVE -> UserStatus.INACTIVE;
+      case INACTIVE -> UserStatus.ACTIVE;
     };
 
     keycloakAdminService.setUserEnabled(keycloakId, newStatus == UserStatus.ACTIVE);
