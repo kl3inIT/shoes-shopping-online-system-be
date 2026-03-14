@@ -12,6 +12,7 @@ import com.sba.ssos.exception.user.UserNotFoundException;
 import com.sba.ssos.repository.CustomerRepository;
 import com.sba.ssos.repository.UserRepository;
 import com.sba.ssos.service.keycloak.KeycloakAdminService;
+import com.sba.ssos.service.storage.MinioStorageService;
 import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
 import java.util.UUID;
@@ -29,6 +30,7 @@ public class AdminUserService {
   private final UserRepository userRepository;
   private final CustomerRepository customerRepository;
   private final KeycloakAdminService keycloakAdminService;
+  private final MinioStorageService minioStorageService;
 
   @Transactional(readOnly = true)
   public PageResponse<AdminUserResponse> getUsers(
@@ -133,7 +135,9 @@ public class AdminUserService {
         user.getEmail(),
         user.getPhoneNumber(),
         user.getDateOfBirth(),
-        user.getAvatarUrl(),
+        user.getAvatarUrl() != null
+            ? minioStorageService.getPresignedGetUrl(user.getAvatarUrl())
+            : null,
         user.getAddress(),
         user.getRole(),
         user.getStatus(),
