@@ -1,5 +1,6 @@
 package com.sba.ssos.repository.product.shoe;
 
+import com.sba.ssos.dto.request.product.shoe.ShoeStockRequest;
 import com.sba.ssos.entity.Shoe;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -33,6 +34,24 @@ public interface ShoeRepository extends JpaRepository<Shoe, UUID>, ShoeRepositor
 
   @Query("SELECT s.brand.id AS brandId, COUNT(s) AS count FROM Shoe s GROUP BY s.brand.id")
   List<BrandCount> countGroupedByBrandId();
+
+  @Query(
+      value = """
+          SELECT COUNT(*) AS total,
+                 COUNT(CASE WHEN summary.status = 'ACTIVE' THEN 1 END) AS selling,
+                 COUNT(CASE WHEN summary.status = 'ACTIVE' AND summary.total_qty = 0 THEN 1 END) AS out_of_stock,
+                 COUNT(CASE WHEN summary.status = 'ACTIVE' AND summary.total_qty BETWEEN 1 AND :threshold THEN 1 END) AS low_stock
+          FROM (
+              SELECT s.id,
+                     s.status,
+                     COALESCE(SUM(CASE WHEN sv.active = true THEN sv.quantity ELSE 0 END), 0) AS total_qty
+              FROM shoes s
+              LEFT JOIN shoe_variants sv ON sv.shoe_id = s.id
+              GROUP BY s.id, s.status
+          ) summary
+          """,
+      nativeQuery = true)
+  ShoeStockRequest getStockSummary(@Param("threshold") long threshold);
 
   default Map<UUID, Long> countPerBrand() {
     return countGroupedByBrandId().stream()
