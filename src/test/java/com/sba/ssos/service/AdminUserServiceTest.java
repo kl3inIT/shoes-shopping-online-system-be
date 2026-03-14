@@ -2,9 +2,11 @@ package com.sba.ssos.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.sba.ssos.dto.request.user.UpdateUserStatusRequest;
 import com.sba.ssos.dto.response.user.AdminUserStatsResponse;
 import com.sba.ssos.entity.User;
 import com.sba.ssos.enums.UserRole;
@@ -16,6 +18,7 @@ import com.sba.ssos.service.storage.MinioStorageService;
 import com.sba.ssos.service.user.AdminUserService;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -81,5 +84,56 @@ class AdminUserServiceTest {
         assertThat(response.content()).hasSize(1);
         assertThat(response.content().getFirst().avatarUrl()).isNull();
         verifyNoInteractions(minioStorageService);
+    }
+
+    @Test
+    void toggleUserStatusMapsActiveToInactiveAndDisablesKeycloakUser() {
+        UUID keycloakId = UUID.randomUUID();
+        User user = User.builder()
+            .keycloakId(keycloakId)
+            .username("manager1")
+            .firstName("Store")
+            .lastName("Manager")
+            .email("manager1@example.com")
+            .role(UserRole.ROLE_MANAGER)
+            .status(UserStatus.ACTIVE)
+            .build();
+        user.setId(UUID.randomUUID());
+        user.setCreatedAt(Instant.parse("2026-03-15T00:00:00Z"));
+
+        when(userRepository.findByKeycloakId(keycloakId)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = adminUserService.toggleUserStatus(keycloakId);
+
+        assertThat(response.status()).isEqualTo(UserStatus.INACTIVE);
+        assertThat(user.getStatus()).isEqualTo(UserStatus.INACTIVE);
+        verify(keycloakAdminService).setUserEnabled(keycloakId, false);
+    }
+
+    @Test
+    void updateUserStatusDisablesKeycloakUserWhenStatusIsInactive() {
+        UUID keycloakId = UUID.randomUUID();
+        User user = User.builder()
+            .keycloakId(keycloakId)
+            .username("manager1")
+            .firstName("Store")
+            .lastName("Manager")
+            .email("manager1@example.com")
+            .role(UserRole.ROLE_MANAGER)
+            .status(UserStatus.ACTIVE)
+            .build();
+        user.setId(UUID.randomUUID());
+        user.setCreatedAt(Instant.parse("2026-03-15T00:00:00Z"));
+
+        when(userRepository.findByKeycloakId(keycloakId)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response =
+            adminUserService.updateUserStatus(keycloakId, new UpdateUserStatusRequest(UserStatus.INACTIVE));
+
+        assertThat(response.status()).isEqualTo(UserStatus.INACTIVE);
+        assertThat(user.getStatus()).isEqualTo(UserStatus.INACTIVE);
+        verify(keycloakAdminService).setUserEnabled(keycloakId, false);
     }
 }

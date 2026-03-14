@@ -4,8 +4,7 @@ import jakarta.annotation.Nullable;
 
 public enum UserStatus {
   ACTIVE("ACTIVE"),
-  INACTIVE("INACTIVE"),
-  SUSPENDED("SUSPENDED");
+  INACTIVE("INACTIVE");
 
   private final String id;
 
