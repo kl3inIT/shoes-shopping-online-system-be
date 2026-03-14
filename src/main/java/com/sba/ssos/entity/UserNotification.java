@@ -14,18 +14,23 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "review_images")
+@Table(name = "user_notifications")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ReviewImage extends BaseAuditableEntity {
-
-    @Column(name = "url", nullable = false, columnDefinition = "TEXT")
-    private String url;
+public class UserNotification extends BaseAuditableEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "review_id", nullable = false)
-    private Review review;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "notification_id", nullable = false)
+    private Notification notification;
+
+    @Column(name = "is_read", nullable = false)
+    private boolean read;
 }
+

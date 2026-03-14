@@ -40,6 +40,10 @@ application-properties:
     max-request-length: 2000
 
   security-properties:
+    # TODO: Set to true once X-Keycloak-Secret header can be configured on the Keycloak side.
+    # Also provide KEYCLOAK_WEBHOOK_SECRET env var with the matching secret value.
+    webhook-security-enabled: false
+    keycloak-webhook-secret: ${KEYCLOAK_WEBHOOK_SECRET:disabled}
     admin-endpoints:
       # Admin management APIs
       - { method: POST, path: /api/categories }
@@ -73,7 +77,16 @@ application-properties:
       - { method: POST, path: /api/admin/users }
       - { method: PATCH, path: /api/admin/users/*/role }
       - { method: PATCH, path: /api/admin/users/*/status }
+      - { method: POST, path: /api/admin/users/*/status/toggle }
       - { method: DELETE, path: /api/admin/users/* }
+      # Dashboard / notifications
+      - { method: GET, path: /admin/dashboard/metrics }
+      - { method: GET, path: /admin/dashboard/chart }
+      - { method: GET, path: /admin/dashboard/recent-orders }
+      - { method: GET, path: /admin/dashboard/top-selling }
+      - { method: GET, path: /admin/dashboard/low-stock }
+      - { method: GET, path: /admin/notifications }
+      - { method: POST, path: /admin/notifications/broadcast }
     manager-endpoints:
       # Reserved for manager-only APIs (add when needed)
       - { method: GET, path: /test/manager }
@@ -81,6 +94,7 @@ application-properties:
       # Profile APIs
       - { method: GET, path: /users/me }
       - { method: PATCH, path: /users/me }
+      - { method: POST, path: /users/me/avatar }
       # Customer APIs (requires ROLE_CUSTOMER)
       - { method: GET, path: /api/orders }
       - { method: GET, path: /api/orders/* }

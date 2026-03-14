@@ -12,6 +12,7 @@ import com.sba.ssos.exception.user.UserNotFoundException;
 import com.sba.ssos.repository.CustomerRepository;
 import com.sba.ssos.repository.UserRepository;
 import com.sba.ssos.service.keycloak.KeycloakAdminService;
+import com.sba.ssos.service.storage.MinioStorageService;
 import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
 import java.util.UUID;
@@ -29,6 +30,7 @@ public class AdminUserService {
   private final UserRepository userRepository;
   private final CustomerRepository customerRepository;
   private final KeycloakAdminService keycloakAdminService;
+  private final MinioStorageService minioStorageService;
 
   @Transactional(readOnly = true)
   public PageResponse<AdminUserResponse> getUsers(
@@ -65,6 +67,10 @@ public class AdminUserService {
   @Transactional
   public AdminUserResponse updateUserRole(UUID keycloakId, UpdateUserRoleRequest request) {
 
+    if (!UserRole.ASSIGNABLE_ROLES.contains(request.role())) {
+      throw new IllegalArgumentException("Role not assignable: " + request.role());
+    }
+
     var user = userRepository.findByKeycloakId(keycloakId)
         .orElseThrow(() -> new UserNotFoundException(keycloakId));
 
@@ -83,6 +89,22 @@ public class AdminUserService {
     keycloakAdminService.setUserEnabled(keycloakId, request.status() == UserStatus.ACTIVE);
 
     user.setStatus(request.status());
+    return toResponse(userRepository.save(user));
+  }
+
+  @Transactional
+  public AdminUserResponse toggleUserStatus(UUID keycloakId) {
+
+    var user = userRepository.findByKeycloakId(keycloakId)
+        .orElseThrow(() -> new UserNotFoundException(keycloakId));
+
+    UserStatus newStatus = switch (user.getStatus()) {
+      case ACTIVE -> UserStatus.SUSPENDED;
+      case INACTIVE, SUSPENDED -> UserStatus.ACTIVE;
+    };
+
+    keycloakAdminService.setUserEnabled(keycloakId, newStatus == UserStatus.ACTIVE);
+    user.setStatus(newStatus);
     return toResponse(userRepository.save(user));
   }
 
@@ -133,7 +155,9 @@ public class AdminUserService {
         user.getEmail(),
         user.getPhoneNumber(),
         user.getDateOfBirth(),
-        user.getAvatarUrl(),
+        user.getAvatarUrl() != null
+            ? minioStorageService.getPresignedGetUrl(user.getAvatarUrl())
+            : null,
         user.getAddress(),
         user.getRole(),
         user.getStatus(),

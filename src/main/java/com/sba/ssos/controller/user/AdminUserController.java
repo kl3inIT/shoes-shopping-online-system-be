@@ -70,6 +70,14 @@ public class AdminUserController {
     return ResponseGeneral.ofSuccess(localeUtils.get("success.admin.users.status.updated"), data);
   }
 
+  @PostMapping("/{keycloakId}/status/toggle")
+  public ResponseGeneral<AdminUserResponse> toggleUserStatus(
+      @PathVariable UUID keycloakId) {
+
+    var data = adminUserService.toggleUserStatus(keycloakId);
+    return ResponseGeneral.ofSuccess(localeUtils.get("success.admin.users.status.updated"), data);
+  }
+
   @DeleteMapping("/{keycloakId}")
   public ResponseGeneral<Void> deleteUser(@PathVariable UUID keycloakId) {
     adminUserService.deleteUser(keycloakId);

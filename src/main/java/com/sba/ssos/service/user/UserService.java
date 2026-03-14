@@ -67,7 +67,7 @@ public class UserService {
         userRepository
             .findByKeycloakId(keycloakId)
             .orElseThrow(() -> new UserNotFoundException(keycloakId));
-    return userMapper.toResponse(user);
+    return userMapper.toResponse(user, minioStorageService);
   }
 
   @Transactional
@@ -81,7 +81,7 @@ public class UserService {
 
     userMapper.updateFromRequest(request, user);
 
-    return userMapper.toResponse(userRepository.save(user));
+    return userMapper.toResponse(userRepository.save(user), minioStorageService);
   }
 
   @Transactional
@@ -93,9 +93,8 @@ public class UserService {
             .orElseThrow(() -> new UserNotFoundException(keycloakId));
 
     String objectKey = minioFileStorageService.upload(file, "avatars");
-    String presignedUrl = minioStorageService.getPresignedGetUrl(objectKey);
-    user.setAvatarUrl(presignedUrl);
-    return userMapper.toResponse(userRepository.save(user));
+    user.setAvatarUrl(objectKey);
+    return userMapper.toResponse(userRepository.save(user), minioStorageService);
   }
 
   @Transactional
