@@ -20,7 +20,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/dashboard")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 public class AdminDashboardController {
 
     private final DashboardService dashboardService;

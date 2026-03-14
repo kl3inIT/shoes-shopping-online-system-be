@@ -16,7 +16,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/notifications")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 public class AdminNotificationController {
 
     private final NotificationService notificationService;
