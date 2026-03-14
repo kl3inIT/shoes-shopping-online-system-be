@@ -30,6 +30,15 @@ public class KeycloakWebhookAuthFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
+        // TODO: Re-enable webhook secret validation once the X-Keycloak-Secret header
+        // can be configured on the Keycloak side. Set webhook-security-enabled: true
+        // in application-properties.yml and provide KEYCLOAK_WEBHOOK_SECRET env var.
+        Boolean securityEnabled = applicationProperties.securityProperties().webhookSecurityEnabled();
+        if (securityEnabled == null || !securityEnabled) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String expectedSecret = applicationProperties.securityProperties().webhookSecret();
         String providedSecret = request.getHeader(SECRET_HEADER);
 
