@@ -5,6 +5,7 @@ import com.sba.ssos.dto.request.user.UpdateUserRoleRequest;
 import com.sba.ssos.dto.request.user.UpdateUserStatusRequest;
 import com.sba.ssos.dto.response.PageResponse;
 import com.sba.ssos.dto.response.user.AdminUserResponse;
+import com.sba.ssos.dto.response.user.AdminUserStatsResponse;
 import com.sba.ssos.entity.User;
 import com.sba.ssos.enums.UserRole;
 import com.sba.ssos.enums.UserStatus;
@@ -40,6 +41,15 @@ public class AdminUserService {
     return PageResponse.from(
         userRepository.findAll(buildSpecification(search, role, status), pageable)
             .map(this::toResponse));
+  }
+
+  @Transactional(readOnly = true)
+  public AdminUserStatsResponse getUserStats() {
+    long admins    = userRepository.countByRole(UserRole.ROLE_ADMIN);
+    long managers  = userRepository.countByRole(UserRole.ROLE_MANAGER);
+    long customers = userRepository.countByRole(UserRole.ROLE_CUSTOMER);
+    long total     = admins + managers + customers;
+    return new AdminUserStatsResponse(total, admins, managers, customers);
   }
 
   @Transactional
