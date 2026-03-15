@@ -2,8 +2,6 @@ package com.sba.ssos.ai.checks;
 
 import com.sba.ssos.ai.chat.ChatResponse;
 import com.sba.ssos.ai.chat.ChatService;
-import com.sba.ssos.ai.checks.CheckController.CheckResultSummary;
-import com.sba.ssos.ai.checks.CheckController.CheckRunSummary;
 import com.sba.ssos.exception.base.NotFoundException;
 import java.util.ArrayList;
 import java.util.List;
