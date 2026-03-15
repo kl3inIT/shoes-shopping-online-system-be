@@ -322,4 +322,49 @@ public class ShoeImageService {
         .map(this::toPublicImageUrl)
         .toList();
   }
+
+  public Map<UUID, List<String>> getShoeImageUrlsByShoeIds(List<UUID> shoeIds) {
+    if (shoeIds == null || shoeIds.isEmpty()) {
+      return Map.of();
+    }
+
+    Map<UUID, List<String>> urlsByShoeId = new HashMap<>();
+    for (UUID shoeId : shoeIds) {
+      urlsByShoeId.put(shoeId, new ArrayList<>());
+    }
+
+    for (ShoeImage shoeImage :
+        shoeImageRepository
+            .findByShoe_IdInAndShoeVariantIsNullOrderByShoe_IdAscIsPrimaryDescSortOrderAscCreatedAtAsc(
+                shoeIds)) {
+      UUID shoeId = shoeImage.getShoe().getId();
+      urlsByShoeId.computeIfAbsent(shoeId, unused -> new ArrayList<>())
+          .add(toPublicImageUrl(shoeImage.getUrl()));
+    }
+
+    urlsByShoeId.replaceAll((unused, urls) -> urls.stream().distinct().toList());
+    return urlsByShoeId;
+  }
+
+  public Map<UUID, List<String>> getVariantImageUrlsByVariantIds(List<UUID> variantIds) {
+    if (variantIds == null || variantIds.isEmpty()) {
+      return Map.of();
+    }
+
+    Map<UUID, List<String>> urlsByVariantId = new HashMap<>();
+    for (UUID variantId : variantIds) {
+      urlsByVariantId.put(variantId, new ArrayList<>());
+    }
+
+    for (ShoeImage shoeImage :
+        shoeImageRepository
+            .findByShoeVariant_IdInOrderByShoeVariant_IdAscIsPrimaryDescSortOrderAscCreatedAtAsc(
+                variantIds)) {
+      UUID variantId = shoeImage.getShoeVariant().getId();
+      urlsByVariantId.computeIfAbsent(variantId, unused -> new ArrayList<>())
+          .add(toPublicImageUrl(shoeImage.getUrl()));
+    }
+
+    return urlsByVariantId;
+  }
 }

@@ -28,6 +28,8 @@ public interface ShoeVariantRepository extends JpaRepository<ShoeVariant, UUID> 
 
     List<ShoeVariant> findByShoe_IdAndActiveTrueOrderBySizeAscColorAsc(UUID shoeId);
 
+    List<ShoeVariant> findByShoe_IdInAndActiveTrueOrderByShoe_IdAscSizeAscColorAsc(List<UUID> shoeIds);
+
     boolean existsBySkuAndIdNot(String sku, UUID id);
 
 }
