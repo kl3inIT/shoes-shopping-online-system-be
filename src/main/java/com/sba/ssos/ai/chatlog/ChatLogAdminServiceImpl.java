@@ -2,6 +2,7 @@ package com.sba.ssos.ai.chatlog;
 
 import com.sba.ssos.dto.response.PageResponse;
 import java.time.Instant;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -24,6 +25,22 @@ public class ChatLogAdminServiceImpl implements ChatLogAdminService {
     var pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
     var result = chatLogRepository.findFiltered(conversationId, from, to, pageable);
     return PageResponse.from(result.map(this::toSummary));
+  }
+
+  @Override
+  public ChatLogDetailResponse getChatLog(UUID id) {
+    ChatLog log = chatLogRepository.findById(id)
+        .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
+            "ChatLog not found: " + id));
+    return new ChatLogDetailResponse(
+        log.getId(),
+        log.getCreatedAt(),
+        log.getConversationId(),
+        log.getPromptTokens(),
+        log.getCompletionTokens(),
+        log.getResponseTimeMs(),
+        log.getLogContent(),
+        log.getSources());
   }
 
   private ChatLogSummaryResponse toSummary(ChatLog log) {
