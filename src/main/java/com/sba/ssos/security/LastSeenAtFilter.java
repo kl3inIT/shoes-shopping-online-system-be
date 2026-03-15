@@ -9,12 +9,14 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class LastSeenAtFilter extends OncePerRequestFilter {
 
   private static final long LAST_SEEN_UPDATE_INTERVAL_MINUTES = 5;
@@ -48,7 +50,8 @@ public class LastSeenAtFilter extends OncePerRequestFilter {
           }
         });
       }
-    } catch (Exception ignored) {
+    } catch (Exception ex) {
+      log.warn("Failed to update last-seen timestamp", ex);
       // Never block the request due to last-seen tracking failure
     }
 

@@ -4,18 +4,18 @@ import jakarta.validation.constraints.NotBlank;
 import java.io.Serializable;
 
 public record BrandRequest(
-    @NotBlank(message = "Name is required")
+    @NotBlank(message = "validation.brand.name.required")
     String name,
     
-    @NotBlank(message = "Slug is required")
+    @NotBlank(message = "validation.brand.slug.required")
     String slug,
     
-    @NotBlank(message = "Description is required")
+    @NotBlank(message = "validation.brand.description.required")
     String description,
     
-    @NotBlank(message = "Logo URL is required")
+    @NotBlank(message = "validation.brand.logo_url.required")
     String logoUrl,
     
-    @NotBlank(message = "Country is required")
+    @NotBlank(message = "validation.brand.country.required")
     String country
 ) implements Serializable {}

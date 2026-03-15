@@ -3,6 +3,7 @@ package com.sba.ssos.ai.vectorstore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.dto.response.PageResponse;
+import com.sba.ssos.exception.base.BadRequestException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -79,16 +80,19 @@ class AdminVectorStoreServiceTest {
 
     @Test
     void deleteDocuments_bulk_emptyFilterReturns400() {
-        // null filter should throw IllegalArgumentException
+        // null filter should throw a localized bad request exception
         assertThatThrownBy(() -> vectorStoreAdminService.deleteDocuments(null))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("validation.vector_store.filter.required");
 
         // blank filter should also throw
         assertThatThrownBy(() -> vectorStoreAdminService.deleteDocuments(""))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("validation.vector_store.filter.required");
 
         assertThatThrownBy(() -> vectorStoreAdminService.deleteDocuments("   "))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("validation.vector_store.filter.required");
     }
 
     // ── Wave 0 RED tests — methods under test do not yet exist on the interface/impl ──

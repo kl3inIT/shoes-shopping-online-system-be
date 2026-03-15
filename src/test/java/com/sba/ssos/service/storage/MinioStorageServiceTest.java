@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.sba.ssos.configuration.ApplicationProperties;
+import com.sba.ssos.exception.base.BadRequestException;
 import io.minio.MinioClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,8 +36,8 @@ class MinioStorageServiceTest {
         MinioStorageService service = new MinioStorageService(minioClient, applicationProperties);
 
         assertThatThrownBy(() -> service.getPresignedPutUrl(" "))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Object key must not be blank to generate a presigned PUT URL.");
+            .isInstanceOf(BadRequestException.class)
+            .hasMessage("error.storage.object_key.required");
 
         verifyNoInteractions(minioClient, applicationProperties);
     }

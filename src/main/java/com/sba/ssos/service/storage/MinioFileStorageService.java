@@ -2,6 +2,7 @@ package com.sba.ssos.service.storage;
 
 import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.dto.response.upload.FileResource;
+import com.sba.ssos.exception.base.BadRequestException;
 import com.sba.ssos.exception.base.InternalServerErrorException;
 import io.minio.BucketExistsArgs;
 import io.minio.GetObjectArgs;
@@ -10,6 +11,7 @@ import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,6 +21,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MinioFileStorageService {
 
     private static final Set<String> ALLOWED_FOLDERS = Set.of("shoes", "shoevariants", "reviews", "avatars");
@@ -46,6 +49,7 @@ public class MinioFileStorageService {
         ensureBucketExists(bucketName);
 
         try {
+            log.info("Uploading file to storage folder {}", safeFolder.isEmpty() ? "<root>" : safeFolder);
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(bucketName)
@@ -55,6 +59,7 @@ public class MinioFileStorageService {
                             .build()
             );
         } catch (Exception e) {
+            log.error("Failed to upload file to storage", e);
             throw new InternalServerErrorException("error.storage.minio", e);
         }
 
@@ -64,6 +69,7 @@ public class MinioFileStorageService {
     public FileResource getFile(String objectKey) {
         String bucketName = applicationProperties.minioProperties().bucket();
         try {
+            log.debug("Fetching file from storage");
             InputStream stream = minioClient.getObject(
                     GetObjectArgs.builder()
                             .bucket(bucketName)
@@ -73,6 +79,7 @@ public class MinioFileStorageService {
             String contentType = guessContentType(objectKey);
             return new FileResource(stream, contentType);
         } catch (Exception e) {
+            log.error("Failed to fetch file from storage", e);
             throw new InternalServerErrorException("error.storage.minio", e);
         }
     }
@@ -80,6 +87,7 @@ public class MinioFileStorageService {
     public void delete(String objectKey) {
         String bucketName = applicationProperties.minioProperties().bucket();
         try {
+            log.info("Deleting file from storage");
             minioClient.removeObject(
                     RemoveObjectArgs.builder()
                             .bucket(bucketName)
@@ -87,6 +95,7 @@ public class MinioFileStorageService {
                             .build()
             );
         } catch (Exception e) {
+            log.error("Failed to delete file from storage", e);
             throw new InternalServerErrorException("error.storage.minio", e);
         }
     }
@@ -98,22 +107,23 @@ public class MinioFileStorageService {
         String trimmed = folder.trim().toLowerCase();
 
         if (trimmed.contains("/") || trimmed.contains("\\") || trimmed.contains("..")) {
-            throw new InternalServerErrorException("error.storage.minio", new IllegalArgumentException("Invalid folder"));
+            throw new BadRequestException("error.storage.folder.invalid");
         }
 
         if (!ALLOWED_FOLDERS.contains(trimmed)) {
-            throw new InternalServerErrorException("error.storage.minio", new IllegalArgumentException("Folder not allowed"));
+            throw new BadRequestException("error.storage.folder.not_allowed");
         }
         return trimmed;
     }
 
-    //phan chinh sua path
     private void ensureBucketExists(String bucketName) {
         try {
             if (!minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build())) {
+                log.info("Creating storage bucket {}", bucketName);
                 minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
             }
         } catch (Exception e) {
+            log.error("Failed to ensure storage bucket exists", e);
             throw new InternalServerErrorException("error.storage.minio", e);
         }
     }

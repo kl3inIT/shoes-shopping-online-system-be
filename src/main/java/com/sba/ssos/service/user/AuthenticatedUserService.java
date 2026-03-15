@@ -1,11 +1,13 @@
 package com.sba.ssos.service.user;
 
 import com.sba.ssos.entity.User;
-import com.sba.ssos.exception.base.NotFoundException;
+import com.sba.ssos.exception.base.UnauthorizedException;
+import com.sba.ssos.exception.user.UserNotFoundException;
 import com.sba.ssos.repository.UserRepository;
 import com.sba.ssos.security.AuthorizedUserDetails;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.Nullable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthenticatedUserService {
 
   private final UserRepository userRepository;
@@ -21,7 +24,8 @@ public class AuthenticatedUserService {
   public AuthorizedUserDetails getCurrentUser() {
     AuthorizedUserDetails user = getCurrentUserOrNull();
     if (user == null) {
-      throw new IllegalStateException("No authenticated user");
+      log.warn("No authenticated user found in security context");
+      throw new UnauthorizedException("error.auth.unauthorized");
     }
     return user;
   }
@@ -47,6 +51,6 @@ public class AuthenticatedUserService {
     UUID keycloakId = getCurrentUser().userId();
     return userRepository
         .findByKeycloakId(keycloakId)
-        .orElseThrow(() -> new NotFoundException("User not found"));
+        .orElseThrow(() -> new UserNotFoundException(keycloakId));
   }
 }

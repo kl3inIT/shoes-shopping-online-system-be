@@ -9,6 +9,7 @@ import com.sba.ssos.dto.response.user.AdminUserStatsResponse;
 import com.sba.ssos.entity.User;
 import com.sba.ssos.enums.UserRole;
 import com.sba.ssos.enums.UserStatus;
+import com.sba.ssos.exception.base.BadRequestException;
 import com.sba.ssos.exception.user.UserNotFoundException;
 import com.sba.ssos.repository.CustomerRepository;
 import com.sba.ssos.repository.UserRepository;
@@ -18,6 +19,7 @@ import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -26,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AdminUserService {
 
   private final UserRepository userRepository;
@@ -54,6 +57,7 @@ public class AdminUserService {
 
   @Transactional
   public AdminUserResponse createUser(CreateAdminUserRequest request) {
+    log.info("Creating admin-managed user {}", request.username());
 
     var keycloakId = keycloakAdminService.createUser(
         request.username(), request.email(), request.firstName(), request.lastName());
@@ -71,14 +75,17 @@ public class AdminUserService {
         .status(UserStatus.ACTIVE)
         .build();
 
-    return toResponse(userRepository.save(user));
+    AdminUserResponse response = toResponse(userRepository.save(user));
+    log.info("Created admin-managed user {} with keycloakId {}", request.username(), keycloakId);
+    return response;
   }
 
   @Transactional
   public AdminUserResponse updateUserRole(UUID keycloakId, UpdateUserRoleRequest request) {
 
     if (!UserRole.ASSIGNABLE_ROLES.contains(request.role())) {
-      throw new IllegalArgumentException("Role not assignable: " + request.role());
+      log.warn("Rejected role update for {} because role {} is not assignable", keycloakId, request.role());
+      throw new BadRequestException("error.admin.user.role.not_assignable", "role", request.role());
     }
 
     var user = userRepository.findByKeycloakId(keycloakId)
@@ -87,7 +94,9 @@ public class AdminUserService {
     keycloakAdminService.replaceRealmRole(keycloakId, request.role());
 
     user.setRole(request.role());
-    return toResponse(userRepository.save(user));
+    AdminUserResponse response = toResponse(userRepository.save(user));
+    log.info("Updated role for user {} to {}", keycloakId, request.role());
+    return response;
   }
 
   @Transactional
@@ -99,7 +108,9 @@ public class AdminUserService {
     keycloakAdminService.setUserEnabled(keycloakId, request.status() == UserStatus.ACTIVE);
 
     user.setStatus(request.status());
-    return toResponse(userRepository.save(user));
+    AdminUserResponse response = toResponse(userRepository.save(user));
+    log.info("Updated status for user {} to {}", keycloakId, request.status());
+    return response;
   }
 
   @Transactional
@@ -115,7 +126,9 @@ public class AdminUserService {
 
     keycloakAdminService.setUserEnabled(keycloakId, newStatus == UserStatus.ACTIVE);
     user.setStatus(newStatus);
-    return toResponse(userRepository.save(user));
+    AdminUserResponse response = toResponse(userRepository.save(user));
+    log.info("Toggled status for user {} to {}", keycloakId, newStatus);
+    return response;
   }
 
   @Transactional
@@ -128,6 +141,7 @@ public class AdminUserService {
 
     customerRepository.findByUser_KeycloakId(keycloakId).ifPresent(customerRepository::delete);
     userRepository.delete(user);
+    log.info("Deleted user {}", keycloakId);
   }
 
   private Specification<User> buildSpecification(String search, UserRole role, UserStatus status) {

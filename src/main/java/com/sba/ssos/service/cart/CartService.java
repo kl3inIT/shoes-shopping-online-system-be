@@ -17,11 +17,13 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CartService {
 
   private final CartItemRepository cartItemRepository;
@@ -55,13 +57,23 @@ public class CartService {
     if (existingItem != null) {
       long newQty = existingItem.getQuantity() + request.quantity();
       if (newQty > shoeVariant.getQuantity()) {
-        throw new BadRequestException("Requested quantity exceeds available stock");
+        log.warn(
+            "Rejected cart quantity update for customer {} because requested={} exceeds stock={}",
+            customer.getId(),
+            newQty,
+            shoeVariant.getQuantity());
+        throw new BadRequestException("error.cart.quantity.exceeds_stock");
       }
       existingItem.setQuantity(newQty);
       cartItemRepository.save(existingItem);
     } else {
       if (request.quantity() > shoeVariant.getQuantity()) {
-        throw new BadRequestException("Requested quantity exceeds available stock");
+        log.warn(
+            "Rejected cart add for customer {} because requested={} exceeds stock={}",
+            customer.getId(),
+            request.quantity(),
+            shoeVariant.getQuantity());
+        throw new BadRequestException("error.cart.quantity.exceeds_stock");
       }
       cartItemRepository.save(
           CartItem.builder()
@@ -72,6 +84,7 @@ public class CartService {
               .build());
     }
 
+    log.info("Updated cart for customer {}", customer.getId());
     return getMyCart();
   }
 
@@ -81,14 +94,20 @@ public class CartService {
     CartItem cartItem =
         cartItemRepository
             .findByIdAndCustomer_IdAndIsActiveTrue(cartItemId, customer.getId())
-            .orElseThrow(() -> new NotFoundException("Cart item not found: " + cartItemId));
+            .orElseThrow(() -> new NotFoundException("error.cart.item.not_found"));
 
     if (request.quantity() > cartItem.getShoeVariant().getQuantity()) {
-      throw new BadRequestException("Requested quantity exceeds available stock");
+      log.warn(
+          "Rejected cart item update for {} because requested={} exceeds stock={}",
+          cartItemId,
+          request.quantity(),
+          cartItem.getShoeVariant().getQuantity());
+      throw new BadRequestException("error.cart.quantity.exceeds_stock");
     }
 
     cartItem.setQuantity(request.quantity());
     cartItemRepository.save(cartItem);
+    log.info("Updated cart item {} for customer {}", cartItemId, customer.getId());
     return getMyCart();
   }
 
@@ -98,7 +117,8 @@ public class CartService {
     CartItem cartItem =
         cartItemRepository
             .findByIdAndCustomer_IdAndIsActiveTrue(cartItemId, customer.getId())
-            .orElseThrow(() -> new NotFoundException("Cart item not found: " + cartItemId));
+            .orElseThrow(() -> new NotFoundException("error.cart.item.not_found"));
+    log.info("Removing cart item {} for customer {}", cartItemId, customer.getId());
     cartItemRepository.delete(cartItem);
   }
 
@@ -108,17 +128,17 @@ public class CartService {
     List<CartItem> cartItems = cartItemRepository.findAllByCustomer_IdAndIsActiveTrue(customer.getId());
     cartItems.forEach(item -> item.setActive(false));
     cartItemRepository.saveAll(cartItems);
+    log.info("Cleared cart for customer {}", customer.getId());
   }
 
   private ShoeVariant resolveShoeVariant(AddToCartRequest request) {
     if (request.shoeVariantId() == null) {
-      throw new BadRequestException("Shoe variant id is required");
+      throw new BadRequestException("validation.cart.shoe_variant_id.required");
     }
 
     return shoeVariantRepository
         .findById(request.shoeVariantId())
-        .orElseThrow(
-            () -> new NotFoundException("Shoe variant not found: " + request.shoeVariantId()));
+        .orElseThrow(() -> new NotFoundException("ShoeVariant", request.shoeVariantId()));
   }
 
   private CartItemResponse toCartItemResponse(CartItem cartItem) {

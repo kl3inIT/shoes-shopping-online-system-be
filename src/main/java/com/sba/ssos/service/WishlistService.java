@@ -12,12 +12,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class WishlistService {
 
   private static final Set<String> ALLOWED_SORT_PROPERTIES =
@@ -50,7 +52,7 @@ public class WishlistService {
     Shoe shoe =
         shoeRepository
             .findById(shoeId)
-            .orElseThrow(() -> new NotFoundException("Shoe not found " + shoeId));
+            .orElseThrow(() -> new NotFoundException("Shoe", shoeId));
 
     Wishlist existingWishlist =
         wishlistRepository.findAllByCustomer_Id(customer.getId()).stream()
@@ -61,6 +63,7 @@ public class WishlistService {
       return toResponse(existingWishlist);
     }
 
+    log.info("Adding shoe {} to wishlist for customer {}", shoeId, customer.getId());
     return toResponse(wishlistRepository.save(Wishlist.builder().customer(customer).shoe(shoe).build()));
   }
 
@@ -68,6 +71,7 @@ public class WishlistService {
   public void removeFromWishlistByShoe(UUID shoeId) {
     var customer = customerService.getCurrentCustomer();
     if (wishlistRepository.existsByCustomer_IdAndShoe_Id(customer.getId(), shoeId)) {
+      log.info("Removing shoe {} from wishlist for customer {}", shoeId, customer.getId());
       wishlistRepository.deleteByCustomer_IdAndShoe_Id(customer.getId(), shoeId);
     }
   }

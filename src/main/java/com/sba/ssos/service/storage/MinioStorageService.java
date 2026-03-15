@@ -1,15 +1,19 @@
 package com.sba.ssos.service.storage;
 
 import com.sba.ssos.configuration.ApplicationProperties;
+import com.sba.ssos.exception.base.BadRequestException;
+import com.sba.ssos.exception.base.InternalServerErrorException;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
 import io.minio.RemoveObjectArgs;
 import io.minio.http.Method;
 import java.util.concurrent.TimeUnit;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 @Service
+@Slf4j
 public class MinioStorageService {
 
     private final MinioClient minioClient;
@@ -27,6 +31,7 @@ public class MinioStorageService {
         }
 
         try {
+            log.debug("Generating presigned GET URL");
             return minioClient.getPresignedObjectUrl(
                 GetPresignedObjectUrlArgs.builder()
                     .method(Method.GET)
@@ -36,7 +41,8 @@ public class MinioStorageService {
                     .build()
             );
         } catch (Exception e) {
-            throw new RuntimeException("Failed to get presigned GET URL for " + normalizedObjectKey, e);
+            log.error("Failed to generate presigned GET URL", e);
+            throw new InternalServerErrorException("error.storage.minio", e);
         }
     }
 
@@ -44,6 +50,7 @@ public class MinioStorageService {
         String normalizedObjectKey = requireObjectKey(objectKey, "generate a presigned PUT URL");
 
         try {
+            log.debug("Generating presigned PUT URL");
             return minioClient.getPresignedObjectUrl(
                 GetPresignedObjectUrlArgs.builder()
                     .method(Method.PUT)
@@ -53,7 +60,8 @@ public class MinioStorageService {
                     .build()
             );
         } catch (Exception e) {
-            throw new RuntimeException("Failed to get presigned PUT URL for " + normalizedObjectKey, e);
+            log.error("Failed to generate presigned PUT URL", e);
+            throw new InternalServerErrorException("error.storage.minio", e);
         }
     }
 
@@ -61,6 +69,7 @@ public class MinioStorageService {
         String normalizedObjectKey = requireObjectKey(objectKey, "delete an object");
 
         try {
+            log.info("Deleting object from storage");
             minioClient.removeObject(
                 RemoveObjectArgs.builder()
                     .bucket(ap.minioProperties().bucket())
@@ -68,7 +77,8 @@ public class MinioStorageService {
                     .build()
             );
         } catch (Exception e) {
-            throw new RuntimeException("Failed to delete object " + normalizedObjectKey, e);
+            log.error("Failed to delete object from storage", e);
+            throw new InternalServerErrorException("error.storage.minio", e);
         }
     }
 
@@ -82,7 +92,7 @@ public class MinioStorageService {
     private String requireObjectKey(String objectKey, String action) {
         String normalizedObjectKey = normalizeObjectKey(objectKey);
         if (normalizedObjectKey == null) {
-            throw new IllegalArgumentException("Object key must not be blank to " + action + ".");
+            throw new BadRequestException("error.storage.object_key.required", "action", action);
         }
         return normalizedObjectKey;
     }
