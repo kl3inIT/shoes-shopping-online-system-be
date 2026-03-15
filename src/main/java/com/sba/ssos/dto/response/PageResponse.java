@@ -9,6 +9,8 @@ public record PageResponse<T>(
     @Schema(description = "Page content")
     List<T> content,
     @Schema(description = "Current page index")
+    int pageNumber,
+    @Schema(description = "Current page index")
     int number,
     @Schema(description = "Requested page size")
     int size,
@@ -24,6 +26,7 @@ public record PageResponse<T>(
   public static <T> PageResponse<T> from(Page<T> page) {
     return new PageResponse<>(
         page.getContent(),
+        page.getNumber(),
         page.getNumber(),
         page.getSize(),
         page.getTotalElements(),

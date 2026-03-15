@@ -1,20 +1,27 @@
 package com.sba.ssos.repository.product.shoe.impl;
 
+import com.querydsl.core.types.Order;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.sba.ssos.entity.QReview;
 import com.sba.ssos.entity.Shoe;
 import com.sba.ssos.enums.ShoeStatus;
 import com.sba.ssos.repository.product.shoe.ShoeRepositoryCustom;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.UUID;
 
 import static com.sba.ssos.entity.QShoe.shoe;
 import static com.sba.ssos.entity.QShoeVariant.shoeVariant;
@@ -39,6 +46,8 @@ public class ShoeRepositoryImpl implements ShoeRepositoryCustom {
     ) {
         List<Shoe> content = queryFactory
                 .selectFrom(shoe)
+                .leftJoin(shoe.brand).fetchJoin()
+                .leftJoin(shoe.category).fetchJoin()
                 .where(
                         nameOrSlugContains(search),
                         hasBrands(brandIds),
@@ -51,7 +60,7 @@ public class ShoeRepositoryImpl implements ShoeRepositoryCustom {
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
-                .orderBy(shoe.createdAt.desc())
+                .orderBy(resolveSort(pageable))
                 .fetch();
 
         Long total = queryFactory
@@ -70,6 +79,73 @@ public class ShoeRepositoryImpl implements ShoeRepositoryCustom {
                 .fetchOne();
 
         return new PageImpl<>(content, pageable, total == null ? 0 : total);
+    }
+
+    private OrderSpecifier<?>[] resolveSort(Pageable pageable) {
+        if (pageable == null || pageable.getSort().isUnsorted()) {
+            return new OrderSpecifier<?>[]{shoe.createdAt.desc()};
+        }
+
+        List<OrderSpecifier<?>> specifiers = pageable.getSort().stream()
+                .map(this::toOrderSpecifier)
+                .filter(Objects::nonNull)
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+
+        if (specifiers.isEmpty()) {
+            return new OrderSpecifier<?>[]{shoe.createdAt.desc()};
+        }
+
+        boolean sortedByCreatedAt = pageable.getSort().stream()
+                .map(Sort.Order::getProperty)
+                .filter(Objects::nonNull)
+                .anyMatch(property -> "createdAt".equalsIgnoreCase(property));
+        if (!sortedByCreatedAt) {
+            specifiers.add(shoe.createdAt.desc());
+        }
+
+        return specifiers.toArray(new OrderSpecifier<?>[0]);
+    }
+
+    private OrderSpecifier<?> toOrderSpecifier(Sort.Order sortOrder) {
+        Order direction = sortOrder.isAscending() ? Order.ASC : Order.DESC;
+        String property = sortOrder.getProperty() == null
+                ? ""
+                : sortOrder.getProperty().trim().toLowerCase(Locale.ROOT);
+
+        return switch (property) {
+            case "createdat" -> new OrderSpecifier<>(direction, shoe.createdAt);
+            case "price" -> new OrderSpecifier<>(direction, shoe.price);
+            case "name" -> new OrderSpecifier<>(direction, shoe.name);
+            case "rating", "avgrating" -> {
+                QReview review = new QReview("shoeReviewSort");
+                yield new OrderSpecifier<>(
+                        direction,
+                        Expressions.numberTemplate(
+                                Double.class,
+                                "coalesce(({0}), 0)",
+                                JPAExpressions
+                                        .select(review.numberStars.avg())
+                                        .from(review)
+                                        .where(review.shoeVariant.shoe.id.eq(shoe.id))
+                        )
+                );
+            }
+            case "reviewcount", "popular" -> {
+                QReview review = new QReview("shoeReviewCountSort");
+                yield new OrderSpecifier<>(
+                        direction,
+                        Expressions.numberTemplate(
+                                Long.class,
+                                "coalesce(({0}), 0)",
+                                JPAExpressions
+                                        .select(review.count())
+                                        .from(review)
+                                        .where(review.shoeVariant.shoe.id.eq(shoe.id))
+                        )
+                );
+            }
+            default -> null;
+        };
     }
 
     /* ===================== PREDICATES ===================== */
