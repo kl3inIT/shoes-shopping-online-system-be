@@ -9,4 +9,8 @@ import org.springframework.stereotype.Repository;
 public interface CheckResultRepository extends JpaRepository<CheckResult, UUID> {
 
   List<CheckResult> findByCheckRunIdOrderByScoreAsc(UUID checkRunId);
+
+  void deleteByCheckRunId(UUID checkRunId);
+
+  void deleteByCheckDefId(UUID checkDefId);
 }

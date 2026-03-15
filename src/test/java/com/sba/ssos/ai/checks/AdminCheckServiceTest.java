@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.sba.ssos.dto.response.PageResponse;
 import com.sba.ssos.exception.base.NotFoundException;
+import com.sba.ssos.repository.UserRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,6 +38,9 @@ class AdminCheckServiceTest {
 
     @Mock
     private CheckRunner checkRunner;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private CheckAdminServiceImpl checkAdminService;
@@ -142,6 +146,7 @@ class AdminCheckServiceTest {
     void getCheckRuns_returnsPaginatedHistory() {
         CheckRun run = new CheckRun();
         run.setScore(0.8);
+        run.setCreatedBy(null);  // null path → toRunSummary returns null username without userRepository call
 
         when(checkRunRepository.findAll(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(run)));

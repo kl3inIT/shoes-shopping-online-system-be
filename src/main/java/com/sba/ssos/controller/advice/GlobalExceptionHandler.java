@@ -37,7 +37,7 @@ public class GlobalExceptionHandler {
   public ProblemDetail handleBaseException(BaseException ex, HttpServletRequest request) {
     String detail = localeUtils.get(ex.getMessage(), ex.getParams().values().toArray());
     ProblemDetail problem =
-        createProblem(HttpStatus.valueOf(ex.getStatus().value()), detail, request, ex.getMessage());
+        createProblem(HttpStatus.valueOf(ex.getStatus().value()), detail, request);
     if (!ex.getParams().isEmpty()) {
       problem.setProperty("params", ex.getParams());
     }
@@ -61,8 +61,7 @@ public class GlobalExceptionHandler {
 
     String detail =
         fieldErrors.values().stream().findFirst().orElse(localeUtils.get("error.validation.failed"));
-    ProblemDetail problem =
-        createProblem(HttpStatus.BAD_REQUEST, detail, request, "error.validation.failed");
+    ProblemDetail problem = createProblem(HttpStatus.BAD_REQUEST, detail, request);
     problem.setProperty("errors", fieldErrors);
     return problem;
   }
@@ -86,8 +85,7 @@ public class GlobalExceptionHandler {
 
     String detail =
         errors.values().stream().findFirst().orElse(localeUtils.get("error.validation.failed"));
-    ProblemDetail problem =
-        createProblem(HttpStatus.BAD_REQUEST, detail, request, "error.validation.failed");
+    ProblemDetail problem = createProblem(HttpStatus.BAD_REQUEST, detail, request);
     problem.setProperty("errors", errors);
     return problem;
   }
@@ -108,8 +106,7 @@ public class GlobalExceptionHandler {
 
     String detail =
         errors.values().stream().findFirst().orElse(localeUtils.get("error.validation.failed"));
-    ProblemDetail problem =
-        createProblem(HttpStatus.BAD_REQUEST, detail, request, "error.validation.failed");
+    ProblemDetail problem = createProblem(HttpStatus.BAD_REQUEST, detail, request);
     problem.setProperty("errors", errors);
     return problem;
   }
@@ -121,8 +118,7 @@ public class GlobalExceptionHandler {
     return createProblem(
         HttpStatus.BAD_REQUEST,
         localeUtils.get("error.request.malformed_json"),
-        request,
-        "error.request.malformed_json");
+        request);
   }
 
   @ExceptionHandler(MethodArgumentTypeMismatchException.class)
@@ -132,8 +128,7 @@ public class GlobalExceptionHandler {
     return createProblem(
         HttpStatus.BAD_REQUEST,
         localeUtils.get("error.validation.failed"),
-        request,
-        "error.validation.failed");
+        request);
   }
 
   @ExceptionHandler(MissingServletRequestParameterException.class)
@@ -143,8 +138,7 @@ public class GlobalExceptionHandler {
     return createProblem(
         HttpStatus.BAD_REQUEST,
         localeUtils.get("error.validation.failed"),
-        request,
-        "error.validation.failed");
+        request);
   }
 
   @ExceptionHandler(IllegalArgumentException.class)
@@ -154,15 +148,14 @@ public class GlobalExceptionHandler {
     return createProblem(
         HttpStatus.BAD_REQUEST,
         resolveMessage(ex.getMessage(), "error.validation.failed"),
-        request,
-        "error.validation.failed");
+        request);
   }
 
   @ExceptionHandler(AccessDeniedException.class)
   public ProblemDetail handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
     log.warn("Access denied: {}", ex.getMessage());
     return createProblem(
-        HttpStatus.FORBIDDEN, localeUtils.get("error.auth.forbidden"), request, "error.auth.forbidden");
+        HttpStatus.FORBIDDEN, localeUtils.get("error.auth.forbidden"), request);
   }
 
   @ExceptionHandler({AuthenticationException.class, JwtException.class})
@@ -171,8 +164,7 @@ public class GlobalExceptionHandler {
     return createProblem(
         HttpStatus.UNAUTHORIZED,
         localeUtils.get("error.auth.unauthorized"),
-        request,
-        "error.auth.unauthorized");
+        request);
   }
 
   @ExceptionHandler(MultipartException.class)
@@ -181,8 +173,7 @@ public class GlobalExceptionHandler {
     return createProblem(
         HttpStatus.BAD_REQUEST,
         localeUtils.get("error.validation.failed"),
-        request,
-        "error.validation.failed");
+        request);
   }
 
   @ExceptionHandler(DataIntegrityViolationException.class)
@@ -190,7 +181,7 @@ public class GlobalExceptionHandler {
       DataIntegrityViolationException ex, HttpServletRequest request) {
     log.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
     return createProblem(
-        HttpStatus.CONFLICT, localeUtils.get("error.data.integrity"), request, "error.data.integrity");
+        HttpStatus.CONFLICT, localeUtils.get("error.data.integrity"), request);
   }
 
   @ExceptionHandler(Exception.class)
@@ -199,16 +190,15 @@ public class GlobalExceptionHandler {
     return createProblem(
         HttpStatus.INTERNAL_SERVER_ERROR,
         localeUtils.get("error.internal.server"),
-        request,
-        "error.internal.server");
+        request);
   }
 
   private ProblemDetail createProblem(
-      HttpStatus status, String detail, HttpServletRequest request, String messageKey) {
+      HttpStatus status, String detail, HttpServletRequest request) {
     ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
     problem.setTitle(status.getReasonPhrase());
     problem.setInstance(URI.create(request.getRequestURI()));
-    problem.setProperty("messageKey", messageKey);
+    problem.setProperty("message", detail);
     return problem;
   }
 
