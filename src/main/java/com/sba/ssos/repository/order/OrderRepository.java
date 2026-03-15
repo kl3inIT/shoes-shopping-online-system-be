@@ -23,11 +23,22 @@ public interface OrderRepository extends JpaRepository<Order, UUID>, OrderReposi
     Optional<Order> findByOrderCode(String orderCode);
 
     @Query("select distinct o from Order o " +
+            "left join fetch o.customer c " +
+            "left join fetch c.user " +
             "left join fetch o.orderDetails d " +
             "left join fetch d.shoeVariant v " +
             "left join fetch v.shoe " +
             "where o.id in :ids")
     List<Order> findByIdInWithOrderDetails(@Param("ids") Collection<UUID> ids);
+
+    @Query("select distinct o from Order o " +
+            "left join fetch o.customer c " +
+            "left join fetch c.user " +
+            "left join fetch o.orderDetails d " +
+            "left join fetch d.shoeVariant v " +
+            "left join fetch v.shoe " +
+            "where o.id = :id")
+    Optional<Order> findByIdWithOrderDetails(@Param("id") UUID id);
 
     Long countByOrderStatus(OrderStatus status);
 

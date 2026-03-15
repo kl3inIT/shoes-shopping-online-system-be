@@ -56,7 +56,6 @@ application-properties:
       - { method: PUT, path: /api/v1/brands/* }
       - { method: DELETE, path: /api/v1/brands/* }
       - { method: DELETE, path: /api/v1/storage }
-      - { method: GET, path: /api/v1/admin/orders }
       # AI admin/debug APIs
       - { method: GET, path: /api/v1/ai-parameters }
       - { method: GET, path: /api/v1/ai-parameters/* }
@@ -104,7 +103,8 @@ application-properties:
       - { method: GET, path: /api/v1/admin/notifications }
       - { method: POST, path: /api/v1/admin/notifications/broadcast }
     manager-endpoints:
-      # Reserved for manager-only APIs (add when needed)
+      # Manager APIs
+      - { method: GET, path: /api/v1/admin/orders }
       - { method: GET, path: /test/manager }
     customer-endpoints:
       # Profile APIs
