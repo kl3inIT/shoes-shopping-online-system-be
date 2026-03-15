@@ -70,9 +70,9 @@ application-properties:
       - { method: POST, path: /api/v1/ingestion/run }
       - { method: POST, path: /api/v1/ingestion/run/* }
       - { method: GET, path: /api/v1/ingestion/types }
-      - { method: POST, path: /api/v1/checks/run }
-      - { method: GET, path: /api/v1/checks/runs/* }
       - { method: POST, path: /api/v1/search }
+      # Chat log admin APIs
+      - { method: GET, path: /api/admin/chat-logs }
       # User management APIs
       - { method: GET, path: /api/admin/users/stats }
       - { method: GET, path: /api/admin/users }
@@ -81,6 +81,20 @@ application-properties:
       - { method: PATCH, path: /api/admin/users/*/status }
       - { method: POST, path: /api/admin/users/*/status/toggle }
       - { method: DELETE, path: /api/admin/users/* }
+      # Vector store admin APIs
+      - { method: GET, path: /api/admin/vector-store/documents }
+      - { method: GET, path: /api/admin/vector-store/documents/* }
+      - { method: DELETE, path: /api/admin/vector-store/documents/bulk }
+      - { method: DELETE, path: /api/admin/vector-store/documents/* }
+      - { method: DELETE, path: /api/admin/vector-store/documents }
+      # Check definition and run admin APIs
+      - { method: GET, path: /api/admin/checks/definitions }
+      - { method: POST, path: /api/admin/checks/definitions }
+      - { method: PUT, path: /api/admin/checks/definitions/* }
+      - { method: DELETE, path: /api/admin/checks/definitions/* }
+      - { method: POST, path: /api/admin/checks/runs }
+      - { method: GET, path: /api/admin/checks/runs }
+      - { method: GET, path: /api/admin/checks/runs/*/results }
       # Dashboard / notifications
       - { method: GET, path: /admin/dashboard/metrics }
       - { method: GET, path: /admin/dashboard/chart }
