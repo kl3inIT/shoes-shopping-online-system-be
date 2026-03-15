@@ -19,4 +19,6 @@ public interface CheckAdminService {
     PageResponse<CheckRunSummaryResponse> getCheckRuns(int page, int size);
 
     List<CheckResultDetailResponse> getCheckResults(UUID runId);
+
+    void deleteCheckRun(UUID id);
 }

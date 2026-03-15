@@ -60,6 +60,7 @@ public class CheckAdminServiceImpl implements CheckAdminService {
     public void deleteCheckDef(UUID id) {
         CheckDef def = checkDefRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("CheckDef", id));
+        checkResultRepository.deleteByCheckDefId(id);
         checkDefRepository.delete(def);
     }
 
@@ -81,6 +82,14 @@ public class CheckAdminServiceImpl implements CheckAdminService {
         return checkResultRepository.findByCheckRunIdOrderByScoreAsc(runId).stream()
                 .map(this::toResultDetail)
                 .toList();
+    }
+
+    @Override
+    public void deleteCheckRun(UUID id) {
+        CheckRun run = checkRunRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("CheckRun", id));
+        checkResultRepository.deleteByCheckRunId(id);
+        checkRunRepository.delete(run);
     }
 
     // ── Private mappers ───────────────────────────────────────────────────────

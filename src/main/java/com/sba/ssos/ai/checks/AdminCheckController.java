@@ -67,6 +67,12 @@ public class AdminCheckController {
         return ResponseGeneral.ofSuccess("Check runs retrieved", checkAdminService.getCheckRuns(page, size));
     }
 
+    @DeleteMapping("/runs/{runId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteCheckRun(@PathVariable UUID runId) {
+        checkAdminService.deleteCheckRun(runId);
+    }
+
     @GetMapping("/runs/{runId}/results")
     public ResponseGeneral<List<CheckResultDetailResponse>> getCheckResults(@PathVariable UUID runId) {
         return ResponseGeneral.ofSuccess("Check results retrieved", checkAdminService.getCheckResults(runId));
