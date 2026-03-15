@@ -57,4 +57,9 @@ public interface OrderRepository extends JpaRepository<Order, UUID>, OrderReposi
     List<Object[]> findRevenueByDateSince(Instant from);
 
     Page<Order> findByOrderStatusOrderByCreatedAtDesc(OrderStatus status, Pageable pageable);
+
+    Page<Order> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+    @Query("select count(o) from Order o where o.orderStatus = com.sba.ssos.enums.OrderStatus.DELIVERED")
+    Long countValidOrders();
 }

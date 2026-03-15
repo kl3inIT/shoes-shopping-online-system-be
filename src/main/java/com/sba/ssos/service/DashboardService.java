@@ -39,7 +39,7 @@ public class DashboardService {
     @Transactional(readOnly = true)
     public DashboardMetricsResponse getMetrics() {
         Double totalRevenue = orderRepository.sumDeliveredRevenue();
-        Long totalOrders = orderRepository.countByOrderStatus(OrderStatus.DELIVERED);
+        Long totalOrders = orderRepository.countValidOrders();
         Long totalCustomers = userRepository.countByRole(UserRole.ROLE_CUSTOMER);
         Long productsSold = orderDetailRepository.sumDeliveredQuantity();
 
@@ -81,7 +81,7 @@ public class DashboardService {
     public List<DashboardRecentOrderResponse> getRecentOrders(int limit) {
         PageRequest page = PageRequest.of(0, limit);
         return orderRepository
-                .findByOrderStatusOrderByCreatedAtDesc(OrderStatus.DELIVERED, page)
+                .findAllByOrderByCreatedAtDesc(page)
                 .stream()
                 .map(this::toRecentOrderResponse)
                 .toList();
