@@ -48,7 +48,7 @@ public class ProductIngester extends AbstractIngester {
   }
 
   @Override
-  @Transactional(readOnly = true)
+  @Transactional
   public String ingestAll() {
     return super.ingestAll();
   }
