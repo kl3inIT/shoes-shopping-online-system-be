@@ -102,7 +102,7 @@ public class GlobalExceptionHandler {
             .collect(
                 Collectors.toMap(
                     violation -> violation.getPropertyPath().toString(),
-                    violation -> violation.getMessage(),
+                    violation -> resolveMessage(violation.getMessage(), "error.validation.failed"),
                     (first, second) -> first,
                     LinkedHashMap::new));
 
@@ -151,7 +151,11 @@ public class GlobalExceptionHandler {
   public ProblemDetail handleIllegalArgument(
       IllegalArgumentException ex, HttpServletRequest request) {
     log.warn("Bad request argument: {}", ex.getMessage());
-    return createProblem(HttpStatus.BAD_REQUEST, ex.getMessage(), request, "error.validation.failed");
+    return createProblem(
+        HttpStatus.BAD_REQUEST,
+        resolveMessage(ex.getMessage(), "error.validation.failed"),
+        request,
+        "error.validation.failed");
   }
 
   @ExceptionHandler(AccessDeniedException.class)
@@ -174,14 +178,11 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(MultipartException.class)
   public ProblemDetail handleMultipart(MultipartException ex, HttpServletRequest request) {
     log.warn("Multipart error: {}", ex.getMessage());
-    ProblemDetail problem =
-        createProblem(
-            HttpStatus.BAD_REQUEST,
-            localeUtils.get("error.validation.failed"),
-            request,
-            "error.validation.failed");
-    problem.setProperty("cause", ex.getMessage());
-    return problem;
+    return createProblem(
+        HttpStatus.BAD_REQUEST,
+        localeUtils.get("error.validation.failed"),
+        request,
+        "error.validation.failed");
   }
 
   @ExceptionHandler(DataIntegrityViolationException.class)
@@ -209,5 +210,15 @@ public class GlobalExceptionHandler {
     problem.setInstance(URI.create(request.getRequestURI()));
     problem.setProperty("messageKey", messageKey);
     return problem;
+  }
+
+  private String resolveMessage(String messageKeyOrMessage, String fallbackKey) {
+    if (messageKeyOrMessage == null || messageKeyOrMessage.isBlank()) {
+      return localeUtils.get(fallbackKey);
+    }
+    if (messageKeyOrMessage.startsWith("error.") || messageKeyOrMessage.startsWith("validation.")) {
+      return localeUtils.get(messageKeyOrMessage);
+    }
+    return messageKeyOrMessage;
   }
 }
