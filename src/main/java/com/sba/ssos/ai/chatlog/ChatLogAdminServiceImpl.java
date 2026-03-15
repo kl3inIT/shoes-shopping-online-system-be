@@ -1,12 +1,16 @@
 package com.sba.ssos.ai.chatlog;
 
 import com.sba.ssos.dto.response.PageResponse;
+import jakarta.persistence.criteria.Predicate;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 /**
@@ -23,8 +27,25 @@ public class ChatLogAdminServiceImpl implements ChatLogAdminService {
   public PageResponse<ChatLogSummaryResponse> getChatLogs(
       int page, int size, String conversationId, Instant from, Instant to) {
     var pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-    var result = chatLogRepository.findFiltered(conversationId, from, to, pageable);
+    var spec = buildSpec(conversationId, from, to);
+    var result = chatLogRepository.findAll(spec, pageable);
     return PageResponse.from(result.map(this::toSummary));
+  }
+
+  private Specification<ChatLog> buildSpec(String conversationId, Instant from, Instant to) {
+    return (root, query, cb) -> {
+      List<Predicate> predicates = new ArrayList<>();
+      if (conversationId != null && !conversationId.isBlank()) {
+        predicates.add(cb.equal(root.get("conversationId"), conversationId));
+      }
+      if (from != null) {
+        predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), from));
+      }
+      if (to != null) {
+        predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), to));
+      }
+      return cb.and(predicates.toArray(new Predicate[0]));
+    };
   }
 
   @Override

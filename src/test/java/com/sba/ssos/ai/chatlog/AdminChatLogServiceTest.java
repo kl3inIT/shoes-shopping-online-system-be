@@ -3,7 +3,6 @@ package com.sba.ssos.ai.chatlog;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -19,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 /**
  * Test scaffold for ChatLogAdminService.
@@ -44,7 +44,7 @@ class AdminChatLogServiceTest {
         log.setCompletionTokens(20);
         log.setResponseTimeMs(300L);
 
-        when(chatLogRepository.findFiltered(eq(null), eq(null), eq(null), any(Pageable.class)))
+        when(chatLogRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(log)));
 
         // Act
@@ -59,17 +59,17 @@ class AdminChatLogServiceTest {
         assertThat(result.content().get(0).completionTokens()).isEqualTo(20);
         assertThat(result.content().get(0).responseTimeMs()).isEqualTo(300L);
 
-        verify(chatLogRepository).findFiltered(eq(null), eq(null), eq(null), any(Pageable.class));
+        verify(chatLogRepository).findAll(any(Specification.class), any(Pageable.class));
     }
 
     @Test
     void getChatLogs_withConversationId_passesFilterToRepository() {
-        when(chatLogRepository.findFiltered(eq("conv-xyz"), eq(null), eq(null), any(Pageable.class)))
+        when(chatLogRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of()));
 
         chatLogAdminService.getChatLogs(0, 20, "conv-xyz", null, null);
 
-        verify(chatLogRepository).findFiltered(eq("conv-xyz"), eq(null), eq(null), any(Pageable.class));
+        verify(chatLogRepository).findAll(any(Specification.class), any(Pageable.class));
     }
 
     @Test
@@ -77,12 +77,12 @@ class AdminChatLogServiceTest {
         Instant from = Instant.parse("2024-01-01T00:00:00Z");
         Instant to = Instant.parse("2024-12-31T23:59:59Z");
 
-        when(chatLogRepository.findFiltered(eq(null), eq(from), eq(to), any(Pageable.class)))
+        when(chatLogRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of()));
 
         chatLogAdminService.getChatLogs(0, 20, null, from, to);
 
-        verify(chatLogRepository).findFiltered(eq(null), eq(from), eq(to), any(Pageable.class));
+        verify(chatLogRepository).findAll(any(Specification.class), any(Pageable.class));
     }
 
     @Test
@@ -91,7 +91,7 @@ class AdminChatLogServiceTest {
         ChatLog log = new ChatLog();
         log.setLogContent(longContent);
 
-        when(chatLogRepository.findFiltered(any(), any(), any(), any(Pageable.class)))
+        when(chatLogRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(log)));
 
         PageResponse<ChatLogSummaryResponse> result =
@@ -106,7 +106,7 @@ class AdminChatLogServiceTest {
         log.setLogContent("content");
         log.setSources(null);
 
-        when(chatLogRepository.findFiltered(any(), any(), any(), any(Pageable.class)))
+        when(chatLogRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(log)));
 
         PageResponse<ChatLogSummaryResponse> result =
