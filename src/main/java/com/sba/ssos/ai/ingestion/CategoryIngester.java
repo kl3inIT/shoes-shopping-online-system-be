@@ -1,9 +1,8 @@
 package com.sba.ssos.ai.ingestion;
 
 import com.sba.ssos.configuration.ApplicationProperties;
-import com.sba.ssos.entity.Review;
-import com.sba.ssos.entity.ShoeVariant;
-import com.sba.ssos.repository.ReviewRepository;
+import com.sba.ssos.entity.Category;
+import com.sba.ssos.repository.CategoryRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -19,28 +18,28 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
-public class ReviewIngester extends AbstractIngester {
+public class CategoryIngester extends AbstractIngester {
 
-  private final ReviewRepository reviewRepository;
+  private final CategoryRepository categoryRepository;
   private final ApplicationProperties properties;
 
-  public ReviewIngester(
+  public CategoryIngester(
       VectorStore vectorStore,
       JdbcTemplate jdbcTemplate,
       ApplicationProperties properties,
-      ReviewRepository reviewRepository) {
+      CategoryRepository categoryRepository) {
     super(
         vectorStore,
         jdbcTemplate,
         properties.ragProperties().schema(),
         properties.ragProperties().table());
     this.properties = properties;
-    this.reviewRepository = reviewRepository;
+    this.categoryRepository = categoryRepository;
   }
 
   @Override
   public String getType() {
-    return "review";
+    return "category";
   }
 
   @Override
@@ -51,8 +50,8 @@ public class ReviewIngester extends AbstractIngester {
 
   @Override
   protected List<String> loadSources() {
-    return reviewRepository.findAll().stream()
-        .map(r -> r.getId().toString())
+    return categoryRepository.findAll().stream()
+        .map(c -> c.getId().toString())
         .toList();
   }
 
@@ -64,20 +63,15 @@ public class ReviewIngester extends AbstractIngester {
   @Override
   @Nullable
   protected Document loadDocument(String source) {
-    UUID reviewId = UUID.fromString(source);
-    Review review = reviewRepository.findById(reviewId).orElse(null);
-    if (review == null) return null;
+    UUID categoryId = UUID.fromString(source);
+    Category category = categoryRepository.findById(categoryId).orElse(null);
+    if (category == null) return null;
 
-    String text = buildReviewText(review);
+    String text = buildCategoryText(category);
     Map<String, Object> metadata = createMetadata(source, text);
-    metadata.put("reviewId", review.getId().toString());
-    metadata.put("stars", review.getNumberStars());
-
-    ShoeVariant variant = review.getShoeVariant();
-    metadata.put("shoeId", variant.getShoe().getId().toString());
-    metadata.put("shoeName", variant.getShoe().getName());
-    metadata.put("brandName", variant.getShoe().getBrand().getName());
-
+    metadata.put("categoryId", category.getId().toString());
+    metadata.put("categoryName", category.getName());
+    metadata.put("slug", category.getSlug());
     return createDocument(text, metadata);
   }
 
@@ -109,15 +103,10 @@ public class ReviewIngester extends AbstractIngester {
     return allChunks;
   }
 
-  private String buildReviewText(Review review) {
-    ShoeVariant variant = review.getShoeVariant();
+  private String buildCategoryText(Category category) {
     StringBuilder sb = new StringBuilder();
-    sb.append("Review for: ").append(variant.getShoe().getName()).append("\n");
-    sb.append("Brand: ").append(variant.getShoe().getBrand().getName()).append("\n");
-    sb.append("Variant: Size ").append(variant.getSize())
-        .append(", Color ").append(variant.getColor()).append("\n");
-    sb.append("Rating: ").append(review.getNumberStars()).append("/5 stars\n");
-    sb.append("Review: ").append(review.getDescription());
+    sb.append("Category: ").append(category.getName()).append("\n");
+    sb.append("Description: ").append(category.getDescription()).append("\n");
     return sb.toString();
   }
 }
