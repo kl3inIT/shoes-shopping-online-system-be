@@ -6,6 +6,7 @@ import lombok.Builder;
 public record ReviewEligibilityResponse(
         boolean eligible,
         boolean alreadyReviewed,
+        boolean canEdit,
         ReviewResponse review
 ) {
 }

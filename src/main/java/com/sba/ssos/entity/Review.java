@@ -15,8 +15,8 @@ import lombok.Setter;
         name = "reviews",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_review_customer_variant",
-                        columnNames = {"shoe_variant_id", "customer_id"}
+                        name = "uk_review_order_detail",
+                        columnNames = {"order_detail_id"}
                 )
         }
 )
@@ -26,6 +26,10 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class Review extends BaseAuditableEntity {
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_detail_id", nullable = false)
+    private OrderDetail orderDetail;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shoe_variant_id", nullable = false)
@@ -48,4 +52,8 @@ public class Review extends BaseAuditableEntity {
     @Column(name = "helpful_count", nullable = false)
     @Builder.Default
     private Long helpfulCount = 0L;
+
+    @Column(name = "visible", nullable = false)
+    @Builder.Default
+    private Boolean visible = true;
 }

@@ -192,7 +192,7 @@ public class ShoeService {
 
     private ShoeResponse buildShoeResponse(Shoe shoe, List<ShoeVariant> variants, List<String> shoeImageUrls) {
         Double avgRating = reviewRepository.getAverageStarsByShoeId(shoe.getId());
-        long reviewCount = reviewRepository.countByShoeVariant_Shoe_Id(shoe.getId());
+        long reviewCount = reviewRepository.countByShoeVariant_Shoe_IdAndVisibleTrue(shoe.getId());
 
         return ShoeResponse.builder()
                 .id(shoe.getId())

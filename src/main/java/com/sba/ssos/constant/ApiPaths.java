@@ -26,6 +26,7 @@ public final class ApiPaths {
   public static final String ADMIN_ORDERS = ADMIN + "/orders";
   public static final String ADMIN_USERS = ADMIN + "/users";
   public static final String ADMIN_VECTOR_STORE = ADMIN + "/vector-store";
+  public static final String ADMIN_REVIEWS = ADMIN + "/reviews";
 
   private ApiPaths() {}
 }

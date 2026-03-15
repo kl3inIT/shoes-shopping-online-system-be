@@ -340,7 +340,15 @@ public class OrderService {
       image = urls.isEmpty() ? "" : urls.getFirst();
     }
 
-    return new CustomerOrderItemResponse(detail.getId(), name, image, price, size, quantity);
+    return new CustomerOrderItemResponse(
+        detail.getId(),
+        shoe != null ? shoe.getId() : null,
+        variant != null ? variant.getId() : null,
+        name,
+        image,
+        price,
+        size,
+        quantity);
   }
 
   private OrderHistoryResponse mapToAdminOrderHistoryResponse(Order order) {

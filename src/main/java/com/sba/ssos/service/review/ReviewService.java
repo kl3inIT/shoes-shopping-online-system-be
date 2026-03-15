@@ -22,7 +22,10 @@ import com.sba.ssos.repository.ReviewRepository;
 import com.sba.ssos.repository.order.OrderDetailRepository;
 import com.sba.ssos.service.customer.CustomerService;
 import com.sba.ssos.service.storage.MinioFileStorageService;
+import com.sba.ssos.service.storage.MinioStorageService;
 import jakarta.transaction.Transactional;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
@@ -48,6 +51,7 @@ public class ReviewService {
     private final OrderDetailRepository orderDetailRepository;
     private final MinioFileStorageService storageService;
     private final ReviewHelpfulVoteRepository reviewHelpfulVoteRepository;
+    private final MinioStorageService minioStorageService;
 
     @Transactional
     public ReviewResponse createReview(ReviewCreateRequest request, List<MultipartFile> images) {
@@ -76,16 +80,18 @@ public class ReviewService {
             throw new BadRequestException("error.review.shoe_variant.mismatch");
         }
 
-        if (reviewRepository.existsByCustomer_IdAndShoeVariant_Id(customer.getId(), request.shoeVariantId())) {
+        if (reviewRepository.existsByOrderDetail_Id(orderDetail.getId())) {
             throw new BadRequestException("error.review.already_exists");
         }
 
         Review review =
                 Review.builder()
+                        .orderDetail(orderDetail)
                         .customer(customer)
                         .shoeVariant(orderDetail.getShoeVariant())
                         .numberStars(request.numberStars())
                         .description(request.description())
+                        .visible(true)
                         .build();
 
         Review saved = reviewRepository.save(review);
@@ -115,16 +121,35 @@ public class ReviewService {
             throw new BadRequestException("error.review.not_owner");
         }
 
-        if (images != null) {
+        Instant createdAt = review.getCreatedAt();
+        if (createdAt != null) {
+            long daysSinceCreation = Duration.between(createdAt, Instant.now()).toDays();
+            if (daysSinceCreation > 10) {
+                throw new BadRequestException("error.review.update_expired");
+            }
+        }
+
+        if (images != null || (request.keepImageUrls() != null && !request.keepImageUrls().isEmpty())) {
             validateImagesCount(images);
 
             List<ReviewImage> existingImages = reviewImageRepository.findByReview_Id(reviewId);
-            for (ReviewImage image : existingImages) {
-                storageService.delete(image.getUrl());
-            }
-            reviewImageRepository.deleteAll(existingImages);
 
-            if (!images.isEmpty()) {
+            // Chuẩn hoá danh sách ảnh cần giữ từ URL/presigned thành objectKey
+            List<String> keepObjectKeys =
+                    (request.keepImageUrls() == null ? List.<String>of() : request.keepImageUrls()).stream()
+                            .map(this::toObjectKey)
+                            .filter(k -> k != null && !k.isBlank())
+                            .toList();
+            Set<String> keepSet = new java.util.HashSet<>(keepObjectKeys);
+
+            for (ReviewImage image : existingImages) {
+                if (!keepSet.contains(image.getUrl())) {
+                    storageService.delete(image.getUrl());
+                    reviewImageRepository.delete(image);
+                }
+            }
+
+            if (images != null && !images.isEmpty()) {
                 for (MultipartFile file : images) {
                     String objectKey = storageService.upload(file, "reviews");
                     ReviewImage reviewImage =
@@ -151,6 +176,7 @@ public class ReviewService {
             return ReviewEligibilityResponse.builder()
                     .eligible(false)
                     .alreadyReviewed(false)
+                    .canEdit(false)
                     .review(null)
                     .build();
         }
@@ -165,6 +191,7 @@ public class ReviewService {
             return ReviewEligibilityResponse.builder()
                     .eligible(false)
                     .alreadyReviewed(false)
+                    .canEdit(false)
                     .review(null)
                     .build();
         }
@@ -173,6 +200,7 @@ public class ReviewService {
             return ReviewEligibilityResponse.builder()
                     .eligible(false)
                     .alreadyReviewed(false)
+                    .canEdit(false)
                     .review(null)
                     .build();
         }
@@ -180,14 +208,24 @@ public class ReviewService {
         boolean validStatus = ALLOWED_REVIEW_STATUSES.contains(order.getOrderStatus());
 
         Optional<Review> existingReview =
-                reviewRepository.findByCustomer_IdAndShoeVariant_Id(customer.getId(), shoeVariantId);
+                reviewRepository.findByOrderDetail_Id(orderDetail.getId());
 
         boolean alreadyReviewed = existingReview.isPresent();
         boolean eligible = validStatus && !alreadyReviewed;
 
+        boolean canEdit = false;
+        if (existingReview.isPresent()) {
+            Instant createdAt = existingReview.get().getCreatedAt();
+            if (createdAt != null) {
+                long daysSinceCreation = Duration.between(createdAt, Instant.now()).toDays();
+                canEdit = daysSinceCreation <= 10;
+            }
+        }
+
         return ReviewEligibilityResponse.builder()
                 .eligible(eligible)
                 .alreadyReviewed(alreadyReviewed)
+                .canEdit(canEdit)
                 .review(existingReview.map(this::toResponse).orElse(null))
                 .build();
     }
@@ -221,7 +259,7 @@ public class ReviewService {
                 continue;
             }
             UUID variantId = od.getShoeVariant().getId();
-            boolean reviewed = reviewRepository.existsByCustomer_IdAndShoeVariant_Id(customer.getId(), variantId);
+            boolean reviewed = reviewRepository.existsByOrderDetail_Id(od.getId());
             if (!reviewed) {
                 hasAnyUnreviewed = true;
                 return ReviewEligibilityByShoeResponse.builder()
@@ -248,9 +286,54 @@ public class ReviewService {
         }
     }
 
+    private String toObjectKey(String urlOrObjectKey) {
+        if (urlOrObjectKey == null || urlOrObjectKey.isBlank()) {
+            return null;
+        }
+        String trimmed = urlOrObjectKey.trim();
+        if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+            return trimmed;
+        }
+
+        try {
+            java.net.URI uri = java.net.URI.create(trimmed);
+            String path = uri.getPath();
+            if (path == null || path.isBlank()) {
+                return trimmed;
+            }
+
+            String normalizedPath = path.startsWith("/") ? path.substring(1) : path;
+            // Nếu URL dạng /ssos-images/reviews/xxx, bỏ prefix bucket "ssos-images/"
+            String bucket = "ssos-images";
+            String bucketPrefix = bucket + "/";
+            if (normalizedPath.startsWith(bucketPrefix)) {
+                normalizedPath = normalizedPath.substring(bucketPrefix.length());
+            }
+
+            return normalizedPath;
+        } catch (IllegalArgumentException ex) {
+            return trimmed;
+        }
+    }
+
+    private String toPublicImageUrl(String urlOrObjectKey) {
+        if (urlOrObjectKey == null || urlOrObjectKey.isBlank()) {
+            return urlOrObjectKey;
+        }
+        String s = urlOrObjectKey.trim();
+        if (s.startsWith("http://") || s.startsWith("https://")) {
+            return s;
+        }
+        return minioStorageService.getPresignedGetUrl(s);
+    }
+
     private ReviewResponse toResponse(Review review) {
         List<ReviewImage> images = reviewImageRepository.findByReview_Id(review.getId());
-        List<String> imageUrls = images.stream().map(ReviewImage::getUrl).toList();
+        List<String> imageUrls =
+                images.stream()
+                        .map(ReviewImage::getUrl)
+                        .map(this::toPublicImageUrl)
+                        .toList();
 
         return ReviewResponse.builder()
                 .id(review.getId())
@@ -275,10 +358,10 @@ public class ReviewService {
                         Sort.by(Sort.Direction.DESC, "createdAt")
                 );
 
-        var reviewsPage = reviewRepository.findByShoeVariant_Shoe_Id(shoeId, pageable);
+        var reviewsPage = reviewRepository.findByShoeVariant_Shoe_IdAndVisibleTrue(shoeId, pageable);
 
         Double avg = reviewRepository.getAverageStarsByShoeId(shoeId);
-        long count = reviewRepository.countByShoeVariant_Shoe_Id(shoeId);
+        long count = reviewRepository.countByShoeVariant_Shoe_IdAndVisibleTrue(shoeId);
 
         Customer currentCustomer = null;
         try {
@@ -305,7 +388,11 @@ public class ReviewService {
             Customer currentCustomer
     ) {
         List<ReviewImage> images = reviewImageRepository.findByReview_Id(review.getId());
-        List<String> imageUrls = images.stream().map(ReviewImage::getUrl).toList();
+        List<String> imageUrls =
+                images.stream()
+                        .map(ReviewImage::getUrl)
+                        .map(this::toPublicImageUrl)
+                        .toList();
 
         String authorName = "";
         String avatarUrl = null;

@@ -23,10 +23,25 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
 
     boolean existsByCustomer_IdAndShoeVariant_Id(UUID customerId, UUID shoeVariantId);
 
-    Page<Review> findByShoeVariant_Shoe_Id(UUID shoeId, Pageable pageable);
+    boolean existsByOrderDetail_Id(UUID orderDetailId);
 
-    long countByShoeVariant_Shoe_Id(UUID shoeId);
+    Optional<Review> findByOrderDetail_Id(UUID orderDetailId);
 
-    @Query("select avg(r.numberStars) from Review r where r.shoeVariant.shoe.id = :shoeId")
+    Page<Review> findByShoeVariant_Shoe_IdAndVisibleTrue(UUID shoeId, Pageable pageable);
+
+    long countByShoeVariant_Shoe_IdAndVisibleTrue(UUID shoeId);
+
+    @Query("""
+            select r from Review r
+            where (:visible is null or r.visible = :visible)
+              and r.lastUpdatedAt between :from and :to
+            """)
+    Page<Review> findForAdmin(
+            @Param("visible") Boolean visible,
+            @Param("from") java.time.Instant from,
+            @Param("to") java.time.Instant to,
+            Pageable pageable);
+
+    @Query("select avg(r.numberStars) from Review r where r.shoeVariant.shoe.id = :shoeId and r.visible = true")
     Double getAverageStarsByShoeId(@Param("shoeId") UUID shoeId);
 }

@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.util.List;
 
 public record ReviewUpdateRequest(
 
@@ -13,7 +14,9 @@ public record ReviewUpdateRequest(
         Long numberStars,
 
         @NotBlank(message = "validation.review.description.required")
-        String description
+        String description,
+
+        List<String> keepImageUrls
 ) {
 }
 

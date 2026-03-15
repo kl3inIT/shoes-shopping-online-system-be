@@ -7,6 +7,8 @@ import java.util.UUID;
  */
 public record CustomerOrderItemResponse(
         UUID id,
+        UUID shoeId,
+        UUID shoeVariantId,
         String name,
         String image,
         Double price,
