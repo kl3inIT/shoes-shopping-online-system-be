@@ -1,8 +1,0 @@
-databaseChangeLog:
-  - changeSet:
-      id: 002-rename-chat-memory-table
-      author: phd
-      changes:
-        - renameTable:
-            oldTableName: chat_memory
-            newTableName: SPRING_AI_CHAT_MEMORY
