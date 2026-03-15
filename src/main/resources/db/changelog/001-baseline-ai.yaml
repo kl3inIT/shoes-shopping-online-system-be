@@ -1,10 +1,16 @@
 databaseChangeLog:
   - changeSet:
-      id: 001-baseline-ai-infrastructure
+      id: 001-enable-pgvector-extension
       author: codex
+      runInTransaction: false
       changes:
         - sql:
-            sql: CREATE EXTENSION IF NOT EXISTS vector;
+            sql: CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;
+
+  - changeSet:
+      id: 001-baseline-chat-memory
+      author: codex
+      changes:
         - createTable:
             tableName: spring_ai_chat_memory
             columns:
@@ -34,6 +40,11 @@ databaseChangeLog:
             columns:
               - column:
                   name: conversation_id
+
+  - changeSet:
+      id: 001-baseline-ai-documents
+      author: codex
+      changes:
         - createTable:
             tableName: ai_documents
             columns:
