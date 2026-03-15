@@ -73,6 +73,7 @@ application-properties:
       - { method: POST, path: /api/v1/search }
       # Chat log admin APIs
       - { method: GET, path: /api/admin/chat-logs }
+      - { method: GET, path: /api/admin/chat-logs/* }
       # User management APIs
       - { method: GET, path: /api/admin/users/stats }
       - { method: GET, path: /api/admin/users }
