@@ -1,10 +1,12 @@
 package com.sba.ssos.controller.category;
 
+import com.sba.ssos.constant.ApiPaths;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.category.CategoryCreateRequest;
 import com.sba.ssos.dto.response.category.CategoryResponse;
 import com.sba.ssos.service.category.CategoryService;
 import com.sba.ssos.utils.LocaleUtils;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -13,8 +15,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("api/categories")
+@RequestMapping(ApiPaths.CATEGORIES)
 @RequiredArgsConstructor
+@Tag(name = "Categories", description = "Category catalog management endpoints")
 public class CategoryController {
 
   private final CategoryService categoryService;

@@ -1,10 +1,10 @@
 package com.sba.ssos.service;
 
-import com.sba.ssos.dto.dashboard.DashboardChartPointResponse;
-import com.sba.ssos.dto.dashboard.DashboardLowStockResponse;
-import com.sba.ssos.dto.dashboard.DashboardMetricsResponse;
-import com.sba.ssos.dto.dashboard.DashboardRecentOrderResponse;
-import com.sba.ssos.dto.dashboard.DashboardTopSellingResponse;
+import com.sba.ssos.dto.response.dashboard.DashboardChartPointResponse;
+import com.sba.ssos.dto.response.dashboard.DashboardLowStockResponse;
+import com.sba.ssos.dto.response.dashboard.DashboardMetricsResponse;
+import com.sba.ssos.dto.response.dashboard.DashboardRecentOrderResponse;
+import com.sba.ssos.dto.response.dashboard.DashboardTopSellingResponse;
 import com.sba.ssos.entity.Order;
 import com.sba.ssos.entity.Shoe;
 import com.sba.ssos.entity.ShoeVariant;

@@ -3,6 +3,7 @@ package com.sba.ssos.controller.advice;
 import com.sba.ssos.exception.base.BaseException;
 import com.sba.ssos.utils.LocaleUtils;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -18,8 +19,11 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MultipartException;
 
 @RestControllerAdvice
@@ -31,13 +35,9 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(BaseException.class)
   public ProblemDetail handleBaseException(BaseException ex, HttpServletRequest request) {
-
     String detail = localeUtils.get(ex.getMessage(), ex.getParams().values().toArray());
-
-    ProblemDetail problem = ProblemDetail.forStatusAndDetail(ex.getStatus(), detail);
-    problem.setTitle(ex.getStatus().getReasonPhrase());
-    problem.setInstance(URI.create(request.getRequestURI()));
-    problem.setProperty("messageKey", ex.getMessage());
+    ProblemDetail problem =
+        createProblem(HttpStatus.valueOf(ex.getStatus().value()), detail, request, ex.getMessage());
     if (!ex.getParams().isEmpty()) {
       problem.setProperty("params", ex.getParams());
     }
@@ -50,27 +50,67 @@ public class GlobalExceptionHandler {
 
     log.warn("Validation failed: {}", ex.getMessage());
 
-    String detail =
-        ex.getBindingResult().getFieldErrors().stream()
-            .findFirst()
-            .map(error -> localeUtils.get(error.getDefaultMessage(), error.getArguments()))
-            .orElse("Validation failed");
-
-    ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail);
-
-    problem.setTitle(HttpStatus.BAD_REQUEST.getReasonPhrase());
-    problem.setInstance(URI.create(request.getRequestURI()));
-
     Map<String, String> fieldErrors =
         ex.getBindingResult().getFieldErrors().stream()
             .collect(
                 Collectors.toMap(
                     FieldError::getField,
-                    fe -> localeUtils.get(fe.getDefaultMessage(), fe.getArguments()),
-                    (a, b) -> a,
+                    fieldError -> localeUtils.get(fieldError.getDefaultMessage()),
+                    (first, second) -> first,
                     LinkedHashMap::new));
 
+    String detail =
+        fieldErrors.values().stream().findFirst().orElse(localeUtils.get("error.validation.failed"));
+    ProblemDetail problem =
+        createProblem(HttpStatus.BAD_REQUEST, detail, request, "error.validation.failed");
     problem.setProperty("errors", fieldErrors);
+    return problem;
+  }
+
+  @ExceptionHandler(HandlerMethodValidationException.class)
+  public ProblemDetail handleHandlerMethodValidation(
+      HandlerMethodValidationException ex, HttpServletRequest request) {
+    log.warn("Handler method validation failed: {}", ex.getMessage());
+
+    Map<String, String> errors = new LinkedHashMap<>();
+    ex.getParameterValidationResults()
+        .forEach(
+            validationResult ->
+                validationResult
+                    .getResolvableErrors()
+                    .forEach(
+                        error ->
+                            errors.putIfAbsent(
+                                validationResult.getMethodParameter().getParameterName(),
+                                localeUtils.get(error.getDefaultMessage()))));
+
+    String detail =
+        errors.values().stream().findFirst().orElse(localeUtils.get("error.validation.failed"));
+    ProblemDetail problem =
+        createProblem(HttpStatus.BAD_REQUEST, detail, request, "error.validation.failed");
+    problem.setProperty("errors", errors);
+    return problem;
+  }
+
+  @ExceptionHandler(ConstraintViolationException.class)
+  public ProblemDetail handleConstraintViolation(
+      ConstraintViolationException ex, HttpServletRequest request) {
+    log.warn("Constraint violation: {}", ex.getMessage());
+
+    Map<String, String> errors =
+        ex.getConstraintViolations().stream()
+            .collect(
+                Collectors.toMap(
+                    violation -> violation.getPropertyPath().toString(),
+                    violation -> resolveMessage(violation.getMessage(), "error.validation.failed"),
+                    (first, second) -> first,
+                    LinkedHashMap::new));
+
+    String detail =
+        errors.values().stream().findFirst().orElse(localeUtils.get("error.validation.failed"));
+    ProblemDetail problem =
+        createProblem(HttpStatus.BAD_REQUEST, detail, request, "error.validation.failed");
+    problem.setProperty("errors", errors);
     return problem;
   }
 
@@ -78,90 +118,107 @@ public class GlobalExceptionHandler {
   public ProblemDetail handleHttpMessageNotReadable(
       HttpMessageNotReadableException ex, HttpServletRequest request) {
     log.warn("Malformed request body: {}", ex.getMessage());
+    return createProblem(
+        HttpStatus.BAD_REQUEST,
+        localeUtils.get("error.request.malformed_json"),
+        request,
+        "error.request.malformed_json");
+  }
 
-    String detail = localeUtils.get("error.request.malformed_json");
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  public ProblemDetail handleTypeMismatch(
+      MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+    log.warn("Request argument type mismatch: {}", ex.getMessage());
+    return createProblem(
+        HttpStatus.BAD_REQUEST,
+        localeUtils.get("error.validation.failed"),
+        request,
+        "error.validation.failed");
+  }
 
-    ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail);
-    problem.setTitle(HttpStatus.BAD_REQUEST.getReasonPhrase());
-    problem.setInstance(URI.create(request.getRequestURI()));
-    return problem;
+  @ExceptionHandler(MissingServletRequestParameterException.class)
+  public ProblemDetail handleMissingRequestParameter(
+      MissingServletRequestParameterException ex, HttpServletRequest request) {
+    log.warn("Missing request parameter: {}", ex.getMessage());
+    return createProblem(
+        HttpStatus.BAD_REQUEST,
+        localeUtils.get("error.validation.failed"),
+        request,
+        "error.validation.failed");
   }
 
   @ExceptionHandler(IllegalArgumentException.class)
   public ProblemDetail handleIllegalArgument(
       IllegalArgumentException ex, HttpServletRequest request) {
     log.warn("Bad request argument: {}", ex.getMessage());
-
-    ProblemDetail problem =
-        ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-    problem.setTitle(HttpStatus.BAD_REQUEST.getReasonPhrase());
-    problem.setInstance(URI.create(request.getRequestURI()));
-    return problem;
+    return createProblem(
+        HttpStatus.BAD_REQUEST,
+        resolveMessage(ex.getMessage(), "error.validation.failed"),
+        request,
+        "error.validation.failed");
   }
 
   @ExceptionHandler(AccessDeniedException.class)
   public ProblemDetail handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
     log.warn("Access denied: {}", ex.getMessage());
-
-    String detail = localeUtils.get("error.auth.forbidden");
-
-    ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, detail);
-    problem.setTitle(HttpStatus.FORBIDDEN.getReasonPhrase());
-    problem.setInstance(URI.create(request.getRequestURI()));
-    return problem;
+    return createProblem(
+        HttpStatus.FORBIDDEN, localeUtils.get("error.auth.forbidden"), request, "error.auth.forbidden");
   }
 
   @ExceptionHandler({AuthenticationException.class, JwtException.class})
   public ProblemDetail handleAuthenticationError(Exception ex, HttpServletRequest request) {
     log.warn("Authentication error: {}", ex.getMessage());
-
-    String detail = localeUtils.get("error.auth.unauthorized");
-
-    ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, detail);
-    problem.setTitle(HttpStatus.UNAUTHORIZED.getReasonPhrase());
-    problem.setInstance(URI.create(request.getRequestURI()));
-    return problem;
+    return createProblem(
+        HttpStatus.UNAUTHORIZED,
+        localeUtils.get("error.auth.unauthorized"),
+        request,
+        "error.auth.unauthorized");
   }
 
   @ExceptionHandler(MultipartException.class)
   public ProblemDetail handleMultipart(MultipartException ex, HttpServletRequest request) {
     log.warn("Multipart error: {}", ex.getMessage());
-
-    String detail =
-            "Request must be multipart/form-data with a part named 'file'. "
-                    + "Do not set Content-Type header manually; use form-data in Postman/curl -F \"file=@path\".";
-
-    ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail);
-    problem.setTitle("Bad Request");
-    problem.setInstance(URI.create(request.getRequestURI()));
-    problem.setProperty("cause", ex.getMessage());
-    return problem;
+    return createProblem(
+        HttpStatus.BAD_REQUEST,
+        localeUtils.get("error.validation.failed"),
+        request,
+        "error.validation.failed");
   }
 
   @ExceptionHandler(DataIntegrityViolationException.class)
   public ProblemDetail handleDataIntegrity(
       DataIntegrityViolationException ex, HttpServletRequest request) {
     log.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
-
-    String detail = localeUtils.get("error.data.integrity");
-
-
-    ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, detail);
-    problem.setTitle(HttpStatus.CONFLICT.getReasonPhrase());
-    problem.setInstance(URI.create(request.getRequestURI()));
-    return problem;
+    return createProblem(
+        HttpStatus.CONFLICT, localeUtils.get("error.data.integrity"), request, "error.data.integrity");
   }
 
   @ExceptionHandler(Exception.class)
   public ProblemDetail handleGeneric(Exception ex, HttpServletRequest request) {
     log.error("Unhandled exception", ex);
+    return createProblem(
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        localeUtils.get("error.internal.server"),
+        request,
+        "error.internal.server");
+  }
 
-    String detail = localeUtils.get("error.internal.server");
-
-    ProblemDetail problem =
-        ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail);
-    problem.setTitle(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
+  private ProblemDetail createProblem(
+      HttpStatus status, String detail, HttpServletRequest request, String messageKey) {
+    ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
+    problem.setTitle(status.getReasonPhrase());
     problem.setInstance(URI.create(request.getRequestURI()));
+    problem.setProperty("messageKey", messageKey);
     return problem;
+  }
+
+  private String resolveMessage(String messageKeyOrMessage, String fallbackKey) {
+    if (messageKeyOrMessage == null || messageKeyOrMessage.isBlank()) {
+      return localeUtils.get(fallbackKey);
+    }
+    if (messageKeyOrMessage.startsWith("error.") || messageKeyOrMessage.startsWith("validation.")) {
+      return localeUtils.get(messageKeyOrMessage);
+    }
+    return messageKeyOrMessage;
   }
 }

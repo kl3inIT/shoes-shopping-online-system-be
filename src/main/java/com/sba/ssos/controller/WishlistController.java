@@ -1,10 +1,13 @@
 package com.sba.ssos.controller;
 
+import com.sba.ssos.constant.ApiPaths;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.wishlist.AddWishlistItemRequest;
 import com.sba.ssos.dto.response.wishlist.WishlistItemResponse;
 import com.sba.ssos.service.WishlistService;
 import com.sba.ssos.utils.LocaleUtils;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,8 +22,9 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/wishlist")
+@RequestMapping(ApiPaths.WISHLIST)
 @RequiredArgsConstructor
+@Tag(name = "Wishlist", description = "Customer wishlist endpoints")
 public class WishlistController {
 
     private final WishlistService wishlistService;
@@ -36,7 +40,7 @@ public class WishlistController {
 
     @PostMapping
     public ResponseGeneral<WishlistItemResponse> addToWishlist(
-            @RequestBody AddWishlistItemRequest request) {
+            @Valid @RequestBody AddWishlistItemRequest request) {
         WishlistItemResponse data = wishlistService.addToWishlist(request.shoeId());
         return ResponseGeneral.ofCreated(localeUtils.get("success.wishlist.added"), data);
     }

@@ -5,46 +5,38 @@ import com.sba.ssos.dto.request.cart.UpdateCartItemRequest;
 import com.sba.ssos.dto.response.cart.CartItemResponse;
 import com.sba.ssos.dto.response.cart.CartResponse;
 import com.sba.ssos.entity.CartItem;
-import com.sba.ssos.entity.Customer;
 import com.sba.ssos.entity.Shoe;
 import com.sba.ssos.entity.ShoeVariant;
 import com.sba.ssos.exception.base.BadRequestException;
 import com.sba.ssos.exception.base.NotFoundException;
 import com.sba.ssos.repository.CartItemRepository;
-import com.sba.ssos.repository.CustomerRepository;
 import com.sba.ssos.repository.ShoeVariantRepository;
-import com.sba.ssos.service.user.UserService;
+import com.sba.ssos.service.customer.CustomerService;
 import com.sba.ssos.service.product.shoeimage.ShoeImageService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class CartService {
 
   private final CartItemRepository cartItemRepository;
-  private final CustomerRepository customerRepository;
   private final ShoeVariantRepository shoeVariantRepository;
-  private final UserService userService;
+  private final CustomerService customerService;
   private final ShoeImageService shoeImageService;
 
   @Transactional(readOnly = true)
   public CartResponse getMyCart() {
-    Customer customer = getCurrentCustomer();
-    List<CartItem> cartItems =
-        cartItemRepository.findAllByCustomer_IdAndIsActiveTrue(customer.getId());
+    var customer = customerService.getCurrentCustomer();
+    List<CartItem> cartItems = cartItemRepository.findAllByCustomer_IdAndIsActiveTrue(customer.getId());
 
-    List<CartItemResponse> items =
-        cartItems.stream().map(this::toCartItemResponse).toList();
-
+    List<CartItemResponse> items = cartItems.stream().map(this::toCartItemResponse).toList();
     BigDecimal totalPrice =
         items.stream().map(CartItemResponse::subtotal).reduce(BigDecimal.ZERO, BigDecimal::add);
-
     int totalQuantity = items.stream().mapToInt(item -> item.quantity().intValue()).sum();
 
     return new CartResponse(items, totalPrice, totalQuantity);
@@ -52,14 +44,12 @@ public class CartService {
 
   @Transactional
   public CartResponse addToCart(AddToCartRequest request) {
-    Customer customer = getCurrentCustomer();
-
+    var customer = customerService.getCurrentCustomer();
     ShoeVariant shoeVariant = resolveShoeVariant(request);
 
     CartItem existingItem =
         cartItemRepository
-            .findByCustomer_IdAndShoeVariant_IdAndIsActiveTrue(
-                customer.getId(), shoeVariant.getId())
+            .findByCustomer_IdAndShoeVariant_IdAndIsActiveTrue(customer.getId(), shoeVariant.getId())
             .orElse(null);
 
     if (existingItem != null) {
@@ -70,18 +60,16 @@ public class CartService {
       existingItem.setQuantity(newQty);
       cartItemRepository.save(existingItem);
     } else {
-      long availableStock = shoeVariant.getQuantity();
-      if (request.quantity() > availableStock) {
+      if (request.quantity() > shoeVariant.getQuantity()) {
         throw new BadRequestException("Requested quantity exceeds available stock");
       }
-      CartItem newItem =
+      cartItemRepository.save(
           CartItem.builder()
               .customer(customer)
               .shoeVariant(shoeVariant)
               .quantity(request.quantity())
               .isActive(true)
-              .build();
-      cartItemRepository.save(newItem);
+              .build());
     }
 
     return getMyCart();
@@ -89,29 +77,24 @@ public class CartService {
 
   @Transactional
   public CartResponse updateCartItem(UUID cartItemId, UpdateCartItemRequest request) {
-    Customer customer = getCurrentCustomer();
-
+    var customer = customerService.getCurrentCustomer();
     CartItem cartItem =
         cartItemRepository
             .findByIdAndCustomer_IdAndIsActiveTrue(cartItemId, customer.getId())
             .orElseThrow(() -> new NotFoundException("Cart item not found: " + cartItemId));
 
-    long reqQty = request.quantity();
-
-    if (reqQty > cartItem.getShoeVariant().getQuantity()) {
+    if (request.quantity() > cartItem.getShoeVariant().getQuantity()) {
       throw new BadRequestException("Requested quantity exceeds available stock");
     }
 
-    cartItem.setQuantity(reqQty);
+    cartItem.setQuantity(request.quantity());
     cartItemRepository.save(cartItem);
-
     return getMyCart();
   }
 
   @Transactional
   public void removeCartItem(UUID cartItemId) {
-    Customer customer = getCurrentCustomer();
-
+    var customer = customerService.getCurrentCustomer();
     CartItem cartItem =
         cartItemRepository
             .findByIdAndCustomer_IdAndIsActiveTrue(cartItemId, customer.getId())
@@ -121,13 +104,9 @@ public class CartService {
 
   @Transactional
   public void clearCart() {
-    Customer customer = getCurrentCustomer();
-    List<CartItem> cartItems =
-        cartItemRepository.findAllByCustomer_IdAndIsActiveTrue(customer.getId());
-
-    for (CartItem item : cartItems) {
-      item.setActive(false);
-    }
+    var customer = customerService.getCurrentCustomer();
+    List<CartItem> cartItems = cartItemRepository.findAllByCustomer_IdAndIsActiveTrue(customer.getId());
+    cartItems.forEach(item -> item.setActive(false));
     cartItemRepository.saveAll(cartItems);
   }
 
@@ -142,13 +121,6 @@ public class CartService {
             () -> new NotFoundException("Shoe variant not found: " + request.shoeVariantId()));
   }
 
-  private Customer getCurrentCustomer() {
-    UUID userId = userService.getCurrentUser().userId(); // this is Keycloak ID
-    return customerRepository
-        .findByUser_KeycloakId(userId)
-        .orElseThrow(() -> new NotFoundException("Customer not found for user: " + userId));
-  }
-
   private CartItemResponse toCartItemResponse(CartItem cartItem) {
     ShoeVariant variant = cartItem.getShoeVariant();
     Shoe shoe = variant.getShoe();
@@ -156,11 +128,11 @@ public class CartService {
     String mainImageUrl = null;
     List<String> variantUrls = shoeImageService.getVariantImageUrls(variant);
     if (!variantUrls.isEmpty()) {
-      mainImageUrl = variantUrls.get(0);
+      mainImageUrl = variantUrls.getFirst();
     } else {
       List<String> shoeUrls = shoeImageService.getShoeImageUrls(shoe, List.of());
       if (!shoeUrls.isEmpty()) {
-        mainImageUrl = shoeUrls.get(0);
+        mainImageUrl = shoeUrls.getFirst();
       }
     }
 

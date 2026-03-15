@@ -1,14 +1,12 @@
 package com.sba.ssos.service;
 
 import com.sba.ssos.dto.response.wishlist.WishlistItemResponse;
-import com.sba.ssos.entity.Customer;
 import com.sba.ssos.entity.Shoe;
 import com.sba.ssos.entity.Wishlist;
 import com.sba.ssos.exception.base.NotFoundException;
-import com.sba.ssos.repository.CustomerRepository;
 import com.sba.ssos.repository.WishlistRepository;
 import com.sba.ssos.repository.product.shoe.ShoeRepository;
-import com.sba.ssos.service.user.UserService;
+import com.sba.ssos.service.customer.CustomerService;
 import com.sba.ssos.service.product.shoeimage.ShoeImageService;
 import java.util.List;
 import java.util.Set;
@@ -22,33 +20,32 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class WishlistService {
 
+  private static final Set<String> ALLOWED_SORT_PROPERTIES =
+      Set.of("createdAt", "shoe.name", "shoe.price");
+
   private final WishlistRepository wishlistRepository;
-  private final CustomerRepository customerRepository;
   private final ShoeRepository shoeRepository;
-  private final UserService userService;
+  private final CustomerService customerService;
   private final ShoeImageService shoeImageService;
 
   @Transactional(readOnly = true)
   public List<WishlistItemResponse> getCurrentUserWishlist(String sortBy, String sortOrder) {
-    Customer customer = getCurrentCustomer();
+    var customer = customerService.getCurrentCustomer();
     String property =
         ALLOWED_SORT_PROPERTIES.contains(sortBy != null ? sortBy : "") ? sortBy : "createdAt";
     Sort.Direction direction =
         "asc".equalsIgnoreCase(sortOrder != null ? sortOrder : "desc")
             ? Sort.Direction.ASC
             : Sort.Direction.DESC;
-      Sort sort = Sort.by(direction, property);
-    return wishlistRepository.findAllByCustomer_Id(customer.getId(), sort).stream()
+
+    return wishlistRepository.findAllByCustomer_Id(customer.getId(), Sort.by(direction, property)).stream()
         .map(this::toResponse)
         .toList();
   }
 
-  private static final Set<String> ALLOWED_SORT_PROPERTIES =
-      Set.of("createdAt", "shoe.name", "shoe.price");
-
   @Transactional
   public WishlistItemResponse addToWishlist(UUID shoeId) {
-    Customer customer = getCurrentCustomer();
+    var customer = customerService.getCurrentCustomer();
 
     Shoe shoe =
         shoeRepository
@@ -64,47 +61,30 @@ public class WishlistService {
       return toResponse(existingWishlist);
     }
 
-    Wishlist wishlist = Wishlist.builder().customer(customer).shoe(shoe).build();
-
-    Wishlist saved = wishlistRepository.save(wishlist);
-    return toResponse(saved);
+    return toResponse(wishlistRepository.save(Wishlist.builder().customer(customer).shoe(shoe).build()));
   }
 
   @Transactional
   public void removeFromWishlistByShoe(UUID shoeId) {
-    Customer customer = getCurrentCustomer();
-
-    boolean exists = wishlistRepository.existsByCustomer_IdAndShoe_Id(customer.getId(), shoeId);
-
-    if (!exists) {
-      return;
+    var customer = customerService.getCurrentCustomer();
+    if (wishlistRepository.existsByCustomer_IdAndShoe_Id(customer.getId(), shoeId)) {
+      wishlistRepository.deleteByCustomer_IdAndShoe_Id(customer.getId(), shoeId);
     }
-
-    wishlistRepository.deleteByCustomer_IdAndShoe_Id(customer.getId(), shoeId);
-  }
-
-  private Customer getCurrentCustomer() {
-    UUID userId = userService.getCurrentUser().userId(); // Keycloak ID
-    return customerRepository
-        .findByUser_KeycloakId(userId)
-        .orElseThrow(() -> new NotFoundException("Customer not found for user " + userId));
   }
 
   private WishlistItemResponse toResponse(Wishlist wishlist) {
     Shoe shoe = wishlist.getShoe();
-    String brandName = shoe.getBrand().getName();
-
     String mainImageUrl = null;
     var shoeUrls = shoeImageService.getShoeImageUrls(shoe, List.of());
     if (!shoeUrls.isEmpty()) {
-      mainImageUrl = shoeUrls.get(0);
+      mainImageUrl = shoeUrls.getFirst();
     }
 
     return new WishlistItemResponse(
         wishlist.getId(),
         shoe.getId(),
         shoe.getName(),
-        brandName,
+        shoe.getBrand().getName(),
         shoe.getPrice(),
         mainImageUrl,
         wishlist.getCreatedAt());

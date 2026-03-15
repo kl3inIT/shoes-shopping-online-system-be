@@ -1,9 +1,11 @@
 package com.sba.ssos.ai.parameters;
 
+import com.sba.ssos.constant.ApiPaths;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.ai.CreateAiParameterRequest;
 import com.sba.ssos.dto.request.ai.UpdateAiParameterRequest;
 import com.sba.ssos.utils.LocaleUtils;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -21,8 +23,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/ai-parameters")
+@RequestMapping(ApiPaths.API_V1 + "/ai-parameters")
 @RequiredArgsConstructor
+@Tag(name = "AI Parameters", description = "AI prompt parameter management endpoints")
 public class ParametersController {
 
   private final ParametersService parametersService;

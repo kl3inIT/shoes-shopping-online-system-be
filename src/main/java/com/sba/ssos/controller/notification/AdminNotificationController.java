@@ -1,11 +1,13 @@
-package com.sba.ssos.controller.admin;
+package com.sba.ssos.controller.notification;
 
+import com.sba.ssos.constant.ApiPaths;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.notification.NotificationBroadcastRequest;
 import com.sba.ssos.dto.response.notification.NotificationResponse;
 import com.sba.ssos.enums.NotificationType;
 import com.sba.ssos.service.NotificationService;
 import com.sba.ssos.utils.LocaleUtils;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,8 +16,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/admin/notifications")
+@RequestMapping(ApiPaths.ADMIN_NOTIFICATIONS)
 @RequiredArgsConstructor
+@Tag(name = "Admin Notifications", description = "Administrative notification broadcast endpoints")
 public class AdminNotificationController {
 
     private final NotificationService notificationService;

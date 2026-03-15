@@ -1,13 +1,15 @@
-package com.sba.ssos.controller.admin;
+package com.sba.ssos.controller.dashboard;
 
+import com.sba.ssos.constant.ApiPaths;
 import com.sba.ssos.dto.ResponseGeneral;
-import com.sba.ssos.dto.dashboard.DashboardChartPointResponse;
-import com.sba.ssos.dto.dashboard.DashboardLowStockResponse;
-import com.sba.ssos.dto.dashboard.DashboardMetricsResponse;
-import com.sba.ssos.dto.dashboard.DashboardRecentOrderResponse;
-import com.sba.ssos.dto.dashboard.DashboardTopSellingResponse;
+import com.sba.ssos.dto.response.dashboard.DashboardChartPointResponse;
+import com.sba.ssos.dto.response.dashboard.DashboardLowStockResponse;
+import com.sba.ssos.dto.response.dashboard.DashboardMetricsResponse;
+import com.sba.ssos.dto.response.dashboard.DashboardRecentOrderResponse;
+import com.sba.ssos.dto.response.dashboard.DashboardTopSellingResponse;
 import com.sba.ssos.service.DashboardService;
 import com.sba.ssos.utils.LocaleUtils;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -19,9 +21,10 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/admin/dashboard")
+@RequestMapping(ApiPaths.ADMIN_DASHBOARD)
 @RequiredArgsConstructor
 @Validated
+@Tag(name = "Admin Dashboard", description = "Administrative dashboard metrics endpoints")
 public class AdminDashboardController {
 
     private final DashboardService dashboardService;

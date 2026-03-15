@@ -1,5 +1,6 @@
 package com.sba.ssos.controller.review;
 
+import com.sba.ssos.constant.ApiPaths;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.review.ReviewCreateRequest;
 import com.sba.ssos.dto.request.review.ReviewUpdateRequest;
@@ -9,6 +10,7 @@ import com.sba.ssos.dto.response.review.ReviewPublicListResponse;
 import com.sba.ssos.dto.response.review.ReviewResponse;
 import com.sba.ssos.service.review.ReviewService;
 import com.sba.ssos.utils.LocaleUtils;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -24,8 +26,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/api/reviews")
+@RequestMapping(ApiPaths.REVIEWS)
 @RequiredArgsConstructor
+@Tag(name = "Reviews", description = "Review browsing and customer review actions")
 public class ReviewController {
 
     private final ReviewService reviewService;
