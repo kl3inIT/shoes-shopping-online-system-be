@@ -107,7 +107,7 @@ public class ShoeController {
     @GetMapping("/{id}/variants")
     public ResponseGeneral<List<ShoeVariantResponse>> getVariantsByShoeId(@PathVariable UUID id) {
         List<ShoeVariantResponse> data = shoeVariantService.getVariantsByShoeId(id);
-        return ResponseGeneral.ofSuccess(localeUtils.get("success.generic"), data);
+        return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.variants.fetched"), data);
     }
 
     @PutMapping(value = "/{id}", consumes = {"multipart/form-data"})

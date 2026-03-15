@@ -20,7 +20,7 @@ public class ShoeVariantService {
 
     public ShoeVariant findById(UUID id) {
         return shoeVariantRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("ShoeVariant not found " + id));
+                .orElseThrow(() -> new NotFoundException("ShoeVariant", id));
     }
 
     public List<ShoeVariantResponse> getVariantsByShoeId(UUID shoeId) {

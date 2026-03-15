@@ -35,6 +35,12 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(BaseException.class)
   public ProblemDetail handleBaseException(BaseException ex, HttpServletRequest request) {
+    if (ex.getStatus().is5xxServerError()) {
+      log.error("Application exception: {}", ex.getMessage(), ex);
+    } else {
+      log.warn("Application exception: {}", ex.getMessage());
+    }
+
     String detail = localeUtils.get(ex.getMessage(), ex.getParams().values().toArray());
     ProblemDetail problem =
         createProblem(HttpStatus.valueOf(ex.getStatus().value()), detail, request);
@@ -55,7 +61,8 @@ public class GlobalExceptionHandler {
             .collect(
                 Collectors.toMap(
                     FieldError::getField,
-                    fieldError -> localeUtils.get(fieldError.getDefaultMessage()),
+                    fieldError ->
+                        resolveMessage(fieldError.getDefaultMessage(), "error.validation.failed"),
                     (first, second) -> first,
                     LinkedHashMap::new));
 
@@ -81,7 +88,8 @@ public class GlobalExceptionHandler {
                         error ->
                             errors.putIfAbsent(
                                 validationResult.getMethodParameter().getParameterName(),
-                                localeUtils.get(error.getDefaultMessage()))));
+                                resolveMessage(
+                                    error.getDefaultMessage(), "error.validation.failed"))));
 
     String detail =
         errors.values().stream().findFirst().orElse(localeUtils.get("error.validation.failed"));
@@ -205,6 +213,9 @@ public class GlobalExceptionHandler {
   private String resolveMessage(String messageKeyOrMessage, String fallbackKey) {
     if (messageKeyOrMessage == null || messageKeyOrMessage.isBlank()) {
       return localeUtils.get(fallbackKey);
+    }
+    if (messageKeyOrMessage.startsWith("{") && messageKeyOrMessage.endsWith("}")) {
+      messageKeyOrMessage = messageKeyOrMessage.substring(1, messageKeyOrMessage.length() - 1);
     }
     if (messageKeyOrMessage.startsWith("error.") || messageKeyOrMessage.startsWith("validation.")) {
       return localeUtils.get(messageKeyOrMessage);

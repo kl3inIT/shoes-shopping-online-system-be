@@ -38,7 +38,8 @@ public class AdminDashboardController {
 
     @GetMapping("/chart")
     public ResponseGeneral<List<DashboardChartPointResponse>> getChart(
-            @RequestParam(name = "days", defaultValue = "90") @Min(1) int days
+            @RequestParam(name = "days", defaultValue = "90")
+            @Min(value = 1, message = "validation.dashboard.days.min") int days
     ) {
         List<DashboardChartPointResponse> data = dashboardService.getChartData(days);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.dashboard.chart"), data);
@@ -46,7 +47,8 @@ public class AdminDashboardController {
 
     @GetMapping("/recent-orders")
     public ResponseGeneral<List<DashboardRecentOrderResponse>> getRecentOrders(
-            @RequestParam(name = "limit", defaultValue = "10") @Min(1) int limit
+            @RequestParam(name = "limit", defaultValue = "10")
+            @Min(value = 1, message = "validation.dashboard.limit.min") int limit
     ) {
         List<DashboardRecentOrderResponse> data = dashboardService.getRecentOrders(limit);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.dashboard.recentOrders"), data);
@@ -54,7 +56,8 @@ public class AdminDashboardController {
 
     @GetMapping("/top-selling")
     public ResponseGeneral<List<DashboardTopSellingResponse>> getTopSelling(
-            @RequestParam(name = "limit", defaultValue = "10") @Min(1) int limit
+            @RequestParam(name = "limit", defaultValue = "10")
+            @Min(value = 1, message = "validation.dashboard.limit.min") int limit
     ) {
         List<DashboardTopSellingResponse> data = dashboardService.getTopSelling(limit);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.dashboard.topSelling"), data);
@@ -62,7 +65,8 @@ public class AdminDashboardController {
 
     @GetMapping("/low-stock")
     public ResponseGeneral<List<DashboardLowStockResponse>> getLowStock(
-            @RequestParam(name = "threshold", defaultValue = "5") @Min(0) int threshold
+            @RequestParam(name = "threshold", defaultValue = "5")
+            @Min(value = 0, message = "validation.dashboard.threshold.min") int threshold
     ) {
         List<DashboardLowStockResponse> data = dashboardService.getLowStock(threshold);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.dashboard.lowStock"), data);

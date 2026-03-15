@@ -123,6 +123,8 @@ public class OrderService {
     payment.setPaymentMethod(PaymentMethod.ONLINE);
     paymentRepository.save(payment);
 
+    log.info("Created order {} for customer {}", order.getId(), customer.getId());
+
     return new OrderCreateResponse(
         order.getId(),
         order.getOrderCode(),
@@ -177,6 +179,7 @@ public class OrderService {
       cartItem.setActive(true);
     }
     cartItemRepository.saveAllAndFlush(cartItems);
+    log.info("Marked order {} as payment expired", orderId);
   }
 
   @Transactional(readOnly = true)
@@ -271,6 +274,7 @@ public class OrderService {
     }
 
     String orderCode = matcher.group();
+    log.info("Resolved payment webhook to order code {}", orderCode);
     Order order = getOrderByCode(orderCode);
 
     double amountReceived = request.transferAmount().doubleValue();

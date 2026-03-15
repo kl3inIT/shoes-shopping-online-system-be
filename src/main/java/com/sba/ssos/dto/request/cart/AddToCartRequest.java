@@ -6,10 +6,10 @@ import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 public record AddToCartRequest(
-        @NotNull(message = "Shoe variant id is required")
+        @NotNull(message = "validation.cart.shoe_variant_id.required")
         UUID shoeVariantId,
 
-        @NotNull(message = "Quantity is required")
-        @Min(value = 1, message = "Quantity must be at least 1")
+        @NotNull(message = "validation.cart.quantity.required")
+        @Min(value = 1, message = "validation.cart.quantity.min")
         Long quantity
 ) {}

@@ -15,14 +15,14 @@ import java.util.UUID;
 
 public record ShoeUpdateRequest(
         @NotBlank(message = "validation.shoe.name.required")
-        @Size(max = 255)
+        @Size(max = 255, message = "validation.shoe.name.size")
         String name,
 
         @NotBlank(message = "validation.shoe.description.required")
         String description,
 
         @NotBlank(message = "validation.shoe.material.required")
-        @Size(max = 255)
+        @Size(max = 255, message = "validation.shoe.material.size")
         String material,
 
         @NotNull(message = "validation.shoe.gender.required")

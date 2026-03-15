@@ -17,11 +17,13 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class NotificationService {
 
   private final NotificationRepository notificationRepository;
@@ -31,6 +33,7 @@ public class NotificationService {
 
   @Transactional
   public NotificationResponse broadcast(NotificationBroadcastRequest request) {
+    log.info("Broadcasting notification of type {}", request.type());
     Notification saved =
         notificationRepository.save(
             Notification.builder()
@@ -51,6 +54,7 @@ public class NotificationService {
             .collect(Collectors.toList());
 
     userNotificationRepository.saveAll(userNotifications);
+    log.info("Broadcast notification {} to {} users", saved.getId(), userNotifications.size());
     return toResponse(saved);
   }
 
@@ -84,16 +88,21 @@ public class NotificationService {
     UserNotification userNotification =
         userNotificationRepository
             .findById(userNotificationId)
-            .orElseThrow(() -> new NotFoundException("Notification not found"));
+            .orElseThrow(() -> new NotFoundException("Notification", userNotificationId));
 
     var currentUser = authenticatedUserService.getCurrentUserEntity();
     if (!userNotification.getUser().getId().equals(currentUser.getId())) {
+      log.warn(
+          "User {} attempted to mark notification {} that does not belong to them",
+          currentUser.getId(),
+          userNotificationId);
       throw new ForbiddenException("error.auth.forbidden");
     }
 
     if (!userNotification.isRead()) {
       userNotification.setRead(true);
       userNotificationRepository.save(userNotification);
+      log.info("Marked notification {} as read for user {}", userNotificationId, currentUser.getId());
     }
   }
 

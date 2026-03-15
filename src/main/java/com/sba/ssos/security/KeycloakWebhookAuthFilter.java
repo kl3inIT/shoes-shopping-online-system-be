@@ -1,23 +1,28 @@
 package com.sba.ssos.security;
 
 import com.sba.ssos.configuration.ApplicationProperties;
+import com.sba.ssos.exception.base.UnauthorizedException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class KeycloakWebhookAuthFilter extends OncePerRequestFilter {
 
     private static final String SECRET_HEADER = "X-Keycloak-Secret";
     private static final String WEBHOOK_PATH_PREFIX = "/keycloak/webhook/";
 
     private final ApplicationProperties applicationProperties;
+    private final HandlerExceptionResolver handlerExceptionResolver;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -43,7 +48,9 @@ public class KeycloakWebhookAuthFilter extends OncePerRequestFilter {
         String providedSecret = request.getHeader(SECRET_HEADER);
 
         if (expectedSecret == null || !expectedSecret.equals(providedSecret)) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            log.warn("Rejected Keycloak webhook request due to missing or invalid secret");
+            handlerExceptionResolver.resolveException(
+                request, response, null, new UnauthorizedException("error.auth.unauthorized"));
             return;
         }
 

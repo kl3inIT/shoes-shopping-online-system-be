@@ -16,6 +16,7 @@ import com.sba.ssos.service.category.CategoryService;
 import com.sba.ssos.service.product.shoeimage.ShoeImageService;
 import com.sba.ssos.utils.SkuUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -30,6 +31,7 @@ import static com.sba.ssos.utils.SlugUtils.slugify;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ShoeService {
 
     private final ShoeRepository shoeRepository;
@@ -45,8 +47,11 @@ public class ShoeService {
     @Transactional
     public ShoeResponse create(ShoeCreateRequest request, List<MultipartFile> shoeImageFiles, List<List<MultipartFile>> variantImageFilesList) {
         if (request.variants() != null && request.variants().size() > 80) {
-            throw new IllegalArgumentException("Shoe variants must not exceed 80");
+            log.warn("Rejected shoe creation because variant count {} exceeds limit", request.variants().size());
+            throw new BadRequestException("error.shoe.variants.max_count", "maxCount", 80);
         }
+
+        log.info("Creating shoe {}", request.name());
 
         Category category = categoryService.findById(request.categoryId());
         Brand brand = brandService.findById(request.brandId());
@@ -80,6 +85,8 @@ public class ShoeService {
     ) {
         Shoe shoe = shoeRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Shoe", id));
+
+        log.info("Updating shoe {}", id);
 
         Category category = categoryService.findById(request.categoryId());
         Brand brand = brandService.findById(request.brandId());
@@ -494,19 +501,19 @@ public class ShoeService {
 
     private void validatePageable(Pageable pageable) {
         if (pageable == null) {
-            throw new IllegalArgumentException("pageable must not be null");
+            throw new BadRequestException("error.pageable.required");
         }
         if (pageable.getPageNumber() < 0) {
-            throw new IllegalArgumentException("page must be greater than or equal to 0");
+            throw new BadRequestException("validation.page.min");
         }
         if (pageable.getPageSize() <= 0 || pageable.getPageSize() > 100) {
-            throw new IllegalArgumentException("size must be between 1 and 100");
+            throw new BadRequestException("error.page.size.invalid");
         }
     }
 
     private void validatePriceRange(BigDecimal minPrice, BigDecimal maxPrice) {
         if (minPrice != null && maxPrice != null && minPrice.compareTo(maxPrice) > 0) {
-            throw new IllegalArgumentException("minPrice must be less than or equal to maxPrice");
+            throw new BadRequestException("error.price.range.invalid");
         }
     }
 
@@ -523,7 +530,7 @@ public class ShoeService {
 
         for (String status : normalized) {
             if (ShoeStatus.fromId(status) == null) {
-                throw new IllegalArgumentException("Invalid shoe status: " + status);
+                throw new BadRequestException("error.shoe.status.invalid", "status", status);
             }
         }
 
@@ -543,7 +550,7 @@ public class ShoeService {
 
         for (String gender : normalized) {
             if (Gender.fromId(gender) == null) {
-                throw new IllegalArgumentException("Invalid gender: " + gender);
+                throw new BadRequestException("error.shoe.gender.invalid", "gender", gender);
             }
         }
 
@@ -582,7 +589,8 @@ public class ShoeService {
             candidate = baseSlug + "-" + suffix;
         }
 
-        throw new IllegalStateException("Could not generate a unique slug for: " + baseSlug);
+        log.error("Failed to generate a unique slug for {}", baseSlug);
+        throw new InternalServerErrorException("error.shoe.slug.generate_failed", "slug", baseSlug);
     }
 
     private String generateUniqueSku(String baseSku) {
@@ -597,7 +605,8 @@ public class ShoeService {
             candidate = SkuUtils.appendNumericSuffix(baseSku, suffix);
         }
 
-        throw new IllegalStateException("Could not generate a unique SKU for: " + baseSku);
+        log.error("Failed to generate a unique SKU for {}", baseSku);
+        throw new InternalServerErrorException("error.shoe.sku.generate_failed", "sku", baseSku);
     }
 
     private String generateUniqueSkuForUpdate(String baseSku, UUID variantId) {
@@ -612,6 +621,7 @@ public class ShoeService {
             candidate = SkuUtils.appendNumericSuffix(baseSku, suffix);
         }
 
-        throw new IllegalStateException("Could not generate a unique SKU for: " + baseSku);
+        log.error("Failed to generate a unique SKU for {}", baseSku);
+        throw new InternalServerErrorException("error.shoe.sku.generate_failed", "sku", baseSku);
     }
 }
