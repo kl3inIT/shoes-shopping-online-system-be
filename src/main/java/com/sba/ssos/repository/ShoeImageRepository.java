@@ -21,8 +21,14 @@ public interface ShoeImageRepository extends JpaRepository<ShoeImage, UUID> {
     // Ảnh chung của shoe (shoeVariant = null), trả về theo thứ tự hiển thị (primary trước)
     List<ShoeImage> findByShoe_IdAndShoeVariantIsNullOrderByIsPrimaryDescSortOrderAscCreatedAtAsc(UUID shoeId);
 
+    List<ShoeImage> findByShoe_IdInAndShoeVariantIsNullOrderByShoe_IdAscIsPrimaryDescSortOrderAscCreatedAtAsc(
+            Collection<UUID> shoeIds);
+
     // Ảnh của 1 variant, trả về theo thứ tự hiển thị (primary trước)
     List<ShoeImage> findByShoeVariant_IdOrderByIsPrimaryDescSortOrderAscCreatedAtAsc(UUID shoeVariantId);
+
+    List<ShoeImage> findByShoeVariant_IdInOrderByShoeVariant_IdAscIsPrimaryDescSortOrderAscCreatedAtAsc(
+            Collection<UUID> shoeVariantIds);
 
     Optional<ShoeImage> findFirstByShoe_IdOrderByIdAsc(UUID shoeId);
 

@@ -18,6 +18,7 @@ import com.sba.ssos.utils.SkuUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -73,7 +74,7 @@ public class ShoeService {
         Shoe shoe = shoeRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Shoe", id));
 
-        return toShoeResponse(shoe);
+        return toShoeResponses(List.of(shoe)).get(0);
     }
 
     @Transactional
@@ -135,6 +136,7 @@ public class ShoeService {
     ) {
         validatePageable(pageable);
         validatePriceRange(minPrice, maxPrice);
+        long startedAt = System.nanoTime();
 
         List<String> normalizedStatuses = normalizeStatuses(statuses);
         List<String> normalizedGenders = normalizeGenders(genders);
@@ -151,13 +153,31 @@ public class ShoeService {
                 pageable
         );
 
-        return page.map(this::toShoeResponse);
+        List<ShoeResponse> content = toShoeResponses(page.getContent());
+        long durationMs = (System.nanoTime() - startedAt) / 1_000_000L;
+        if (durationMs > 1_000) {
+            log.warn(
+                    "Slow shoe search detected: {} ms (page={}, size={}, total={}, search='{}', brands={}, categories={}, sizes={}, statuses={}, genders={})",
+                    durationMs,
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    page.getTotalElements(),
+                    search,
+                    brandIds == null ? 0 : brandIds.size(),
+                    categoryIds == null ? 0 : categoryIds.size(),
+                    sizes == null ? 0 : sizes.size(),
+                    normalizedStatuses == null ? 0 : normalizedStatuses.size(),
+                    normalizedGenders == null ? 0 : normalizedGenders.size()
+            );
+        }
+
+        return new PageImpl<>(content, pageable, page.getTotalElements());
     }
 
     @Transactional(readOnly = true)
     public List<ShoeResponse> getNewArrivals(int limit) {
         List<Shoe> shoes = shoeRepository.findAll(PageRequest.of(0, limit)).getContent();
-        return shoes.stream().map(this::toShoeResponse).toList();
+        return toShoeResponses(shoes);
     }
 
     @Transactional(readOnly = true)
@@ -173,7 +193,7 @@ public class ShoeService {
                 }
             }
         }
-        return shoes.stream().map(this::toShoeResponse).toList();
+        return toShoeResponses(shoes);
     }
 
     @Transactional(readOnly = true)
@@ -197,9 +217,67 @@ public class ShoeService {
         return buildShoeResponse(shoe, variants, shoeImageUrls);
     }
 
+    private List<ShoeResponse> toShoeResponses(List<Shoe> shoes) {
+        if (shoes == null || shoes.isEmpty()) {
+            return List.of();
+        }
+
+        List<UUID> shoeIds = shoes.stream().map(Shoe::getId).toList();
+        List<ShoeVariant> variants =
+                shoeVariantRepository.findByShoe_IdInAndActiveTrueOrderByShoe_IdAscSizeAscColorAsc(shoeIds);
+        Map<UUID, List<ShoeVariant>> variantsByShoeId = new LinkedHashMap<>();
+        for (Shoe shoe : shoes) {
+            variantsByShoeId.put(shoe.getId(), new ArrayList<>());
+        }
+        for (ShoeVariant variant : variants) {
+            variantsByShoeId.computeIfAbsent(variant.getShoe().getId(), unused -> new ArrayList<>())
+                    .add(variant);
+        }
+
+        List<UUID> variantIds = variants.stream().map(ShoeVariant::getId).toList();
+        Map<UUID, List<String>> shoeImageUrlsByShoeId = shoeImageService.getShoeImageUrlsByShoeIds(shoeIds);
+        Map<UUID, List<String>> variantImageUrlsByVariantId =
+                shoeImageService.getVariantImageUrlsByVariantIds(variantIds);
+
+        Map<UUID, ShoeReviewSnapshot> reviewStatsByShoeId = new HashMap<>();
+        for (ReviewRepository.ShoeReviewStats stats : reviewRepository.getStatsByShoeIds(shoeIds)) {
+            reviewStatsByShoeId.put(
+                    stats.getShoeId(),
+                    new ShoeReviewSnapshot(stats.getAverageStars(), stats.getReviewCount())
+            );
+        }
+
+        return shoes.stream()
+                .map(shoe -> buildShoeResponse(
+                        shoe,
+                        variantsByShoeId.getOrDefault(shoe.getId(), List.of()),
+                        shoeImageUrlsByShoeId.getOrDefault(shoe.getId(), List.of()),
+                        reviewStatsByShoeId.getOrDefault(shoe.getId(), ShoeReviewSnapshot.EMPTY),
+                        variantImageUrlsByVariantId
+                ))
+                .toList();
+    }
+
     private ShoeResponse buildShoeResponse(Shoe shoe, List<ShoeVariant> variants, List<String> shoeImageUrls) {
         Double avgRating = reviewRepository.getAverageStarsByShoeId(shoe.getId());
         long reviewCount = reviewRepository.countByShoeVariant_Shoe_Id(shoe.getId());
+
+        return buildShoeResponse(
+                shoe,
+                variants,
+                shoeImageUrls,
+                new ShoeReviewSnapshot(avgRating, reviewCount),
+                Map.of()
+        );
+    }
+
+    private ShoeResponse buildShoeResponse(
+            Shoe shoe,
+            List<ShoeVariant> variants,
+            List<String> shoeImageUrls,
+            ShoeReviewSnapshot reviewSnapshot,
+            Map<UUID, List<String>> variantImageUrlsByVariantId
+    ) {
 
         return ShoeResponse.builder()
                 .id(shoe.getId())
@@ -216,16 +294,23 @@ public class ShoeService {
                 .brandName(shoe.getBrand().getName())
                 .brandSlug(shoe.getBrand().getSlug())
                 .price(shoe.getPrice())
-                .avgRating(avgRating)
-                .reviewCount(reviewCount)
+                .avgRating(reviewSnapshot.avgRating())
+                .reviewCount(reviewSnapshot.reviewCount())
                 .imageUrls(shoeImageUrls)
-                .variants(toVariantResponses(variants))
+                .variants(toVariantResponses(variants, variantImageUrlsByVariantId))
                 .createdAt(shoe.getCreatedAt())
                 .updatedAt(shoe.getLastUpdatedAt())
                 .build();
     }
 
     private List<ShoeVariantResponse> toVariantResponses(List<ShoeVariant> variants) {
+        return toVariantResponses(variants, Map.of());
+    }
+
+    private List<ShoeVariantResponse> toVariantResponses(
+            List<ShoeVariant> variants,
+            Map<UUID, List<String>> variantImageUrlsByVariantId
+    ) {
         return variants.stream()
                 .map(variant -> new ShoeVariantResponse(
                         variant.getId(),
@@ -234,11 +319,17 @@ public class ShoeService {
                         variant.getColor(),
                         variant.getQuantity(),
                         variant.getSku(),
-                        shoeImageService.getVariantImageUrls(variant),
+                        variantImageUrlsByVariantId.isEmpty()
+                                ? shoeImageService.getVariantImageUrls(variant)
+                                : variantImageUrlsByVariantId.getOrDefault(variant.getId(), List.of()),
                         variant.getCreatedAt(),
                         variant.getLastUpdatedAt()
                 ))
                 .toList();
+    }
+
+    private record ShoeReviewSnapshot(Double avgRating, long reviewCount) {
+        private static final ShoeReviewSnapshot EMPTY = new ShoeReviewSnapshot(null, 0L);
     }
 
     private List<ShoeVariant> createVariants(Shoe shoe, List<ShoeVariantRequest> requests) {

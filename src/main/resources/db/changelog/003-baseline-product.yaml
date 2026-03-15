@@ -1,0 +1,344 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-baseline-product
+      author: codex
+      changes:
+        - createTable:
+            tableName: brands
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_brands
+                    nullable: false
+              - column:
+                  name: version
+                  type: bigint
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamp
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: updated_at
+                  type: timestamp
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: slug
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: logo_url
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: country
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: brands
+            columnNames: slug
+            constraintName: uk_brands_slug
+        - createTable:
+            tableName: categories
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_categories
+                    nullable: false
+              - column:
+                  name: version
+                  type: bigint
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamp
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: updated_at
+                  type: timestamp
+              - column:
+                  name: name
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: slug
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: categories
+            columnNames: slug
+            constraintName: uk_categories_slug
+        - createTable:
+            tableName: shoes
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_shoes
+                    nullable: false
+              - column:
+                  name: version
+                  type: bigint
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamp
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: updated_at
+                  type: timestamp
+              - column:
+                  name: gender
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: material
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: slug
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: category_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: brand_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price
+                  type: double
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: shoes
+            columnNames: slug
+            constraintName: uk_shoes_slug
+        - createIndex:
+            tableName: shoes
+            indexName: idx_shoes_category_id
+            columns:
+              - column:
+                  name: category_id
+        - createIndex:
+            tableName: shoes
+            indexName: idx_shoes_brand_id
+            columns:
+              - column:
+                  name: brand_id
+        - addForeignKeyConstraint:
+            baseTableName: shoes
+            baseColumnNames: category_id
+            referencedTableName: categories
+            referencedColumnNames: id
+            constraintName: fk_shoes_category
+        - addForeignKeyConstraint:
+            baseTableName: shoes
+            baseColumnNames: brand_id
+            referencedTableName: brands
+            referencedColumnNames: id
+            constraintName: fk_shoes_brand
+        - createTable:
+            tableName: shoe_variants
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_shoe_variants
+                    nullable: false
+              - column:
+                  name: version
+                  type: bigint
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamp
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: updated_at
+                  type: timestamp
+              - column:
+                  name: shoe_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: size
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: color
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sku
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: active
+                  type: boolean
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: shoe_variants
+            columnNames: sku
+            constraintName: uk_shoe_variants_sku
+        - createIndex:
+            tableName: shoe_variants
+            indexName: idx_shoe_variants_shoe_id
+            columns:
+              - column:
+                  name: shoe_id
+        - addForeignKeyConstraint:
+            baseTableName: shoe_variants
+            baseColumnNames: shoe_id
+            referencedTableName: shoes
+            referencedColumnNames: id
+            constraintName: fk_shoe_variants_shoe
+        - createTable:
+            tableName: shoe_images
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_shoe_images
+                    nullable: false
+              - column:
+                  name: version
+                  type: bigint
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamp
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: updated_at
+                  type: timestamp
+              - column:
+                  name: url
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_primary
+                  type: boolean
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sort_order
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: shoe_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: shoe_variant_id
+                  type: uuid
+        - createIndex:
+            tableName: shoe_images
+            indexName: idx_shoe_images_shoe_id
+            columns:
+              - column:
+                  name: shoe_id
+        - createIndex:
+            tableName: shoe_images
+            indexName: idx_shoe_images_shoe_variant_id
+            columns:
+              - column:
+                  name: shoe_variant_id
+        - addForeignKeyConstraint:
+            baseTableName: shoe_images
+            baseColumnNames: shoe_id
+            referencedTableName: shoes
+            referencedColumnNames: id
+            constraintName: fk_shoe_images_shoe
+        - addForeignKeyConstraint:
+            baseTableName: shoe_images
+            baseColumnNames: shoe_variant_id
+            referencedTableName: shoe_variants
+            referencedColumnNames: id
+            constraintName: fk_shoe_images_shoe_variant
