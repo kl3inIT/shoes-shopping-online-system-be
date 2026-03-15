@@ -6,13 +6,8 @@ import com.sba.ssos.exception.base.NotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -24,21 +19,18 @@ public class CheckRunner {
   private final CheckResultRepository checkResultRepository;
   private final ChatService chatService;
   private final ExternalEvaluator externalEvaluator;
-  private final int parallelism;
 
   public CheckRunner(
       CheckDefRepository checkDefRepository,
       CheckRunRepository checkRunRepository,
       CheckResultRepository checkResultRepository,
       ChatService chatService,
-      ExternalEvaluator externalEvaluator,
-      @Value("${ai.checks.parallelism:4}") int parallelism) {
+      ExternalEvaluator externalEvaluator) {
     this.checkDefRepository = checkDefRepository;
     this.checkRunRepository = checkRunRepository;
     this.checkResultRepository = checkResultRepository;
     this.chatService = chatService;
     this.externalEvaluator = externalEvaluator;
-    this.parallelism = Math.max(1, parallelism);
   }
 
   public UUID runChecks() {
@@ -52,32 +44,13 @@ public class CheckRunner {
     checkRunRepository.save(checkRun);
 
     log.info(
-        "Starting check run {} with {} definitions, parallelism={}",
+        "Starting check run {} with {} definitions (sequential)",
         checkRun.getId(),
-        checkDefs.size(),
-        parallelism);
+        checkDefs.size());
 
-    ExecutorService executor = Executors.newFixedThreadPool(parallelism);
     List<CheckResult> results = new ArrayList<>();
-
-    try {
-      List<Future<CheckResult>> futures =
-          checkDefs.stream()
-              .map(def -> executor.submit(() -> evaluateSingle(def, checkRun)))
-              .toList();
-
-      for (int i = 0; i < futures.size(); i++) {
-        try {
-          results.add(futures.get(i).get());
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          results.add(failedResult(checkDefs.get(i), checkRun, "Interrupted: " + e.getMessage()));
-        } catch (ExecutionException e) {
-          results.add(failedResult(checkDefs.get(i), checkRun, "Failed: " + e.getCause()));
-        }
-      }
-    } finally {
-      executor.shutdown();
+    for (CheckDef def : checkDefs) {
+      results.add(evaluateSingle(def, checkRun));
     }
 
     checkResultRepository.saveAll(results);
