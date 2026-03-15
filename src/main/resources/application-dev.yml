@@ -3,7 +3,7 @@ spring:
     activate:
       on-profile: dev
   datasource:
-    url: jdbc:postgresql://${POSTGRESQL_HOST:localhost}:${POSTGRESQL_PORT:5432}/${POSTGRESQL_NAME:ssos}
+    url: jdbc:postgresql://${POSTGRESQL_HOST:localhost}:${POSTGRESQL_PORT:5432}/${POSTGRESQL_NAME:ssos}?currentSchema=${POSTGRESQL_SCHEMA:v2}
     username: ${POSTGRESQL_USERNAME:postgres}
     password: ${POSTGRESQL_PASSWORD:123456}
   sql:
@@ -11,7 +11,7 @@ spring:
       mode: never
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
   security:
     oauth2:
       resourceserver:

@@ -9,7 +9,7 @@ spring:
     virtual:
       enabled: true
   liquibase:
-    enabled: false
+    enabled: true
     change-log: classpath:db/changelog/master.yaml
   jpa:
     open-in-view: false
