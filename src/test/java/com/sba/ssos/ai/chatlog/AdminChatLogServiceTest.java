@@ -1,6 +1,7 @@
 package com.sba.ssos.ai.chatlog;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -9,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.sba.ssos.dto.response.PageResponse;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -111,5 +113,38 @@ class AdminChatLogServiceTest {
                 chatLogAdminService.getChatLogs(0, 20, null, null, null);
 
         assertThat(result.content().get(0).sourcesExcerpt()).isEqualTo("");
+    }
+
+    @Test
+    void getChatLog_returnsFullDetail() {
+        UUID id = UUID.randomUUID();
+        ChatLog log = new ChatLog();
+        log.setConversationId("conv-detail");
+        log.setLogContent("Full response content here");
+        log.setSources("https://src1.com,https://src2.com");
+        log.setPromptTokens(50);
+        log.setCompletionTokens(150);
+        log.setResponseTimeMs(1200L);
+
+        when(chatLogRepository.findById(id)).thenReturn(Optional.of(log));
+
+        ChatLogDetailResponse result = chatLogAdminService.getChatLog(id);
+
+        assertThat(result).isNotNull();
+        assertThat(result.logContent()).isEqualTo("Full response content here");
+        assertThat(result.sources()).isEqualTo("https://src1.com,https://src2.com");
+        assertThat(result.promptTokens()).isEqualTo(50);
+        assertThat(result.completionTokens()).isEqualTo(150);
+        assertThat(result.responseTimeMs()).isEqualTo(1200L);
+    }
+
+    @Test
+    void getChatLog_throwsWhenNotFound() {
+        UUID unknownId = UUID.randomUUID();
+        when(chatLogRepository.findById(unknownId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> chatLogAdminService.getChatLog(unknownId))
+                .isInstanceOf(jakarta.persistence.EntityNotFoundException.class)
+                .hasMessageContaining(unknownId.toString());
     }
 }
