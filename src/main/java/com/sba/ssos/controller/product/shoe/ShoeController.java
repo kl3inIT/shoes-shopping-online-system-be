@@ -4,6 +4,7 @@ import com.sba.ssos.constant.ApiPaths;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.product.shoe.ShoeCreateRequest;
 import com.sba.ssos.dto.request.product.shoe.ShoeUpdateRequest;
+import com.sba.ssos.dto.response.PageResponse;
 import com.sba.ssos.dto.response.product.shoe.ShoeResponse;
 import com.sba.ssos.dto.response.product.shoe.ShoeStockSummaryResponse;
 import com.sba.ssos.dto.response.product.shoevariant.ShoeVariantResponse;
@@ -14,7 +15,6 @@ import com.sba.ssos.utils.LocaleUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
@@ -49,7 +49,7 @@ public class ShoeController {
     }
 
     @GetMapping
-    public ResponseGeneral<Page<ShoeResponse>> getAll(
+    public ResponseGeneral<PageResponse<ShoeResponse>> getAll(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) List<UUID> brandIds,
             @RequestParam(required = false) List<String> sizes,
@@ -60,7 +60,7 @@ public class ShoeController {
             @RequestParam(required = false) List<String> genders,
             @PageableDefault(sort = "createdAt") Pageable pageable
     ) {
-        Page<ShoeResponse> data = shoeService.search(
+        PageResponse<ShoeResponse> data = PageResponse.from(shoeService.search(
                 search,
                 brandIds,
                 sizes,
@@ -70,7 +70,7 @@ public class ShoeController {
                 statuses,
                 genders,
                 pageable
-        );
+        ));
         return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.fetched"), data);
     }
 
@@ -107,7 +107,7 @@ public class ShoeController {
     @GetMapping("/{id}/variants")
     public ResponseGeneral<List<ShoeVariantResponse>> getVariantsByShoeId(@PathVariable UUID id) {
         List<ShoeVariantResponse> data = shoeVariantService.getVariantsByShoeId(id);
-        return ResponseGeneral.ofSuccess(localeUtils.get("success.generic"), data);
+        return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.variants.fetched"), data);
     }
 
     @PutMapping(value = "/{id}", consumes = {"multipart/form-data"})

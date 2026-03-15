@@ -1,0 +1,325 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-baseline-commerce
+      author: codex
+      changes:
+        - createTable:
+            tableName: cart_items
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_cart_items
+                    nullable: false
+              - column:
+                  name: version
+                  type: bigint
+              - column:
+                  name: customer_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: shoe_variant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_active
+                  type: boolean
+        - createIndex:
+            tableName: cart_items
+            indexName: idx_cart_items_customer_id
+            columns:
+              - column:
+                  name: customer_id
+        - createIndex:
+            tableName: cart_items
+            indexName: idx_cart_items_shoe_variant_id
+            columns:
+              - column:
+                  name: shoe_variant_id
+        - addForeignKeyConstraint:
+            baseTableName: cart_items
+            baseColumnNames: customer_id
+            referencedTableName: customers
+            referencedColumnNames: id
+            constraintName: fk_cart_items_customer
+        - addForeignKeyConstraint:
+            baseTableName: cart_items
+            baseColumnNames: shoe_variant_id
+            referencedTableName: shoe_variants
+            referencedColumnNames: id
+            constraintName: fk_cart_items_shoe_variant
+        - createTable:
+            tableName: wishlists
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_wishlists
+                    nullable: false
+              - column:
+                  name: version
+                  type: bigint
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamp
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: updated_at
+                  type: timestamp
+              - column:
+                  name: shoe_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: customer_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: wishlists
+            indexName: idx_wishlists_shoe_id
+            columns:
+              - column:
+                  name: shoe_id
+        - createIndex:
+            tableName: wishlists
+            indexName: idx_wishlists_customer_id
+            columns:
+              - column:
+                  name: customer_id
+        - addForeignKeyConstraint:
+            baseTableName: wishlists
+            baseColumnNames: shoe_id
+            referencedTableName: shoes
+            referencedColumnNames: id
+            constraintName: fk_wishlists_shoe
+        - addForeignKeyConstraint:
+            baseTableName: wishlists
+            baseColumnNames: customer_id
+            referencedTableName: customers
+            referencedColumnNames: id
+            constraintName: fk_wishlists_customer
+        - createTable:
+            tableName: orders
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_orders
+                    nullable: false
+              - column:
+                  name: version
+                  type: bigint
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamp
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: updated_at
+                  type: timestamp
+              - column:
+                  name: customer_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: order_code
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: total_amount
+                  type: double
+                  constraints:
+                    nullable: false
+              - column:
+                  name: shipping_name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: shipping_address
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: shipping_phone
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: notes
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: order_status
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: orders
+            columnNames: order_code
+            constraintName: uk_orders_order_code
+        - createIndex:
+            tableName: orders
+            indexName: idx_orders_customer_id
+            columns:
+              - column:
+                  name: customer_id
+        - addForeignKeyConstraint:
+            baseTableName: orders
+            baseColumnNames: customer_id
+            referencedTableName: customers
+            referencedColumnNames: id
+            constraintName: fk_orders_customer
+        - createTable:
+            tableName: order_details
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_order_details
+                    nullable: false
+              - column:
+                  name: version
+                  type: bigint
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamp
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: updated_at
+                  type: timestamp
+              - column:
+                  name: order_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: shoe_variant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity
+                  type: bigint
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: order_details
+            indexName: idx_order_details_order_id
+            columns:
+              - column:
+                  name: order_id
+        - createIndex:
+            tableName: order_details
+            indexName: idx_order_details_shoe_variant_id
+            columns:
+              - column:
+                  name: shoe_variant_id
+        - addForeignKeyConstraint:
+            baseTableName: order_details
+            baseColumnNames: order_id
+            referencedTableName: orders
+            referencedColumnNames: id
+            constraintName: fk_order_details_order
+        - addForeignKeyConstraint:
+            baseTableName: order_details
+            baseColumnNames: shoe_variant_id
+            referencedTableName: shoe_variants
+            referencedColumnNames: id
+            constraintName: fk_order_details_shoe_variant
+        - createTable:
+            tableName: payments
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_payments
+                    nullable: false
+              - column:
+                  name: version
+                  type: bigint
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamp
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: updated_at
+                  type: timestamp
+              - column:
+                  name: order_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: total_amount
+                  type: double
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount_received
+                  type: double
+              - column:
+                  name: payment_status
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expired_at
+                  type: timestamp
+              - column:
+                  name: method
+                  type: varchar(255)
+        - createIndex:
+            tableName: payments
+            indexName: idx_payments_order_id
+            columns:
+              - column:
+                  name: order_id
+        - addForeignKeyConstraint:
+            baseTableName: payments
+            baseColumnNames: order_id
+            referencedTableName: orders
+            referencedColumnNames: id
+            constraintName: fk_payments_order

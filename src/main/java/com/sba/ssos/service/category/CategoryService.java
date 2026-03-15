@@ -12,11 +12,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CategoryService {
 
   private final CategoryRepository categoryRepository;
@@ -35,6 +37,7 @@ public class CategoryService {
 
   @Transactional
   public CategoryResponse create(CategoryCreateRequest request) {
+    log.info("Creating category {}", request.name());
     CategoryCreateRequest trimmed =
         new CategoryCreateRequest(request.name().trim(), request.description().trim());
     String slug = generateUniqueSlug(SlugUtils.slugify(trimmed.name()), null);
@@ -46,6 +49,7 @@ public class CategoryService {
 
   @Transactional
   public CategoryResponse update(UUID id, CategoryCreateRequest request) {
+    log.info("Updating category {}", id);
     Category category =
         categoryRepository.findById(id).orElseThrow(() -> new NotFoundException("Category", id));
     CategoryCreateRequest trimmed =
@@ -63,9 +67,11 @@ public class CategoryService {
       throw new NotFoundException("Category", id);
     }
     if (shoeRepository.countByCategory_Id(id) > 0) {
+      log.warn("Rejected category deletion for {} because products still exist", id);
       throw new com.sba.ssos.exception.base.ConflictException(
           "error.category.delete.has_products");
     }
+    log.info("Deleting category {}", id);
     categoryRepository.deleteById(id);
   }
 

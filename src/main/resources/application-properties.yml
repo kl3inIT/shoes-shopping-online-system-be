@@ -23,7 +23,7 @@ application-properties:
       - ssos-sepay
 
   rag-properties:
-    schema: ${RAG_SCHEMA:public}
+    schema: ${RAG_SCHEMA:${POSTGRESQL_SCHEMA:public}}
     table: ${RAG_TABLE:ai_documents}
     dimensions: ${RAG_DIMENSIONS:1536}
     ingest-on-boot: ${RAG_INGEST_ON_BOOT:false}

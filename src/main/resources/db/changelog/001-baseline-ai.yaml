@@ -1,0 +1,324 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-enable-pgvector-extension
+      author: codex
+      runInTransaction: false
+      changes:
+        - sql:
+            sql: CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;
+
+  - changeSet:
+      id: 001-baseline-chat-memory
+      author: codex
+      changes:
+        - createTable:
+            tableName: spring_ai_chat_memory
+            columns:
+              - column:
+                  name: conversation_id
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: content
+                  type: text
+              - column:
+                  name: type
+                  type: varchar(50)
+              - column:
+                  name: timestamp
+                  type: timestamp
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: spring_ai_chat_memory
+            columnNames: conversation_id, timestamp
+            constraintName: pk_spring_ai_chat_memory
+        - createIndex:
+            tableName: spring_ai_chat_memory
+            indexName: idx_spring_ai_chat_memory_conversation_id
+            columns:
+              - column:
+                  name: conversation_id
+
+  - changeSet:
+      id: 001-baseline-ai-documents
+      author: codex
+      changes:
+        - createTable:
+            tableName: ai_documents
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_ai_documents
+                    nullable: false
+              - column:
+                  name: content
+                  type: text
+              - column:
+                  name: metadata
+                  type: jsonb
+              - column:
+                  name: embedding
+                  type: vector(1536)
+        - sql:
+            sql: |
+              CREATE INDEX IF NOT EXISTS idx_ai_documents_embedding
+              ON ai_documents
+              USING ivfflat (embedding vector_cosine_ops)
+              WITH (lists = 100);
+
+  - changeSet:
+      id: 001-baseline-ai-domain
+      author: codex
+      changes:
+        - createTable:
+            tableName: ai_chat_logs
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_ai_chat_logs
+                    nullable: false
+              - column:
+                  name: version
+                  type: bigint
+              - column:
+                  name: conversation_id
+                  type: varchar(255)
+              - column:
+                  name: log_content
+                  type: text
+              - column:
+                  name: sources
+                  type: text
+              - column:
+                  name: prompt_tokens
+                  type: int
+              - column:
+                  name: completion_tokens
+                  type: int
+              - column:
+                  name: response_time_ms
+                  type: bigint
+              - column:
+                  name: created_at
+                  type: timestamp
+        - createTable:
+            tableName: ai_parameters
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_ai_parameters
+                    nullable: false
+              - column:
+                  name: version
+                  type: bigint
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamp
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: updated_at
+                  type: timestamp
+              - column:
+                  name: description
+                  type: varchar(255)
+              - column:
+                  name: target_type
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: active
+                  type: boolean
+                  constraints:
+                    nullable: false
+              - column:
+                  name: content
+                  type: text
+        - createIndex:
+            tableName: ai_parameters
+            indexName: idx_ai_params_active_type
+            columns:
+              - column:
+                  name: active
+              - column:
+                  name: target_type
+        - createTable:
+            tableName: ai_check_defs
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_ai_check_defs
+                    nullable: false
+              - column:
+                  name: version
+                  type: bigint
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamp
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: updated_at
+                  type: timestamp
+              - column:
+                  name: active
+                  type: boolean
+              - column:
+                  name: category
+                  type: varchar(255)
+              - column:
+                  name: question
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reference_answer
+                  type: text
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: ai_check_defs
+            indexName: idx_check_def_active
+            columns:
+              - column:
+                  name: active
+        - createTable:
+            tableName: ai_check_runs
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_ai_check_runs
+                    nullable: false
+              - column:
+                  name: version
+                  type: bigint
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamp
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: updated_at
+                  type: timestamp
+              - column:
+                  name: score
+                  type: double
+              - column:
+                  name: summary
+                  type: text
+        - createIndex:
+            tableName: ai_check_runs
+            indexName: idx_check_run_created
+            columns:
+              - column:
+                  name: created_at
+        - createTable:
+            tableName: ai_check_results
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_ai_check_results
+                    nullable: false
+              - column:
+                  name: version
+                  type: bigint
+              - column:
+                  name: check_run_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: check_def_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: category
+                  type: varchar(255)
+              - column:
+                  name: question
+                  type: text
+              - column:
+                  name: reference_answer
+                  type: text
+              - column:
+                  name: actual_answer
+                  type: text
+              - column:
+                  name: score
+                  type: double
+              - column:
+                  name: log
+                  type: text
+              - column:
+                  name: created_at
+                  type: timestamp
+        - createIndex:
+            tableName: ai_chat_logs
+            indexName: idx_ai_chat_logs_conversation
+            columns:
+              - column:
+                  name: conversation_id
+        - createIndex:
+            tableName: ai_chat_logs
+            indexName: idx_ai_chat_logs_created
+            columns:
+              - column:
+                  name: created_at
+        - createIndex:
+            tableName: ai_check_results
+            indexName: idx_check_result_run
+            columns:
+              - column:
+                  name: check_run_id
+        - createIndex:
+            tableName: ai_check_results
+            indexName: idx_check_result_def
+            columns:
+              - column:
+                  name: check_def_id
+        - addForeignKeyConstraint:
+            baseTableName: ai_check_results
+            baseColumnNames: check_run_id
+            referencedTableName: ai_check_runs
+            referencedColumnNames: id
+            constraintName: fk_ai_check_results_check_run
+        - addForeignKeyConstraint:
+            baseTableName: ai_check_results
+            baseColumnNames: check_def_id
+            referencedTableName: ai_check_defs
+            referencedColumnNames: id
+            constraintName: fk_ai_check_results_check_def

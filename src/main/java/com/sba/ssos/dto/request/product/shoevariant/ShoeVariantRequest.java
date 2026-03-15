@@ -10,11 +10,11 @@ public record ShoeVariantRequest(
         UUID id,
 
         @NotBlank(message = "validation.shoe.variant.size.required")
-        @Size(max = 255)
+        @Size(max = 255, message = "validation.shoe.variant.size.max")
         String size,
 
         @NotBlank(message = "validation.shoe.variant.color.required")
-        @Size(max = 255)
+        @Size(max = 255, message = "validation.shoe.variant.color.max")
         String color,
 
         @NotNull(message = "validation.shoe.variant.quantity.required")

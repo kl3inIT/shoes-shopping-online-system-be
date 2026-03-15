@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtConverter implements Converter<Jwt, UsernamePasswordAuthenticationToken> {
 
   static final String RESOURCE_ACCESS_CLAIM = "resource_access";
@@ -37,7 +39,7 @@ public class JwtConverter implements Converter<Jwt, UsernamePasswordAuthenticati
             || acceptClients == null
             || acceptClients.isEmpty()
             || acceptClients.stream().noneMatch(c -> c.equalsIgnoreCase(clientName))) {
-
+      log.warn("Rejected JWT with invalid azp claim: {}", clientName);
       throw new UnauthorizedException(
               "error.jwt.invalid_azp", "expected", acceptClients, "actual", clientName);
     }
@@ -81,6 +83,7 @@ public class JwtConverter implements Converter<Jwt, UsernamePasswordAuthenticati
 
   private static <T> T nonMissing(T object, String name) {
     if (object == null) {
+      log.warn("Rejected JWT with missing claim {}", name);
       throw new UnauthorizedException("error.jwt.claim_missing", "claim", name);
     }
 

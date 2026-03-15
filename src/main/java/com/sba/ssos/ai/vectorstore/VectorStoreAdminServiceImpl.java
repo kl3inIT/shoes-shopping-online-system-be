@@ -4,6 +4,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.dto.response.PageResponse;
+import com.sba.ssos.exception.base.BadRequestException;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -12,9 +15,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Admin service implementation for vector store document management.
@@ -178,7 +178,7 @@ public class VectorStoreAdminServiceImpl implements VectorStoreAdminService {
     @Override
     public void deleteDocuments(String filterExpression) {
         if (!StringUtils.hasText(filterExpression)) {
-            throw new IllegalArgumentException("Filter must not be empty");
+            throw new BadRequestException("validation.vector_store.filter.required");
         }
 
         String table = qualifiedTable();
@@ -190,8 +190,6 @@ public class VectorStoreAdminServiceImpl implements VectorStoreAdminService {
         if (!ids.isEmpty()) {
             log.debug("Bulk deleting {} vector store documents matching filter", ids.size());
             vectorStore.delete(ids);
-        } else {
-            log.debug("No vector store documents matched filter — skipping delete");
         }
     }
 }

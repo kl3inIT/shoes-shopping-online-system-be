@@ -3,6 +3,7 @@ package com.sba.ssos.ai.checks;
 import com.sba.ssos.constant.ApiPaths;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.response.PageResponse;
+import com.sba.ssos.utils.LocaleUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -27,24 +28,29 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminCheckController {
 
     private final CheckAdminService checkAdminService;
+    private final LocaleUtils localeUtils;
 
     @GetMapping("/definitions")
     public ResponseGeneral<List<CheckDefResponse>> getCheckDefs() {
-        return ResponseGeneral.ofSuccess("Check definitions retrieved", checkAdminService.getCheckDefs());
+        return ResponseGeneral.ofSuccess(
+            localeUtils.get("success.ai.check_defs.fetched"), checkAdminService.getCheckDefs());
     }
 
     @PostMapping("/definitions")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseGeneral<CheckDefResponse> createCheckDef(
             @Valid @RequestBody CheckDefCreateRequest request) {
-        return ResponseGeneral.ofCreated("Check definition created", checkAdminService.createCheckDef(request));
+        return ResponseGeneral.ofCreated(
+            localeUtils.get("success.ai.check_def.created"), checkAdminService.createCheckDef(request));
     }
 
     @PutMapping("/definitions/{id}")
     public ResponseGeneral<CheckDefResponse> updateCheckDef(
             @PathVariable UUID id,
             @Valid @RequestBody CheckDefUpdateRequest request) {
-        return ResponseGeneral.ofSuccess("Check definition updated", checkAdminService.updateCheckDef(id, request));
+        return ResponseGeneral.ofSuccess(
+            localeUtils.get("success.ai.check_def.updated"),
+            checkAdminService.updateCheckDef(id, request));
     }
 
     @DeleteMapping("/definitions/{id}")
@@ -56,7 +62,10 @@ public class AdminCheckController {
     @PostMapping("/runs")
     public ResponseGeneral<CheckRunSummary> triggerRun() {
         CheckRunSummary result = checkAdminService.triggerRun();
-        String msg = result != null ? "Check run completed" : "No active check definitions found";
+        String msg =
+            result != null
+                ? localeUtils.get("success.ai.check_runs.completed")
+                : localeUtils.get("success.ai.check_runs.none_active");
         return ResponseGeneral.ofSuccess(msg, result);
     }
 
@@ -64,7 +73,9 @@ public class AdminCheckController {
     public ResponseGeneral<PageResponse<CheckRunSummaryResponse>> getCheckRuns(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return ResponseGeneral.ofSuccess("Check runs retrieved", checkAdminService.getCheckRuns(page, size));
+        return ResponseGeneral.ofSuccess(
+            localeUtils.get("success.ai.check_runs.fetched"),
+            checkAdminService.getCheckRuns(page, size));
     }
 
     @DeleteMapping("/runs/{runId}")
@@ -75,6 +86,8 @@ public class AdminCheckController {
 
     @GetMapping("/runs/{runId}/results")
     public ResponseGeneral<List<CheckResultDetailResponse>> getCheckResults(@PathVariable UUID runId) {
-        return ResponseGeneral.ofSuccess("Check results retrieved", checkAdminService.getCheckResults(runId));
+        return ResponseGeneral.ofSuccess(
+            localeUtils.get("success.ai.check_results.fetched"),
+            checkAdminService.getCheckResults(runId));
     }
 }

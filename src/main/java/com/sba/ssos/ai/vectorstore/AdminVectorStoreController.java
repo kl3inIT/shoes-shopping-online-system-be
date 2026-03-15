@@ -3,6 +3,7 @@ package com.sba.ssos.ai.vectorstore;
 import com.sba.ssos.constant.ApiPaths;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.response.PageResponse;
+import com.sba.ssos.utils.LocaleUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminVectorStoreController {
 
     private final VectorStoreAdminService vectorStoreAdminService;
+    private final LocaleUtils localeUtils;
 
     @GetMapping("/documents")
     public ResponseGeneral<PageResponse<VectorDocumentResponse>> getDocuments(
@@ -34,16 +36,19 @@ public class AdminVectorStoreController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String filter) {
         var data = vectorStoreAdminService.getDocuments(page, size, filter);
-        return ResponseGeneral.ofSuccess("Vector store documents retrieved", data);
+        return ResponseGeneral.ofSuccess(localeUtils.get("success.ai.vector.documents.fetched"), data);
     }
 
     @GetMapping("/documents/{id}")
     public ResponseGeneral<VectorDocumentResponse> getDocument(@PathVariable String id) {
         var data = vectorStoreAdminService.getDocument(id);
-        return ResponseGeneral.ofSuccess("Vector store document retrieved", data);
+        return ResponseGeneral.ofSuccess(localeUtils.get("success.ai.vector.document.fetched"), data);
     }
 
-    public record BulkDeleteByIdsRequest(@Schema(description = "Document ids to delete") @NotEmpty List<String> ids) {}
+    public record BulkDeleteByIdsRequest(
+        @Schema(description = "Document ids to delete")
+        @NotEmpty(message = "validation.vector_store.ids.required")
+        List<String> ids) {}
 
     @DeleteMapping("/documents/bulk")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -57,7 +62,10 @@ public class AdminVectorStoreController {
         vectorStoreAdminService.deleteDocument(id);
     }
 
-    public record BulkDeleteRequest(@Schema(description = "Vector store filter expression") @NotBlank String filter) {}
+    public record BulkDeleteRequest(
+        @Schema(description = "Vector store filter expression")
+        @NotBlank(message = "validation.vector_store.filter.required")
+        String filter) {}
 
     @DeleteMapping("/documents")
     @ResponseStatus(HttpStatus.NO_CONTENT)

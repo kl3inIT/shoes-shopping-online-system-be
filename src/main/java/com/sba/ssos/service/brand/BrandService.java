@@ -9,6 +9,7 @@ import com.sba.ssos.mapper.BrandMapper;
 import com.sba.ssos.repository.BrandRepository;
 import com.sba.ssos.repository.product.shoe.ShoeRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class BrandService {
     private final BrandRepository brandRepository;
     private final ShoeRepository shoeRepository;
@@ -41,7 +43,7 @@ public class BrandService {
     @Transactional(readOnly = true)
     public BrandResponse getBrandById(UUID id) {
         Brand brand = brandRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Brand not found with id: " + id));
+                .orElseThrow(() -> new NotFoundException("Brand", id));
         BrandResponse base = brandMapper.toResponse(brand);
         long productCount = shoeRepository.countByBrandId(brand.getId());
         return new BrandResponse(
@@ -53,8 +55,10 @@ public class BrandService {
     @Transactional
     public BrandResponse createBrand(BrandRequest request) {
         if (brandRepository.existsBySlug(request.slug())) {
-            throw new ConflictException("Brand with slug '" + request.slug() + "' already exists");
+            log.warn("Rejected brand creation because slug {} already exists", request.slug());
+            throw new ConflictException("error.brand.slug.exists", "slug", request.slug());
         }
+        log.info("Creating brand with slug {}", request.slug());
         Brand brand = brandMapper.toEntity(request);
         return brandMapper.toResponse(brandRepository.save(brand));
     }
@@ -62,12 +66,14 @@ public class BrandService {
     @Transactional
     public BrandResponse updateBrand(UUID id, BrandRequest request) {
         Brand brand = brandRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Brand not found with id: " + id));
+                .orElseThrow(() -> new NotFoundException("Brand", id));
 
         if (!brand.getSlug().equals(request.slug()) && brandRepository.existsBySlug(request.slug())) {
-             throw new ConflictException("Brand with slug '" + request.slug() + "' already exists");
+             log.warn("Rejected brand update for {} because slug {} already exists", id, request.slug());
+             throw new ConflictException("error.brand.slug.exists", "slug", request.slug());
         }
-        
+
+        log.info("Updating brand {}", id);
         brandMapper.updateBrandFromRequest(request, brand);
         return brandMapper.toResponse(brandRepository.save(brand));
     }
@@ -75,11 +81,13 @@ public class BrandService {
     @Transactional
     public void deleteBrand(UUID id) {
         if (!brandRepository.existsById(id)) {
-            throw new NotFoundException("Brand not found with id: " + id);
+            throw new NotFoundException("Brand", id);
         }
         if (shoeRepository.countByBrandId(id) > 0) {
+            log.warn("Rejected brand deletion for {} because products still exist", id);
             throw new ConflictException("error.brand.delete.has_products");
         }
+        log.info("Deleting brand {}", id);
         brandRepository.deleteById(id);
     }
 

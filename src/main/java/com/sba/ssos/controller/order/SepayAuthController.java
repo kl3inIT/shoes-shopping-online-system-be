@@ -5,6 +5,7 @@ import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.order.sepay.SepayTokenRequest;
 import com.sba.ssos.dto.response.order.sepay.SepayTokenData;
 import com.sba.ssos.service.sepay.SepayTokenService;
+import com.sba.ssos.utils.LocaleUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,9 +21,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class SepayAuthController {
 
   private final SepayTokenService tokenService;
+  private final LocaleUtils localeUtils;
 
   @PostMapping("/token")
   public ResponseGeneral<SepayTokenData> getToken(@Valid @RequestBody SepayTokenRequest request) {
-    return ResponseGeneral.ofSuccess("success", tokenService.getKeyCloakToken(request));
+    return ResponseGeneral.ofSuccess(
+        localeUtils.get("success.sepay.token.fetched"), tokenService.getKeyCloakToken(request));
   }
 }

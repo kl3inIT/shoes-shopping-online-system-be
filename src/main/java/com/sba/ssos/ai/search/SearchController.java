@@ -2,6 +2,7 @@ package com.sba.ssos.ai.search;
 
 import com.sba.ssos.constant.ApiPaths;
 import com.sba.ssos.dto.ResponseGeneral;
+import com.sba.ssos.utils.LocaleUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 public class SearchController {
 
   private final SearchService searchService;
+  private final LocaleUtils localeUtils;
 
   @Schema(description = "Semantic search request")
   public record SearchRequest(@Schema(description = "Free-text query") String query) {}
@@ -50,6 +52,6 @@ public class SearchController {
             .toList();
 
     return ResponseEntity.ok(
-        ResponseGeneral.ofSuccess("Search completed", results));
+        ResponseGeneral.ofSuccess(localeUtils.get("success.ai.search.completed"), results));
   }
 }

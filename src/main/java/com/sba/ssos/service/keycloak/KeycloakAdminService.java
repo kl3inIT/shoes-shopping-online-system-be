@@ -2,6 +2,7 @@ package com.sba.ssos.service.keycloak;
 
 import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.enums.UserRole;
+import com.sba.ssos.exception.base.InternalServerErrorException;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -141,7 +142,11 @@ public class KeycloakAdminService {
         .stream()
         .findFirst()
         .map(ClientRepresentation::getId)
-        .orElseThrow(() -> new IllegalStateException("Keycloak client not found: " + clientId));
+        .orElseThrow(
+            () -> {
+              log.error("Keycloak client {} not found", clientId);
+              return new InternalServerErrorException("error.admin.user.keycloak.client_not_found");
+            });
   }
 
   private boolean isAppRole(String roleName) {

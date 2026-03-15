@@ -4,6 +4,7 @@ import com.sba.ssos.constant.ApiPaths;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.keycloak.KeycloakUserCreatedWebhookRequest;
 import com.sba.ssos.service.user.UserRegistrationService;
+import com.sba.ssos.utils.LocaleUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,12 +22,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class KeycloakWebhookController {
 
   private final UserRegistrationService userRegistrationService;
+  private final LocaleUtils localeUtils;
 
   @PostMapping("/registration")
   @ResponseStatus(HttpStatus.OK)
   public ResponseGeneral<Void> handleUserRegistration(
       @Valid @RequestBody KeycloakUserCreatedWebhookRequest request) {
     userRegistrationService.registerUserFromWebhook(request);
-    return ResponseGeneral.ofSuccess("User registration processed successfully");
+    return ResponseGeneral.ofSuccess(localeUtils.get("success.user.registration.processed"));
   }
 }

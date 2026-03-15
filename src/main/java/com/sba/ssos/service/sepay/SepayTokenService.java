@@ -3,7 +3,10 @@ package com.sba.ssos.service.sepay;
 import com.sba.ssos.configuration.ApplicationProperties;
 import com.sba.ssos.dto.request.order.sepay.SepayTokenRequest;
 import com.sba.ssos.dto.response.order.sepay.SepayTokenData;
+import com.sba.ssos.exception.base.InternalServerErrorException;
+import com.sba.ssos.exception.base.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -14,6 +17,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SepayTokenService {
 
     private final ObjectMapper objectMapper;
@@ -30,6 +34,7 @@ public class SepayTokenService {
         requestBody.add("password", applicationProperties.sepayProperties().sepayPassword());
 
         try {
+            log.info("Requesting SePay Keycloak token");
             String token = restClient.post()
                     .uri(applicationProperties.keycloakProperties().tokenUrl())
                     .headers(httpHeaders -> {
@@ -46,13 +51,16 @@ public class SepayTokenService {
             return sepayTokenData(token);
 
         } catch (RestClientResponseException ex) {
-            throw new RuntimeException(
-                    "Keycloak token request failed: " + ex.getResponseBodyAsString(),
-                    ex
-            );
+            if (ex.getStatusCode().is4xxClientError()) {
+                log.warn("SePay Keycloak token request failed with status {}", ex.getStatusCode().value());
+                throw new UnauthorizedException("error.sepay.auth.failed");
+            }
+            log.error("SePay Keycloak token request failed with status {}", ex.getStatusCode().value(), ex);
+            throw new InternalServerErrorException("error.sepay.token.request_failed", ex);
 
         } catch (Exception ex) {
-            throw new RuntimeException("Unexpected error when calling Keycloak", ex);
+            log.error("Unexpected error while requesting SePay Keycloak token", ex);
+            throw new InternalServerErrorException("error.sepay.token.request_failed", ex);
         }
     }
 
@@ -68,9 +76,8 @@ public class SepayTokenService {
             );
 
         } catch (Exception e) {
-            throw new IllegalArgumentException(
-                    "Cannot parse Keycloak token response", e
-            );
+            log.error("Failed to parse SePay Keycloak token response", e);
+            throw new InternalServerErrorException("error.sepay.token.parse_failed", e);
         }
 
     }

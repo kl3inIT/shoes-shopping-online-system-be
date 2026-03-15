@@ -1,25 +1,13 @@
 databaseChangeLog:
   - include:
-      file: db/changelog/001-create-chat-memory.yaml
+      file: db/changelog/001-baseline-ai.yaml
   - include:
-      file: db/changelog/002-create-vector-table.yaml
+      file: db/changelog/002-baseline-user.yaml
   - include:
-      file: db/changelog/003-rename-chat-memory-table.yaml
+      file: db/changelog/003-baseline-product.yaml
   - include:
-      file: db/changelog/004-make-avatar-nullable.yaml
+      file: db/changelog/004-baseline-commerce.yaml
   - include:
-      file: db/changelog/005-create-user-indexes.yaml
+      file: db/changelog/005-baseline-review.yaml
   - include:
-      file: db/changelog/006-make-date-of-birth-nullable.yaml
-  - include:
-      file: db/changelog/007-make-phone-nullable.yaml
-  - include:
-      file: db/changelog/008-add-user-address.yaml
-  - include:
-      file: db/changelog/009-create-review-helpful-votes.yaml
-  - include:
-      file: db/changelog/010-create-notifications.yaml
-  - include:
-      file: db/changelog/011-normalize-user-statuses.yaml
-  - include:
-      file: db/changelog/2026/012-add-check-run-audit-columns.yaml
+      file: db/changelog/006-baseline-notification.yaml
