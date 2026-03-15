@@ -7,4 +7,5 @@ public record CheckRunSummaryResponse(
     UUID id,
     Double score,
     Instant createdAt,
-    UUID createdBy) {}
+    UUID createdBy,
+    String createdByUsername) {}

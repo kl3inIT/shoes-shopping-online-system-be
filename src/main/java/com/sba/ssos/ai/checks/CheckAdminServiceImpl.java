@@ -1,7 +1,9 @@
 package com.sba.ssos.ai.checks;
 
 import com.sba.ssos.dto.response.PageResponse;
+import com.sba.ssos.entity.User;
 import com.sba.ssos.exception.base.NotFoundException;
+import com.sba.ssos.repository.UserRepository;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ public class CheckAdminServiceImpl implements CheckAdminService {
     private final CheckRunRepository checkRunRepository;
     private final CheckResultRepository checkResultRepository;
     private final CheckRunner checkRunner;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -93,11 +96,16 @@ public class CheckAdminServiceImpl implements CheckAdminService {
     }
 
     private CheckRunSummaryResponse toRunSummary(CheckRun run) {
+        String username = run.getCreatedBy() == null ? null
+                : userRepository.findByKeycloakId(run.getCreatedBy())
+                        .map(User::getUsername)
+                        .orElse(null);
         return new CheckRunSummaryResponse(
                 run.getId(),
                 run.getScore(),
                 run.getCreatedAt(),
-                run.getCreatedBy());
+                run.getCreatedBy(),
+                username);
     }
 
     private CheckResultDetailResponse toResultDetail(CheckResult result) {
