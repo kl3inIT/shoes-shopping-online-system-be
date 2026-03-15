@@ -1,4 +1,4 @@
-package com.sba.ssos.dto.dashboard;
+package com.sba.ssos.dto.response.dashboard;
 
 import java.time.LocalDate;
 

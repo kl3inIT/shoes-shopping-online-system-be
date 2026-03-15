@@ -1,16 +1,19 @@
 package com.sba.ssos.controller;
 
+import com.sba.ssos.constant.ApiPaths;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.service.storage.MinioStorageService;
 import com.sba.ssos.utils.LocaleUtils;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/storage")
+@RequestMapping(ApiPaths.STORAGE)
 @RequiredArgsConstructor
+@Tag(name = "Storage", description = "File storage utility endpoints")
 public class StorageController {
 
     private final MinioStorageService minioStorageService;

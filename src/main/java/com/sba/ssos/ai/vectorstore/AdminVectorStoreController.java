@@ -1,13 +1,13 @@
-package com.sba.ssos.controller.admin;
+package com.sba.ssos.ai.vectorstore;
 
-import com.sba.ssos.ai.vectorstore.VectorDocumentResponse;
-import com.sba.ssos.ai.vectorstore.VectorStoreAdminService;
+import com.sba.ssos.constant.ApiPaths;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.response.PageResponse;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,8 +21,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/admin/vector-store")
+@RequestMapping(ApiPaths.ADMIN_VECTOR_STORE)
 @RequiredArgsConstructor
+@Tag(name = "Admin Vector Store", description = "Administrative vector store maintenance endpoints")
 public class AdminVectorStoreController {
 
     private final VectorStoreAdminService vectorStoreAdminService;
@@ -42,7 +43,7 @@ public class AdminVectorStoreController {
         return ResponseGeneral.ofSuccess("Vector store document retrieved", data);
     }
 
-    public record BulkDeleteByIdsRequest(@NotEmpty List<String> ids) {}
+    public record BulkDeleteByIdsRequest(@Schema(description = "Document ids to delete") @NotEmpty List<String> ids) {}
 
     @DeleteMapping("/documents/bulk")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -56,7 +57,7 @@ public class AdminVectorStoreController {
         vectorStoreAdminService.deleteDocument(id);
     }
 
-    public record BulkDeleteRequest(@NotBlank String filter) {}
+    public record BulkDeleteRequest(@Schema(description = "Vector store filter expression") @NotBlank String filter) {}
 
     @DeleteMapping("/documents")
     @ResponseStatus(HttpStatus.NO_CONTENT)

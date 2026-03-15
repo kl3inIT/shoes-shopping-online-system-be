@@ -1,10 +1,9 @@
-package com.sba.ssos.controller.admin;
+package com.sba.ssos.ai.chatlog;
 
-import com.sba.ssos.ai.chatlog.ChatLogAdminService;
-import com.sba.ssos.ai.chatlog.ChatLogDetailResponse;
-import com.sba.ssos.ai.chatlog.ChatLogSummaryResponse;
+import com.sba.ssos.constant.ApiPaths;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.response.PageResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -16,8 +15,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/admin/chat-logs")
+@RequestMapping(ApiPaths.ADMIN_CHAT_LOGS)
 @RequiredArgsConstructor
+@Tag(name = "Admin Chat Logs", description = "Administrative AI chat log endpoints")
 public class AdminChatLogController {
 
   private final ChatLogAdminService chatLogAdminService;

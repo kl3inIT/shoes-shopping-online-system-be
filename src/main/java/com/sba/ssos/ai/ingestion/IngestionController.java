@@ -1,14 +1,17 @@
 package com.sba.ssos.ai.ingestion;
 
+import com.sba.ssos.constant.ApiPaths;
 import com.sba.ssos.dto.ResponseGeneral;
 import java.util.List;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/ingestion")
+@RequestMapping(ApiPaths.API_V1 + "/ingestion")
 @RequiredArgsConstructor
+@Tag(name = "AI Ingestion", description = "Vector ingestion and reindexing endpoints")
 public class IngestionController {
 
   private final IngesterService ingesterService;

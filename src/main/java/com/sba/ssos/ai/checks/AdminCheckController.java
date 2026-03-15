@@ -1,14 +1,9 @@
-package com.sba.ssos.controller.admin;
+package com.sba.ssos.ai.checks;
 
-import com.sba.ssos.ai.checks.CheckAdminService;
-import com.sba.ssos.ai.checks.CheckDefCreateRequest;
-import com.sba.ssos.ai.checks.CheckDefResponse;
-import com.sba.ssos.ai.checks.CheckDefUpdateRequest;
-import com.sba.ssos.ai.checks.CheckResultDetailResponse;
-import com.sba.ssos.ai.checks.CheckRunSummary;
-import com.sba.ssos.ai.checks.CheckRunSummaryResponse;
+import com.sba.ssos.constant.ApiPaths;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.response.PageResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -26,8 +21,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/admin/checks")
+@RequestMapping(ApiPaths.ADMIN_CHECKS)
 @RequiredArgsConstructor
+@Tag(name = "Admin Checks", description = "Administrative AI check management endpoints")
 public class AdminCheckController {
 
     private final CheckAdminService checkAdminService;
@@ -47,7 +43,7 @@ public class AdminCheckController {
     @PutMapping("/definitions/{id}")
     public ResponseGeneral<CheckDefResponse> updateCheckDef(
             @PathVariable UUID id,
-            @RequestBody CheckDefUpdateRequest request) {
+            @Valid @RequestBody CheckDefUpdateRequest request) {
         return ResponseGeneral.ofSuccess("Check definition updated", checkAdminService.updateCheckDef(id, request));
     }
 

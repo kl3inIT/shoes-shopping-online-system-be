@@ -1,10 +1,12 @@
 package com.sba.ssos.controller;
 
+import com.sba.ssos.constant.ApiPaths;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.brand.BrandRequest;
 import com.sba.ssos.dto.response.brand.BrandResponse;
 import com.sba.ssos.service.brand.BrandService;
 import com.sba.ssos.utils.LocaleUtils;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -14,8 +16,9 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/brands")
+@RequestMapping(ApiPaths.BRANDS)
 @RequiredArgsConstructor
+@Tag(name = "Brands", description = "Brand catalog management endpoints")
 public class BrandController {
     private final BrandService brandService;
     private final LocaleUtils localeUtils;

@@ -1,5 +1,6 @@
 package com.sba.ssos.controller.user;
 
+import com.sba.ssos.constant.ApiPaths;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.user.CreateAdminUserRequest;
 import com.sba.ssos.dto.request.user.UpdateUserRoleRequest;
@@ -11,6 +12,7 @@ import com.sba.ssos.enums.UserRole;
 import com.sba.ssos.enums.UserStatus;
 import com.sba.ssos.service.user.AdminUserService;
 import com.sba.ssos.utils.LocaleUtils;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -27,8 +29,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/admin/users")
+@RequestMapping(ApiPaths.ADMIN_USERS)
 @RequiredArgsConstructor
+@Tag(name = "Admin Users", description = "Administrative user management endpoints")
 public class AdminUserController {
 
   private final AdminUserService adminUserService;

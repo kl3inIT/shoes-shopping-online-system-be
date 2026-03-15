@@ -9,7 +9,7 @@ import com.sba.ssos.ai.parameters.ParametersService;
 import com.sba.ssos.ai.rag.ToolsManager;
 import com.sba.ssos.exception.base.BadRequestException;
 import com.sba.ssos.security.AuthorizedUserDetails;
-import com.sba.ssos.service.user.UserService;
+import com.sba.ssos.service.user.AuthenticatedUserService;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,7 +40,7 @@ public class ChatServiceImpl implements ChatService {
   private final ToolsManager toolsManager;
   private final ChatLogService chatLogService;
   private final ParametersService parametersService;
-  private final UserService userService;
+  private final AuthenticatedUserService authenticatedUserService;
 
   @Value("${application-properties.chat-properties.max-request-length:2000}")
   private int maxRequestLength;
@@ -51,13 +51,13 @@ public class ChatServiceImpl implements ChatService {
       ToolsManager toolsManager,
       ChatLogService chatLogService,
       ParametersService parametersService,
-      UserService userService) {
+      AuthenticatedUserService authenticatedUserService) {
     this.chatClient = chatClient;
     this.chatMemory = chatMemory;
     this.toolsManager = toolsManager;
     this.chatLogService = chatLogService;
     this.parametersService = parametersService;
-    this.userService = userService;
+    this.authenticatedUserService = authenticatedUserService;
   }
 
   @Override
@@ -66,7 +66,7 @@ public class ChatServiceImpl implements ChatService {
 
     validateMessage(message);
 
-    AuthorizedUserDetails user = userService.getCurrentUserOrNull();
+    AuthorizedUserDetails user = authenticatedUserService.getCurrentUserOrNull();
 
     String userId = null;
     String cid;

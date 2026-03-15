@@ -1,11 +1,13 @@
 package com.sba.ssos.controller;
 
+import com.sba.ssos.constant.ApiPaths;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.cart.AddToCartRequest;
 import com.sba.ssos.dto.request.cart.UpdateCartItemRequest;
 import com.sba.ssos.dto.response.cart.CartResponse;
 import com.sba.ssos.service.cart.CartService;
 import com.sba.ssos.utils.LocaleUtils;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -14,8 +16,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/cart")
+@RequestMapping(ApiPaths.CART)
 @RequiredArgsConstructor
+@Tag(name = "Cart", description = "Customer shopping cart endpoints")
 public class CartController {
 
     private final CartService cartService;

@@ -1,14 +1,17 @@
 package com.sba.ssos.ai.chat;
 
+import com.sba.ssos.constant.ApiPaths;
 import com.sba.ssos.dto.ResponseGeneral;
 import jakarta.validation.Valid;
 import java.util.List;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/chat")
+@RequestMapping(ApiPaths.API_V1 + "/chat")
 @RequiredArgsConstructor
+@Tag(name = "AI Chat", description = "Conversational AI endpoints")
 public class ChatController {
 
   private final ChatService chatService;

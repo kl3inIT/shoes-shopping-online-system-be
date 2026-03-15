@@ -1,14 +1,17 @@
 package com.sba.ssos.controller.product.shoe;
 
+import com.sba.ssos.constant.ApiPaths;
 import com.sba.ssos.dto.ResponseGeneral;
 import com.sba.ssos.dto.request.product.shoe.ShoeCreateRequest;
 import com.sba.ssos.dto.request.product.shoe.ShoeUpdateRequest;
 import com.sba.ssos.dto.response.product.shoe.ShoeResponse;
 import com.sba.ssos.dto.response.product.shoe.ShoeStockSummaryResponse;
 import com.sba.ssos.dto.response.product.shoevariant.ShoeVariantResponse;
+import com.sba.ssos.service.product.shoe.ShoeMultipartRequestService;
 import com.sba.ssos.service.product.shoe.ShoeService;
 import com.sba.ssos.service.product.shoevariant.ShoeVariantService;
 import com.sba.ssos.utils.LocaleUtils;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,16 +22,17 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("api/shoes")
+@RequestMapping(ApiPaths.SHOES)
+@Tag(name = "Shoes", description = "Product catalog and inventory endpoints")
 public class ShoeController {
 
     private final ShoeService shoeService;
+    private final ShoeMultipartRequestService shoeMultipartRequestService;
     private final ShoeVariantService shoeVariantService;
     private final LocaleUtils localeUtils;
 
@@ -38,14 +42,8 @@ public class ShoeController {
             @RequestPart(value = "shoeImages", required = false) List<MultipartFile> shoeImages,
             MultipartHttpServletRequest multiRequest
     ) {
-        List<List<MultipartFile>> variantImagesList = new ArrayList<>();
-        int variantCount = request.variants().size();
-
-        for (int i = 0; i < variantCount; i++) {
-            List<MultipartFile> files = multiRequest.getFiles("variantImages" + i);
-            variantImagesList.add(files != null ? files : new ArrayList<>());
-        }
-
+        List<List<MultipartFile>> variantImagesList =
+                shoeMultipartRequestService.extractVariantImages(request.variants().size(), multiRequest);
         ShoeResponse data = shoeService.create(request, shoeImages, variantImagesList);
         return ResponseGeneral.ofCreated(localeUtils.get("success.shoe.created"), data);
     }
@@ -119,14 +117,8 @@ public class ShoeController {
             @RequestPart(value = "shoeImages", required = false) List<MultipartFile> shoeImages,
             MultipartHttpServletRequest multiRequest
     ) {
-        List<List<MultipartFile>> variantImagesList = new ArrayList<>();
-        int variantCount = request.variants().size();
-
-        for (int i = 0; i < variantCount; i++) {
-            List<MultipartFile> files = multiRequest.getFiles("variantImages" + i);
-            variantImagesList.add(files != null ? files : new ArrayList<>());
-        }
-
+        List<List<MultipartFile>> variantImagesList =
+                shoeMultipartRequestService.extractVariantImages(request.variants().size(), multiRequest);
         ShoeResponse data = shoeService.update(id, request, shoeImages, variantImagesList);
         return ResponseGeneral.ofSuccess(localeUtils.get("success.shoe.updated"), data);
     }
