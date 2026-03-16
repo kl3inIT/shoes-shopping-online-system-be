@@ -134,20 +134,18 @@ public class OrderIngester extends AbstractIngester {
       }
     }
 
-    List<Payment> payments = order.getPayments();
-    if (payments != null && !payments.isEmpty()) {
+    Payment payment = order.getPayments().stream().findFirst().orElse(null);
+    if (payment != null) {
       sb.append("Payment:\n");
-      for (Payment payment : payments) {
-        sb.append("  - Method: ").append(payment.getPaymentMethod())
-            .append(", Status: ").append(payment.getPaymentStatus())
-            .append(", Amount: ").append(String.format("%.0f", payment.getTotalAmount()))
+      sb.append("  - Method: ").append(payment.getPaymentMethod())
+          .append(", Status: ").append(payment.getPaymentStatus())
+          .append(", Amount: ").append(String.format("%.0f", payment.getTotalAmount()))
+          .append(" VND");
+      if (payment.getAmountReceived() != null) {
+        sb.append(", Received: ").append(String.format("%.0f", payment.getAmountReceived()))
             .append(" VND");
-        if (payment.getAmountReceived() != null) {
-          sb.append(", Received: ").append(String.format("%.0f", payment.getAmountReceived()))
-              .append(" VND");
-        }
-        sb.append("\n");
       }
+      sb.append("\n");
     }
 
     return sb.toString();

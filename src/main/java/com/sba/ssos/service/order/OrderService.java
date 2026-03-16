@@ -35,9 +35,11 @@ import com.sba.ssos.service.product.shoevariant.ShoeVariantService;
 import com.sba.ssos.utils.OrderCodeUtils;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -165,21 +167,31 @@ public class OrderService {
     log.info("Handling payment timeout for order {} by customer {}", orderId, customer.getId());
 
     Order order = getCustomerOrderById(orderId, customer.getId());
-    order.setOrderStatus(OrderStatus.PAYMENT_EXPIRED);
-    orderRepository.saveAndFlush(order);
-
-    List<Payment> payments = order.getPayments();
-    for (Payment payment : payments) {
-      payment.setPaymentStatus(PaymentStatus.TIME_OUT);
-    }
-    paymentRepository.saveAllAndFlush(payments);
-
-    List<CartItem> cartItems = order.getCustomer().getCartItems();
-    for (CartItem cartItem : cartItems) {
-      cartItem.setActive(true);
-    }
-    cartItemRepository.saveAllAndFlush(cartItems);
+    cancelPendingPaymentOrder(order);
     log.info("Marked order {} as payment expired", orderId);
+  }
+
+  @Transactional
+  public void cancelExpiredPendingOrders() {
+    LocalDateTime now = LocalDateTime.now();
+    List<Payment> expiredPayments =
+        paymentRepository.findExpiredPaymentsForPendingOrders(
+            OrderStatus.PENDING_PAYMENT, PaymentStatus.PENDING, now);
+
+    if (expiredPayments.isEmpty()) {
+      return;
+    }
+
+    Set<UUID> processedOrderIds = new LinkedHashSet<>();
+    for (Payment payment : expiredPayments) {
+      Order order = payment.getOrder();
+      if (order == null || order.getId() == null || !processedOrderIds.add(order.getId())) {
+        continue;
+      }
+      cancelPendingPaymentOrder(getOrderById(order.getId()));
+    }
+
+    log.info("Auto-cancelled {} expired pending payment orders", processedOrderIds.size());
   }
 
   @Transactional(readOnly = true)
@@ -280,10 +292,7 @@ public class OrderService {
     double amountReceived = request.transferAmount().doubleValue();
     double orderTotalAmount = order.getTotalAmount();
 
-    Payment payment =
-        order.getPayments().stream()
-            .findFirst()
-            .orElseThrow(() -> new NotFoundException("error.payment.not_found"));
+    Payment payment = getPrimaryPayment(order);
     payment.setAmountReceived(amountReceived);
 
     if (amountReceived < orderTotalAmount) {
@@ -460,5 +469,48 @@ public class OrderService {
     }
 
     return fallbackName == null ? "" : fallbackName;
+  }
+
+  private void cancelPendingPaymentOrder(Order order) {
+    if (order.getOrderStatus() != OrderStatus.PENDING_PAYMENT) {
+      log.debug("Skipping order {} because status is {}", order.getId(), order.getOrderStatus());
+      return;
+    }
+
+    Payment payment = getPrimaryPayment(order);
+    payment.setPaymentStatus(PaymentStatus.TIME_OUT);
+
+    List<ShoeVariant> variantsToRestore =
+        (order.getOrderDetails() == null ? List.<OrderDetail>of() : order.getOrderDetails()).stream()
+            .map(
+                detail -> {
+                  ShoeVariant variant = detail.getShoeVariant();
+                  if (variant != null && detail.getQuantity() != null) {
+                    variant.setQuantity(variant.getQuantity() + detail.getQuantity());
+                  }
+                  return variant;
+                })
+            .filter(Objects::nonNull)
+            .toList();
+
+    order.setOrderStatus(OrderStatus.PAYMENT_EXPIRED);
+    orderRepository.saveAndFlush(order);
+    paymentRepository.saveAndFlush(payment);
+
+    if (!variantsToRestore.isEmpty()) {
+      shoeVariantRepository.saveAllAndFlush(variantsToRestore);
+    }
+
+    List<CartItem> cartItems = order.getCustomer().getCartItems();
+    for (CartItem cartItem : cartItems) {
+      cartItem.setActive(true);
+    }
+    cartItemRepository.saveAllAndFlush(cartItems);
+  }
+
+  private Payment getPrimaryPayment(Order order) {
+    return order.getPayments().stream()
+        .findFirst()
+        .orElseThrow(() -> new NotFoundException("error.payment.not_found"));
   }
 }
