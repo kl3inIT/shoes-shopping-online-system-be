@@ -141,7 +141,7 @@ public record PageResponse<T>(
 Yêu cầu: Java 21, PostgreSQL đang chạy, Keycloak đã cấu hình realm + client phù hợp.
 
 ```bash
-# 1. Chạy PostgreSQL & Keycloak (tự chuẩn bị hoặc dùng docker compose của bạn)
+# 1. Chạy PostgreSQL & Keycloak (tự chuẩn bị hoặc dùng docker compose của bạn).
 
 # 2. Thiết lập biến môi trường (ví dụ trên Windows PowerShell)
 $env:POSTGRESQL_HOST="localhost"
