@@ -159,4 +159,5 @@ application-properties:
       # Custom no-auth URLs:
       - /test/free
       - /chat
-      - /ws/**
+      - /ws
+      - /ws/*
