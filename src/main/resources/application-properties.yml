@@ -160,4 +160,4 @@ application-properties:
       - /test/free
       - /chat
       - /ws
-      - /ws/*
+      - /ws/**
